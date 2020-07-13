@@ -6,3 +6,5 @@ RUN make
 FROM registry.svc.ci.openshift.org/openshift/origin-v4.0:base
 COPY --from=builder /go/src/github.com/kubernetes-sigs/aws-ebs-csi-driver/bin/aws-ebs-csi-driver /usr/bin/
 ENTRYPOINT ["/usr/bin/aws-ebs-csi-driver"]
+LABEL io.k8s.display-name="OpenShift AWS EBS CSI Driver" \
+	io.k8s.description="OpenShift AWS EBS CSI driver."
