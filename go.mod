@@ -49,6 +49,7 @@ replace (
 	k8s.io/sample-apiserver => k8s.io/sample-apiserver v0.17.3
 	k8s.io/sample-cli-plugin => k8s.io/sample-cli-plugin v0.17.3
 	k8s.io/sample-controller => k8s.io/sample-controller v0.17.3
+	vbom.ml/util => github.com/fvbommel/util v0.0.2 // Mitigate https://github.com/fvbommel/util/issues/6
 )
 
 go 1.13
