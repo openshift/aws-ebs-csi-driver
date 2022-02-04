@@ -28,10 +28,10 @@ spec:
           operator: Exists
         - operator: Exists
           effect: NoExecute
-          tolerationSeconds: 300
+          tolerationSeconds: 300 
       containers:
         - name: ebs-plugin
-          image: k8s.gcr.io/provider-aws/aws-ebs-csi-driver:v1.1.3
+          image: k8s.gcr.io/provider-aws/aws-ebs-csi-driver:v1.5.0
           imagePullPolicy: IfNotPresent
           args:
             # - {all,controller,node} # specify the driver mode
@@ -82,6 +82,7 @@ spec:
             failureThreshold: 5
         - name: csi-provisioner
           image: k8s.gcr.io/sig-storage/csi-provisioner:v2.1.1
+          imagePullPolicy: IfNotPresent
           args:
             - --csi-address=$(ADDRESS)
             - --v=2
@@ -97,6 +98,7 @@ spec:
               mountPath: /var/lib/csi/sockets/pluginproxy/
         - name: csi-attacher
           image: k8s.gcr.io/sig-storage/csi-attacher:v3.1.0
+          imagePullPolicy: IfNotPresent
           args:
             - --csi-address=$(ADDRESS)
             - --v=2
@@ -109,6 +111,7 @@ spec:
               mountPath: /var/lib/csi/sockets/pluginproxy/
         - name: csi-snapshotter
           image: k8s.gcr.io/sig-storage/csi-snapshotter:v3.0.3
+          imagePullPolicy: IfNotPresent
           args:
             - --csi-address=$(ADDRESS)
             - --leader-election=true
@@ -119,8 +122,8 @@ spec:
             - name: socket-dir
               mountPath: /var/lib/csi/sockets/pluginproxy/
         - name: csi-resizer
-          image: k8s.gcr.io/sig-storage/csi-resizer:v1.0.0
-          imagePullPolicy: Always
+          image: k8s.gcr.io/sig-storage/csi-resizer:v1.1.0
+          imagePullPolicy: IfNotPresent
           args:
             - --csi-address=$(ADDRESS)
             - --v=2
@@ -132,6 +135,7 @@ spec:
               mountPath: /var/lib/csi/sockets/pluginproxy/
         - name: liveness-probe
           image: k8s.gcr.io/sig-storage/livenessprobe:v2.2.0
+          imagePullPolicy: IfNotPresent
           args:
             - --csi-address=/csi/csi.sock
           volumeMounts:

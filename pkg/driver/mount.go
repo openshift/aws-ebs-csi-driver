@@ -17,6 +17,9 @@ limitations under the License.
 package driver
 
 import (
+	"os"
+	"path/filepath"
+
 	"github.com/kubernetes-sigs/aws-ebs-csi-driver/pkg/mounter"
 	mountutils "k8s.io/mount-utils"
 )
@@ -29,10 +32,10 @@ type mountInterface = mountutils.Interface
 // mount.Interface). Define it explicitly so that it can be mocked and to
 // insulate from oft-changing upstream interfaces/structs
 type Mounter interface {
-	mountInterface
+	mountutils.Interface
 
 	FormatAndMount(source string, target string, fstype string, options []string) error
-
+	IsCorruptedMnt(err error) bool
 	GetDeviceNameFromMount(mountPath string) (string, int, error)
 	MakeFile(path string) error
 	MakeDir(path string) error
@@ -53,4 +56,28 @@ func newNodeMounter() (Mounter, error) {
 		return nil, err
 	}
 	return &NodeMounter{safeMounter}, nil
+}
+
+// DeviceIdentifier is for mocking os io functions used for the driver to
+// identify an EBS volume's corresponding device (in Linux, the path under
+// /dev; in Windows, the volume number) so that it can mount it. For volumes
+// already mounted, see GetDeviceNameFromMount.
+// https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/nvme-ebs-volumes.html#identify-nvme-ebs-device
+type DeviceIdentifier interface {
+	Lstat(name string) (os.FileInfo, error)
+	EvalSymlinks(path string) (string, error)
+}
+
+type nodeDeviceIdentifier struct{}
+
+func newNodeDeviceIdentifier() DeviceIdentifier {
+	return &nodeDeviceIdentifier{}
+}
+
+func (i *nodeDeviceIdentifier) Lstat(name string) (os.FileInfo, error) {
+	return os.Lstat(name)
+}
+
+func (i *nodeDeviceIdentifier) EvalSymlinks(path string) (string, error) {
+	return filepath.EvalSymlinks(path)
 }

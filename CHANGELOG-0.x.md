@@ -1,3 +1,60 @@
+# v1.5.1
+## Notable changes
+* Address CVE ALAS-2021-1552
+
+# v1.5.0
+### Misc.
+* Update windows example to refer to v1.4.0 ([#1093](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/1093), [@wongma7](https://github.com/wongma7))
+* Bump eksctl used in e2e tests to 0.69.0 ([#1094](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/1094), [@wongma7](https://github.com/wongma7))
+* Update to go 1.17 ([#1109](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/1109), [@bertinatto](https://github.com/bertinatto))
+
+# v1.4.0
+## Notable changes
+* Recognize instance-type node label when EC2 metadata isn't available ([#1060](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/1060), [@rifelpet](https://github.com/rifelpet))
+* Fix windows NodePublish failing because mount target doesn't exist ([#1081](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/1081), [@wongma7](https://github.com/wongma7))
+* Search for nvme device path even if non-nvme exists ([#1082](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/1082), [@wongma7](https://github.com/wongma7))
+
+### Misc.
+* Bump csi-proxy from RC v1.0.0 to GA v1.0.1 ([#1018](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/1018), [@wongma7](https://github.com/wongma7))
+* Fix spacing in RELEASE.md ([#1035](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/1035), [@wongma7](https://github.com/wongma7))
+* [chart] Support image.pullPolicy for csi-resizer image ([#1045](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/1045), [@jyaworski](https://github.com/jyaworski))
+* merge 1.3.0 release and post-release commits into master ([#1068](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/1068), [@vdhanan](https://github.com/vdhanan))
+* Allow default fstype to be overriden via values.yaml ([#1069](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/1069), [@jcrsilva](https://github.com/jcrsilva))
+* Update windows example for image release ([#1070](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/1070), [@wongma7](https://github.com/wongma7))
+* Refactor pkg/cloud/metadata.go into pkg/cloud/metadata_*.go files ([#1074](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/1074), [@wongma7](https://github.com/wongma7))
+* Move mocks to parent package to avoid import cycle ([#1078](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/1078), [@wongma7](https://github.com/wongma7))
+* deploy: Add resizer and snapshotter images to kustomization ([#1080](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/1080), [@maxbrunet](https://github.com/maxbrunet))
+* deploy: Fix csi-resizer tag and bump to v1.1.0 ([#1085](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/1085), [@maxbrunet](https://github.com/maxbrunet))
+* Reorder isMounted for readability ([#1087](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/1087), [@wongma7](https://github.com/wongma7))
+
+# v1.3.1
+* Push multi-arch/os image manifest to ECR.
+
+# v1.3.0
+## Notable changes
+* Make NodePublish Mount Idempotent ([#1019](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/1019), [@nirmalaagash](https://github.com/nirmalaagash))
+* Build and push multi-arch/os (amazon and windows, no debian) image manifest via Make rules ([#957](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/957), [@wongma7](https://github.com/wongma7))
+
+### Bug fixes
+* Fix windows build IsCorruptedMnt not implemented ([#1047](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/1047), [@wongma7](https://github.com/wongma7))
+* Hash volume name to get client token ([#1041](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/1041), [@vdhanan](https://github.com/vdhanan))
+* Include ClusterRole and ClusterRoleBinding for csi-node ([#1021](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/1021), [@groodt](https://github.com/groodt))
+* Fix gcr prow builld failing because docker missing --os-version ([#1020](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/1020), [@wongma7](https://github.com/wongma7))
+* Fix gcr prow build failing because of IMAGE variable collision ([#1017](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/1017), [@wongma7](https://github.com/wongma7))
+* Fix github build failing because of wrong docker hub registry name  ([#1016](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/1016), [@wongma7](https://github.com/wongma7))
+
+### New features
+* [chart] Add controller strategy ([#1008](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/1008), [@stevehipwell](https://github.com/stevehipwell))
+* [chart] Node update strategy & auto driver image tag ([#988](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/988), [@stevehipwell](https://github.com/stevehipwell))
+
+### Misc.
+* Update helm chart alongside kustomize, after images have been pushed, for consistency ([#1015](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/1015), [@wongma7](https://github.com/wongma7))
+* Update kustomize templates only after verifying images are available in registries ([#995](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/995), [@wongma7](https://github.com/wongma7))
+
+# v1.2.1
+## Notable changes
+- Fix mount idempotency ([#1019](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/1019), [@nirmalaagash](https://github.com/nirmalaagash))
+
 # v1.2.0
 ## Notable changes
 * utilize latest go sdk to ensure createVolume idempotency ([#982](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/982), [@AndyXiangLi](https://github.com/AndyXiangLi))
@@ -45,6 +102,11 @@
 * Update base images: yum update al2, bump debian tag ([#986](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/986), [@wongma7](https://github.com/wongma7))
 * Release 1.1.3 ([#992](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/992), [@wongma7](https://github.com/wongma7))
 * add ecr images to readme ([#998](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/998), [@vdhanan](https://github.com/vdhanan))
+
+# v1.1.4
+
+## Notable changes
+- Fix mount idempotency ([#1019](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/1019), [@nirmalaagash](https://github.com/nirmalaagash))
 
 # v1.1.3
 
