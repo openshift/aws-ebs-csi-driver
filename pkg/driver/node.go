@@ -73,10 +73,11 @@ var (
 
 // nodeService represents the node service of CSI driver
 type nodeService struct {
-	metadata      cloud.MetadataService
-	mounter       Mounter
-	inFlight      *internal.InFlight
-	driverOptions *DriverOptions
+	metadata         cloud.MetadataService
+	mounter          Mounter
+	deviceIdentifier DeviceIdentifier
+	inFlight         *internal.InFlight
+	driverOptions    *DriverOptions
 }
 
 // newNodeService creates a new node service
@@ -94,10 +95,11 @@ func newNodeService(driverOptions *DriverOptions) nodeService {
 	}
 
 	return nodeService{
-		metadata:      metadata,
-		mounter:       nodeMounter,
-		inFlight:      internal.NewInFlight(),
-		driverOptions: driverOptions,
+		metadata:         metadata,
+		mounter:          nodeMounter,
+		deviceIdentifier: newNodeDeviceIdentifier(),
+		inFlight:         internal.NewInFlight(),
+		driverOptions:    driverOptions,
 	}
 }
 
@@ -586,15 +588,67 @@ func (d *nodeService) nodePublishVolumeForBlock(req *csi.NodePublishVolumeReques
 		return status.Errorf(codes.Internal, "Could not create file %q: %v", target, err)
 	}
 
-	klog.V(4).Infof("NodePublishVolume [block]: mounting %s at %s", source, target)
-	if err := d.mounter.Mount(source, target, "", mountOptions); err != nil {
-		if removeErr := os.Remove(target); removeErr != nil {
-			return status.Errorf(codes.Internal, "Could not remove mount target %q: %v", target, removeErr)
+	//Checking if the target file is already mounted with a device.
+	mounted, err := d.isMounted(source, target)
+	if err != nil {
+		return status.Errorf(codes.Internal, "Could not check if %q is mounted: %v", target, err)
+	}
+
+	if !mounted {
+		klog.V(4).Infof("NodePublishVolume [block]: mounting %s at %s", source, target)
+		if err := d.mounter.Mount(source, target, "", mountOptions); err != nil {
+			if removeErr := os.Remove(target); removeErr != nil {
+				return status.Errorf(codes.Internal, "Could not remove mount target %q: %v", target, removeErr)
+			}
+			return status.Errorf(codes.Internal, "Could not mount %q at %q: %v", source, target, err)
 		}
-		return status.Errorf(codes.Internal, "Could not mount %q at %q: %v", source, target, err)
+	} else {
+		klog.V(4).Infof("NodePublishVolume [block]: Target path %q is already mounted", target)
 	}
 
 	return nil
+}
+
+// isMounted checks if target is mounted. It does NOT return an error if target
+// doesn't exist.
+func (d *nodeService) isMounted(source string, target string) (bool, error) {
+	/*
+		Checking if it's a mount point using IsLikelyNotMountPoint. There are three different return values,
+		1. true, err when the directory does not exist or corrupted.
+		2. false, nil when the path is already mounted with a device.
+		3. true, nil when the path is not mounted with any device.
+	*/
+	notMnt, err := d.mounter.IsLikelyNotMountPoint(target)
+	if err != nil && !os.IsNotExist(err) {
+		//Checking if the path exists and error is related to Corrupted Mount, in that case, the system could unmount and mount.
+		_, pathErr := d.mounter.PathExists(target)
+		if pathErr != nil && d.mounter.IsCorruptedMnt(pathErr) {
+			klog.V(4).Infof("NodePublishVolume: Target path %q is a corrupted mount. Trying to unmount.", target)
+			if mntErr := d.mounter.Unmount(target); mntErr != nil {
+				return false, status.Errorf(codes.Internal, "Unable to unmount the target %q : %v", target, mntErr)
+			}
+			//After successful unmount, the device is ready to be mounted.
+			return false, nil
+		}
+		return false, status.Errorf(codes.Internal, "Could not check if %q is a mount point: %v, %v", target, err, pathErr)
+	}
+
+	// Do not return os.IsNotExist error. Other errors were handled above.  The
+	// Existence of the target should be checked by the caller explicitly and
+	// independently because sometimes prior to mount it is expected not to exist
+	// (in Windows, the target must NOT exist before a symlink is created at it)
+	// and in others it is an error (in Linux, the target mount directory must
+	// exist before mount is called on it)
+	if err != nil && os.IsNotExist(err) {
+		klog.V(5).Infof("[Debug] NodePublishVolume: Target path %q does not exist", target)
+		return false, nil
+	}
+
+	if !notMnt {
+		klog.V(4).Infof("NodePublishVolume: Target path %q is already mounted", target)
+	}
+
+	return !notMnt, nil
 }
 
 func (d *nodeService) nodePublishVolumeForFileSystem(req *csi.NodePublishVolumeRequest, mountOptions []string, mode *csi.VolumeCapability_Mount) error {
@@ -612,19 +666,23 @@ func (d *nodeService) nodePublishVolumeForFileSystem(req *csi.NodePublishVolumeR
 		return status.Errorf(codes.Internal, err.Error())
 	}
 
-	fsType := mode.Mount.GetFsType()
-	if len(fsType) == 0 {
-		fsType = defaultFsType
+	//Checking if the target directory is already mounted with a device.
+	mounted, err := d.isMounted(source, target)
+	if err != nil {
+		return status.Errorf(codes.Internal, "Could not check if %q is mounted: %v", target, err)
 	}
 
-	mountOptions = collectMountOptions(fsType, mountOptions)
-
-	klog.V(4).Infof("NodePublishVolume: mounting %s at %s with option %s as fstype %s", source, target, mountOptions, fsType)
-	if err := d.mounter.Mount(source, target, fsType, mountOptions); err != nil {
-		if removeErr := os.Remove(target); removeErr != nil {
-			return status.Errorf(codes.Internal, "Could not remove mount target %q: %v", target, err)
+	if !mounted {
+		fsType := mode.Mount.GetFsType()
+		if len(fsType) == 0 {
+			fsType = defaultFsType
 		}
-		return status.Errorf(codes.Internal, "Could not mount %q at %q: %v", source, target, err)
+
+		mountOptions = collectMountOptions(fsType, mountOptions)
+		klog.V(4).Infof("NodePublishVolume: mounting %s at %s with option %s as fstype %s", source, target, mountOptions, fsType)
+		if err := d.mounter.Mount(source, target, fsType, mountOptions); err != nil {
+			return status.Errorf(codes.Internal, "Could not mount %q at %q: %v", source, target, err)
+		}
 	}
 
 	return nil

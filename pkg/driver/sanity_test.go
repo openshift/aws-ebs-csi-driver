@@ -57,9 +57,10 @@ func TestSanity(t *testing.T) {
 				Region:           "region",
 				AvailabilityZone: "az",
 			},
-			mounter:       newFakeMounter(),
-			inFlight:      internal.NewInFlight(),
-			driverOptions: &DriverOptions{},
+			mounter:          newFakeMounter(),
+			deviceIdentifier: newNodeDeviceIdentifier(),
+			inFlight:         internal.NewInFlight(),
+			driverOptions:    &DriverOptions{},
 		},
 	}
 	defer func() {
@@ -299,6 +300,10 @@ func newFakeMounter() *fakeMounter {
 	return &fakeMounter{
 		exec.New(),
 	}
+}
+
+func (f *fakeMounter) IsCorruptedMnt(err error) bool {
+	return false
 }
 
 func (f *fakeMounter) Mount(source string, target string, fstype string, options []string) error {
