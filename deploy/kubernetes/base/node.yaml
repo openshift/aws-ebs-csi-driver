@@ -12,6 +12,10 @@ spec:
     matchLabels:
       app: ebs-csi-node
       app.kubernetes.io/name: aws-ebs-csi-driver
+  updateStrategy:
+    rollingUpdate:
+      maxUnavailable: 10%
+    type: RollingUpdate
   template:
     metadata:
       labels:
@@ -41,7 +45,8 @@ spec:
         - name: ebs-plugin
           securityContext:
             privileged: true
-          image: k8s.gcr.io/provider-aws/aws-ebs-csi-driver:v1.1.3
+          image: k8s.gcr.io/provider-aws/aws-ebs-csi-driver:v1.3.0
+          imagePullPolicy: IfNotPresent
           args:
             - node
             - --endpoint=$(CSI_ENDPOINT)
@@ -76,6 +81,7 @@ spec:
             failureThreshold: 5
         - name: node-driver-registrar
           image: k8s.gcr.io/sig-storage/csi-node-driver-registrar:v2.1.0
+          imagePullPolicy: IfNotPresent
           args:
             - --csi-address=$(ADDRESS)
             - --kubelet-registration-path=$(DRIVER_REG_SOCK_PATH)
@@ -92,6 +98,7 @@ spec:
               mountPath: /registration
         - name: liveness-probe
           image: k8s.gcr.io/sig-storage/livenessprobe:v2.2.0
+          imagePullPolicy: IfNotPresent
           args:
             - --csi-address=/csi/csi.sock
           volumeMounts:
