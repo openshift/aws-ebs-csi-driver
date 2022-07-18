@@ -10,6 +10,8 @@ spec:
     matchLabels:
       app: ebs-csi-node
       {{- include "aws-ebs-csi-driver.selectorLabels" . | nindent 6 }}
+  updateStrategy:
+    {{ toYaml .Values.node.updateStrategy | nindent 4 }}
   template:
     metadata:
       labels:
@@ -54,7 +56,8 @@ spec:
         {{- end }}
       containers:
         - name: ebs-plugin
-          image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+          image: {{ printf "%s:%s" .Values.image.repository (default (printf "v%s" .Chart.AppVersion) (toString .Values.image.tag)) }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
           args:
             - node
             - --endpoint=$(CSI_ENDPOINT)
@@ -106,6 +109,7 @@ spec:
           {{- end }}
         - name: node-driver-registrar
           image: {{ printf "%s:%s" .Values.sidecars.nodeDriverRegistrar.image.repository .Values.sidecars.nodeDriverRegistrar.image.tag }}
+          imagePullPolicy: {{ default .Values.image.pullPolicy .Values.sidecars.nodeDriverRegistrar.image.pullPolicy }}
           args:
             - --csi-address=$(ADDRESS)
             - --kubelet-registration-path=$(DRIVER_REG_SOCK_PATH)
@@ -132,6 +136,7 @@ spec:
           {{- end }}
         - name: liveness-probe
           image: {{ printf "%s:%s" .Values.sidecars.livenessProbe.image.repository .Values.sidecars.livenessProbe.image.tag }}
+          imagePullPolicy: {{ default .Values.image.pullPolicy .Values.sidecars.livenessProbe.image.pullPolicy }}
           args:
             - --csi-address=unix:/csi/csi.sock
           volumeMounts:

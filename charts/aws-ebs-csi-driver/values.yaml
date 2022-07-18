@@ -4,13 +4,15 @@
 
 image:
   repository: k8s.gcr.io/provider-aws/aws-ebs-csi-driver
-  tag: "v1.1.3"
+  # Overrides the image tag whose default is v{{ .Chart.AppVersion }}
+  tag: ""
   pullPolicy: IfNotPresent
 
 sidecars:
   provisioner:
     env: []
     image:
+      pullPolicy: IfNotPresent
       repository: k8s.gcr.io/sig-storage/csi-provisioner
       tag: "v2.1.1"
     logLevel: 2
@@ -18,6 +20,7 @@ sidecars:
   attacher:
     env: []
     image:
+      pullPolicy: IfNotPresent
       repository: k8s.gcr.io/sig-storage/csi-attacher
       tag: "v3.1.0"
     logLevel: 2
@@ -25,18 +28,21 @@ sidecars:
   snapshotter:
     env: []
     image:
+      pullPolicy: IfNotPresent
       repository: k8s.gcr.io/sig-storage/csi-snapshotter
       tag: "v3.0.3"
     logLevel: 2
     resources: {}
   livenessProbe:
     image:
+      pullPolicy: IfNotPresent
       repository: k8s.gcr.io/sig-storage/livenessprobe
       tag: "v2.2.0"
     resources: {}
   resizer:
     env: []
     image:
+      pullPolicy: IfNotPresent
       repository: k8s.gcr.io/sig-storage/csi-resizer
       tag: "v1.0.0"
     logLevel: 2
@@ -44,6 +50,7 @@ sidecars:
   nodeDriverRegistrar:
     env: []
     image:
+      pullPolicy: IfNotPresent
       repository: k8s.gcr.io/sig-storage/csi-node-driver-registrar
       tag: "v2.1.0"
     logLevel: 2
@@ -61,6 +68,9 @@ controller:
   # If arbitrary args like "--aws-sdk-debug-log=true" need to be passed, use this value
   additionalArgs: []
   affinity: {}
+  # The default filesystem type of the volume to provision when fstype is unspecified in the StorageClass.
+  # If the default is not set and fstype is unset in the StorageClass, then no fstype will be set
+  defaultFsType: ext4
   env: []
   # If set, add pv/pvc metadata to plugin create requests as parameters.
   extraCreateMetadata: true
@@ -84,6 +94,11 @@ controller:
   # region: us-east-1
   region:
   replicaCount: 2
+  updateStrategy: {}
+  # type: RollingUpdate
+  # rollingUpdate:
+  #   maxSurge: 0
+  #   maxUnavailable: 1
   resources: {}
   # We usually recommend not to specify default resources and to leave this as a conscious
   # choice for the user. This also increases chances charts run on environments with little
@@ -98,8 +113,8 @@ controller:
   #   cpu: 100m
   #   memory: 128Mi
   serviceAccount:
-    create: true # A service account will be created for you if set to true. Set to false if you want to use your own.
-    name: ebs-csi-controller-sa # Name of the service-account to be used/created.
+    create: true  # A service account will be created for you if set to true. Set to false if you want to use your own.
+    name: ebs-csi-controller-sa  # Name of the service-account to be used/created.
     annotations: {}
   tolerations: []
   # TSCs without the label selector stanza
@@ -133,6 +148,10 @@ node:
   enableWindows: false
   # The "maximum number of attachable volumes" per node
   volumeAttachLimit:
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: "10%"
 
 storageClasses: []
 # Add StorageClass resources like:
