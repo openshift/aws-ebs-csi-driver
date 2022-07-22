@@ -31,7 +31,7 @@ spec:
           tolerationSeconds: 300
       containers:
         - name: ebs-plugin
-          image: k8s.gcr.io/provider-aws/aws-ebs-csi-driver:v1.0.0
+          image: k8s.gcr.io/provider-aws/aws-ebs-csi-driver:v1.3.0
           imagePullPolicy: IfNotPresent
           args:
             # - {all,controller,node} # specify the driver mode
@@ -82,10 +82,12 @@ spec:
             failureThreshold: 5
         - name: csi-provisioner
           image: k8s.gcr.io/sig-storage/csi-provisioner:v2.1.1
+          imagePullPolicy: IfNotPresent
           args:
             - --csi-address=$(ADDRESS)
-            - --v=5
+            - --v=2
             - --feature-gates=Topology=true
+            - --extra-create-metadata
             - --leader-election=true
             - --default-fstype=ext4
           env:
@@ -96,9 +98,10 @@ spec:
               mountPath: /var/lib/csi/sockets/pluginproxy/
         - name: csi-attacher
           image: k8s.gcr.io/sig-storage/csi-attacher:v3.1.0
+          imagePullPolicy: IfNotPresent
           args:
             - --csi-address=$(ADDRESS)
-            - --v=5
+            - --v=2
             - --leader-election=true
           env:
             - name: ADDRESS
@@ -108,6 +111,7 @@ spec:
               mountPath: /var/lib/csi/sockets/pluginproxy/
         - name: csi-snapshotter
           image: k8s.gcr.io/sig-storage/csi-snapshotter:v3.0.3
+          imagePullPolicy: IfNotPresent
           args:
             - --csi-address=$(ADDRESS)
             - --leader-election=true
@@ -118,11 +122,11 @@ spec:
             - name: socket-dir
               mountPath: /var/lib/csi/sockets/pluginproxy/
         - name: csi-resizer
-          image: k8s.gcr.io/sig-storage/csi-resizer:v1.0.0
-          imagePullPolicy: Always
+          image: k8s.gcr.io/sig-storage/csi-resizer:v1.1.0
+          imagePullPolicy: IfNotPresent
           args:
             - --csi-address=$(ADDRESS)
-            - --v=5
+            - --v=2
           env:
             - name: ADDRESS
               value: /var/lib/csi/sockets/pluginproxy/csi.sock
@@ -131,6 +135,7 @@ spec:
               mountPath: /var/lib/csi/sockets/pluginproxy/
         - name: liveness-probe
           image: k8s.gcr.io/sig-storage/livenessprobe:v2.2.0
+          imagePullPolicy: IfNotPresent
           args:
             - --csi-address=/csi/csi.sock
           volumeMounts:
