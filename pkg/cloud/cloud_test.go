@@ -30,7 +30,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/golang/mock/gomock"
 	dm "github.com/kubernetes-sigs/aws-ebs-csi-driver/pkg/cloud/devicemanager"
-	"github.com/kubernetes-sigs/aws-ebs-csi-driver/pkg/cloud/mocks"
 	"github.com/kubernetes-sigs/aws-ebs-csi-driver/pkg/util"
 )
 
@@ -202,6 +201,30 @@ func TestCreateDisk(t *testing.T) {
 			expCreateVolumeInput: &ec2.CreateVolumeInput{},
 			expErr:               fmt.Errorf("could not create volume in EC2: CreateVolume generic error"),
 			expCreateVolumeErr:   fmt.Errorf("CreateVolume generic error"),
+		},
+		{
+			name:       "fail: ec2.CreateVolume returned snapshot not found error",
+			volumeName: "vol-test-name-error",
+			diskOptions: &DiskOptions{
+				CapacityBytes:    util.GiBToBytes(1),
+				Tags:             map[string]string{VolumeNameTagKey: "vol-test", AwsEbsDriverTagKey: "true"},
+				AvailabilityZone: expZone,
+			},
+			expCreateVolumeInput: &ec2.CreateVolumeInput{},
+			expErr:               ErrNotFound,
+			expCreateVolumeErr:   awserr.New("InvalidSnapshot.NotFound", "Snapshot not found", fmt.Errorf("not able to find source snapshot")),
+		},
+		{
+			name:       "fail: ec2.CreateVolume returned Idempotent Parameter Mismatch error",
+			volumeName: "vol-test-name-error",
+			diskOptions: &DiskOptions{
+				CapacityBytes:    util.GiBToBytes(1),
+				Tags:             map[string]string{VolumeNameTagKey: "vol-test", AwsEbsDriverTagKey: "true"},
+				AvailabilityZone: expZone,
+			},
+			expCreateVolumeInput: &ec2.CreateVolumeInput{},
+			expErr:               ErrIdempotentParameterMismatch,
+			expCreateVolumeErr:   awserr.New("IdempotentParameterMismatch", "Another request is in-flight", fmt.Errorf("another request is in-flight")),
 		},
 		{
 			name:       "fail: ec2.DescribeVolumes error after volume created",
@@ -402,7 +425,7 @@ func TestCreateDisk(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
-			mockEC2 := mocks.NewMockEC2(mockCtrl)
+			mockEC2 := NewMockEC2(mockCtrl)
 			c := newCloud(mockEC2)
 
 			volState := tc.volState
@@ -504,7 +527,7 @@ func TestDeleteDisk(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
-			mockEC2 := mocks.NewMockEC2(mockCtrl)
+			mockEC2 := NewMockEC2(mockCtrl)
 			c := newCloud(mockEC2)
 
 			ctx := context.Background()
@@ -558,7 +581,7 @@ func TestAttachDisk(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
-			mockEC2 := mocks.NewMockEC2(mockCtrl)
+			mockEC2 := NewMockEC2(mockCtrl)
 			c := newCloud(mockEC2)
 
 			vol := &ec2.Volume{
@@ -620,7 +643,7 @@ func TestDetachDisk(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
-			mockEC2 := mocks.NewMockEC2(mockCtrl)
+			mockEC2 := NewMockEC2(mockCtrl)
 			c := newCloud(mockEC2)
 
 			vol := &ec2.Volume{
@@ -689,7 +712,7 @@ func TestGetDiskByName(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
-			mockEC2 := mocks.NewMockEC2(mockCtrl)
+			mockEC2 := NewMockEC2(mockCtrl)
 			c := newCloud(mockEC2)
 
 			vol := &ec2.Volume{
@@ -771,7 +794,7 @@ func TestGetDiskByID(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
-			mockEC2 := mocks.NewMockEC2(mockCtrl)
+			mockEC2 := NewMockEC2(mockCtrl)
 			c := newCloud(mockEC2)
 
 			ctx := context.Background()
@@ -870,7 +893,7 @@ func TestCreateSnapshot(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
-			mockEC2 := mocks.NewMockEC2(mockCtrl)
+			mockEC2 := NewMockEC2(mockCtrl)
 			c := newCloud(mockEC2)
 
 			ec2snapshot := &ec2.Snapshot{
@@ -929,7 +952,7 @@ func TestDeleteSnapshot(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
-			mockEC2 := mocks.NewMockEC2(mockCtrl)
+			mockEC2 := NewMockEC2(mockCtrl)
 			c := newCloud(mockEC2)
 
 			ctx := context.Background()
@@ -1060,7 +1083,7 @@ func TestResizeDisk(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
-			mockEC2 := mocks.NewMockEC2(mockCtrl)
+			mockEC2 := NewMockEC2(mockCtrl)
 			// reduce number of steps to reduce test time
 			volumeModificationWaitSteps = 3
 			c := newCloud(mockEC2)
@@ -1146,7 +1169,7 @@ func TestGetSnapshotByName(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
-			mockEC2 := mocks.NewMockEC2(mockCtrl)
+			mockEC2 := NewMockEC2(mockCtrl)
 			c := newCloud(mockEC2)
 
 			ec2snapshot := &ec2.Snapshot{
@@ -1202,7 +1225,7 @@ func TestGetSnapshotByID(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
-			mockEC2 := mocks.NewMockEC2(mockCtrl)
+			mockEC2 := NewMockEC2(mockCtrl)
 			c := newCloud(mockEC2)
 
 			ec2snapshot := &ec2.Snapshot{
@@ -1262,7 +1285,7 @@ func TestListSnapshots(t *testing.T) {
 
 				mockCtl := gomock.NewController(t)
 				defer mockCtl.Finish()
-				mockEC2 := mocks.NewMockEC2(mockCtl)
+				mockEC2 := NewMockEC2(mockCtl)
 				c := newCloud(mockEC2)
 
 				ctx := context.Background()
@@ -1304,7 +1327,7 @@ func TestListSnapshots(t *testing.T) {
 
 				mockCtl := gomock.NewController(t)
 				defer mockCtl.Finish()
-				mockEC2 := mocks.NewMockEC2(mockCtl)
+				mockEC2 := NewMockEC2(mockCtl)
 				c := newCloud(mockEC2)
 
 				ctx := context.Background()
@@ -1351,7 +1374,7 @@ func TestListSnapshots(t *testing.T) {
 
 				mockCtl := gomock.NewController(t)
 				defer mockCtl.Finish()
-				mockEC2 := mocks.NewMockEC2(mockCtl)
+				mockEC2 := NewMockEC2(mockCtl)
 				c := newCloud(mockEC2)
 
 				ctx := context.Background()
@@ -1400,7 +1423,7 @@ func TestListSnapshots(t *testing.T) {
 			testFunc: func(t *testing.T) {
 				mockCtl := gomock.NewController(t)
 				defer mockCtl.Finish()
-				mockEC2 := mocks.NewMockEC2(mockCtl)
+				mockEC2 := NewMockEC2(mockCtl)
 				c := newCloud(mockEC2)
 
 				ctx := context.Background()
@@ -1417,7 +1440,7 @@ func TestListSnapshots(t *testing.T) {
 			testFunc: func(t *testing.T) {
 				mockCtl := gomock.NewController(t)
 				defer mockCtl.Finish()
-				mockEC2 := mocks.NewMockEC2(mockCtl)
+				mockEC2 := NewMockEC2(mockCtl)
 				c := newCloud(mockEC2)
 
 				ctx := context.Background()
@@ -1538,7 +1561,7 @@ func TestWaitForAttachmentState(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
-			mockEC2 := mocks.NewMockEC2(mockCtrl)
+			mockEC2 := NewMockEC2(mockCtrl)
 			c := newCloud(mockEC2)
 
 			attachedVol := &ec2.Volume{

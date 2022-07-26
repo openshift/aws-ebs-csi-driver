@@ -1,3 +1,4 @@
+//go:build linux
 // +build linux
 
 /*
@@ -26,47 +27,68 @@ import (
 	"strings"
 
 	"golang.org/x/sys/unix"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 // findDevicePath finds path of device and verifies its existence
 // if the device is not nvme, return the path directly
 // if the device is nvme, finds and returns the nvme device path eg. /dev/nvme1n1
-func (d *nodeService) findDevicePath(devicePath, volumeID string, partition string) (string, error) {
+func (d *nodeService) findDevicePath(devicePath, volumeID, partition string) (string, error) {
+	canonicalDevicePath := ""
+
+	// If the given path exists, the device MAY be nvme. Further, it MAY be a
+	// symlink to the nvme device path like:
+	// | $ stat /dev/xvdba
+	// | File: ‘/dev/xvdba’ -> ‘nvme1n1’
+	// Since these are maybes, not guarantees, the search for the nvme device
+	// path below must happen and must rely on volume ID
 	exists, err := d.mounter.PathExists(devicePath)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to check if path %q exists: %v", devicePath, err)
 	}
 
-	// If the path exists, assume it is not nvme device
 	if exists {
 		if partition != "" {
 			devicePath = devicePath + diskPartitionSuffix + partition
 		}
-		return devicePath, nil
+		canonicalDevicePath = devicePath
 	}
 
-	// Else find the nvme device path using volume ID
-	// This is the magic name on which AWS presents NVME devices under /dev/disk/by-id/
-	// For example, vol-0fab1d5e3f72a5e23 creates a symlink at
+	// AWS recommends identifying devices by volume ID
+	// (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/nvme-ebs-volumes.html),
+	// so find the nvme device path using volume ID. This is the magic name on
+	// which AWS presents NVME devices under /dev/disk/by-id/. For example,
+	// vol-0fab1d5e3f72a5e23 creates a symlink at
 	// /dev/disk/by-id/nvme-Amazon_Elastic_Block_Store_vol0fab1d5e3f72a5e23
 	nvmeName := "nvme-Amazon_Elastic_Block_Store_" + strings.Replace(volumeID, "-", "", -1)
 
-	nvmeDevicePath, err := findNvmeVolume(nvmeName)
-	if err != nil {
-		return "", err
+	nvmeDevicePath, err := findNvmeVolume(d.deviceIdentifier, nvmeName)
+
+	if err == nil {
+		if partition != "" {
+			nvmeDevicePath = nvmeDevicePath + nvmeDiskPartitionSuffix + partition
+		}
+		canonicalDevicePath = nvmeDevicePath
+	} else {
+		klog.V(5).Infof("[Debug] error searching for nvme path %q: %v", nvmeName, err)
 	}
-	if partition != "" {
-		nvmeDevicePath = nvmeDevicePath + nvmeDiskPartitionSuffix + partition
+
+	if canonicalDevicePath == "" {
+		return "", errNoDevicePathFound(devicePath, volumeID)
 	}
-	return nvmeDevicePath, nil
+
+	return canonicalDevicePath, nil
+}
+
+func errNoDevicePathFound(devicePath, volumeID string) error {
+	return fmt.Errorf("no device path for device %q volume %q found!", devicePath, volumeID)
 }
 
 // findNvmeVolume looks for the nvme volume with the specified name
 // It follows the symlink (if it exists) and returns the absolute path to the device
-func findNvmeVolume(findName string) (device string, err error) {
+func findNvmeVolume(deviceIdentifier DeviceIdentifier, findName string) (device string, err error) {
 	p := filepath.Join("/dev/disk/by-id/", findName)
-	stat, err := os.Lstat(p)
+	stat, err := deviceIdentifier.Lstat(p)
 	if err != nil {
 		if os.IsNotExist(err) {
 			klog.V(5).Infof("[Debug] nvme path %q not found", p)
@@ -81,7 +103,7 @@ func findNvmeVolume(findName string) (device string, err error) {
 	}
 	// Find the target, resolving to an absolute path
 	// For example, /dev/disk/by-id/nvme-Amazon_Elastic_Block_Store_vol0fab1d5e3f72a5e23 -> ../../nvme2n1
-	resolved, err := filepath.EvalSymlinks(p)
+	resolved, err := deviceIdentifier.EvalSymlinks(p)
 	if err != nil {
 		return "", fmt.Errorf("error reading target of symlink %q: %v", p, err)
 	}
@@ -91,6 +113,14 @@ func findNvmeVolume(findName string) (device string, err error) {
 	}
 
 	return resolved, nil
+}
+
+func (d *nodeService) preparePublishTarget(target string) error {
+	klog.V(4).Infof("NodePublishVolume: creating dir %s", target)
+	if err := d.mounter.MakeDir(target); err != nil {
+		return fmt.Errorf("Could not create dir %q: %v", target, err)
+	}
+	return nil
 }
 
 // IsBlock checks if the given path is a block device
@@ -105,7 +135,7 @@ func (d *nodeService) IsBlockDevice(fullPath string) (bool, error) {
 }
 
 func (d *nodeService) getBlockSizeBytes(devicePath string) (int64, error) {
-	cmd := d.mounter.Command("blockdev", "--getsize64", devicePath)
+	cmd := d.mounter.(*NodeMounter).Exec.Command("blockdev", "--getsize64", devicePath)
 	output, err := cmd.Output()
 	if err != nil {
 		return -1, fmt.Errorf("error when getting size of block volume at path %s: output: %s, err: %v", devicePath, string(output), err)
