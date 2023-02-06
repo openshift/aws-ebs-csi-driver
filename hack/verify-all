@@ -22,3 +22,9 @@ ${PKG_ROOT}/hack/verify-gofmt
 ${PKG_ROOT}/hack/verify-govet
 ${PKG_ROOT}/bin/golangci-lint run --deadline=10m
 ${PKG_ROOT}/hack/verify-vendor.sh
+
+set -x
+set
+
+go install -mod=mod -v github.com/jsafrane/kubernetes/openshift-hack/commitchecker@test-commitchecker
+bin/commitchecker --start ${PULL_BASE_SHA:-master}
