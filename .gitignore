@@ -26,7 +26,7 @@ Vagrantfile
 *.DS_Store
 
 # Vendor dir
-vendor/
+#vendor/
 
 # .image-* files used by Makefile
 .image-*
