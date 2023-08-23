@@ -12,7 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-VERSION?=v1.21.0
+# Carry: clear all Kubernetes env. variables. generate-kustomize target below
+# would get the actual namespace where this Makefile runs and file it into
+# generated kustomize yaml files.
+undefine KUBECONFIG
+undefine KUBERNETES_PORT
+undefine KUBERNETES_PORT_443_TCP
+undefine KUBERNETES_PORT_443_TCP_ADDR
+undefine KUBERNETES_PORT_443_TCP_PORT
+undefine KUBERNETES_PORT_443_TCP_PROTO
+undefine KUBERNETES_SERVICE_HOST
+undefine KUBERNETES_SERVICE_PORT
+undefine KUBERNETES_SERVICE_PORT_HTTPS
+# Carry: VERSION is set by CI to go version, not CSI driver version
+undefine VERSION
+
+VERSION?=v1.22.0
 
 PKG=github.com/kubernetes-sigs/aws-ebs-csi-driver
 GIT_COMMIT?=$(shell git rev-parse HEAD)
@@ -54,12 +69,12 @@ word-hyphen = $(word $2,$(subst -, ,$1))
 .PHONY: linux/$(ARCH) bin/aws-ebs-csi-driver
 linux/$(ARCH): bin/aws-ebs-csi-driver
 bin/aws-ebs-csi-driver: | bin
-	CGO_ENABLED=0 GOOS=linux GOARCH=$(ARCH) go build -mod=mod -ldflags ${LDFLAGS} -o bin/aws-ebs-csi-driver ./cmd/
+	CGO_ENABLED=0 GOOS=linux GOARCH=$(ARCH) go build -mod=vendor -ldflags ${LDFLAGS} -o bin/aws-ebs-csi-driver ./cmd/
 
 .PHONY: windows/$(ARCH) bin/aws-ebs-csi-driver.exe
 windows/$(ARCH): bin/aws-ebs-csi-driver.exe
 bin/aws-ebs-csi-driver.exe: | bin
-	CGO_ENABLED=0 GOOS=windows GOARCH=$(ARCH) go build -mod=mod -ldflags ${LDFLAGS} -o bin/aws-ebs-csi-driver.exe ./cmd/
+	CGO_ENABLED=0 GOOS=windows GOARCH=$(ARCH) go build -mod=vendor -ldflags ${LDFLAGS} -o bin/aws-ebs-csi-driver.exe ./cmd/
 
 # Builds all linux images (not windows because it can't be exported with OUTPUT_TYPE=docker)
 .PHONY: all

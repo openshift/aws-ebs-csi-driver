@@ -1,18 +1,3 @@
 approvers:
-- AndyXiangLi
-- bertinatto
-- ConnorJC3
-- gnufied
-- gtxu
-- hanyuel
-- jsafrane
-- leakingtapan
-- rdpsin
-- torredil
-- wongma7
-reviewers:
-- ConnorJC3
-- gtxu
-- hanyuel
-- rdpsin
-- torredil
+- openshift-storage-maintainers
+component: "Storage / Kubernetes External Components"
