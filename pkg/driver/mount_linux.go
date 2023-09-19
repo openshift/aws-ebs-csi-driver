@@ -21,10 +21,11 @@ package driver
 
 import (
 	"fmt"
-	"k8s.io/klog"
 	"os"
 	"strconv"
 	"strings"
+
+	"k8s.io/klog"
 
 	mountutils "k8s.io/mount-utils"
 )
@@ -187,4 +188,23 @@ func (m *NodeMounter) parseFsInfoOutput(cmdOutput string, spliter string, blockS
 		}
 	}
 	return blockSize, blockCount, err
+}
+
+func (m *NodeMounter) Unpublish(path string) error {
+	// On linux, unpublish and unstage both perform an unmount
+	return m.Unstage(path)
+}
+
+func (m *NodeMounter) Unstage(path string) error {
+	err := mountutils.CleanupMountPoint(path, m, false)
+	// Ignore the error when it contains "not mounted", because that indicates the
+	// world is already in the desired state
+	//
+	// mount-utils attempts to detect this on its own but fails when running on
+	// a read-only root filesystem, which our manifests use by default
+	if err == nil || strings.Contains(fmt.Sprint(err), "not mounted") {
+		return nil
+	} else {
+		return err
+	}
 }

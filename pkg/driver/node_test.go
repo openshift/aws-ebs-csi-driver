@@ -406,7 +406,7 @@ func TestNodeUnstageVolume(t *testing.T) {
 				}
 
 				mockMounter.EXPECT().GetDeviceNameFromMount(gomock.Eq(targetPath)).Return(devicePath, 1, nil)
-				mockMounter.EXPECT().Unmount(gomock.Eq(targetPath)).Return(nil)
+				mockMounter.EXPECT().Unstage(gomock.Eq(targetPath)).Return(nil)
 
 				req := &csi.NodeUnstageVolumeRequest{
 					StagingTargetPath: targetPath,
@@ -466,7 +466,7 @@ func TestNodeUnstageVolume(t *testing.T) {
 				}
 
 				mockMounter.EXPECT().GetDeviceNameFromMount(gomock.Eq(targetPath)).Return(devicePath, 2, nil)
-				mockMounter.EXPECT().Unmount(gomock.Eq(targetPath)).Return(nil)
+				mockMounter.EXPECT().Unstage(gomock.Eq(targetPath)).Return(nil)
 
 				req := &csi.NodeUnstageVolumeRequest{
 					StagingTargetPath: targetPath,
@@ -734,7 +734,7 @@ func TestNodePublishVolume(t *testing.T) {
 
 				mockMounter.EXPECT().MakeDir(gomock.Eq(targetPath)).Return(nil)
 				mockMounter.EXPECT().IsLikelyNotMountPoint(gomock.Eq(targetPath)).Return(true, errors.New("internal system error"))
-				mockMounter.EXPECT().Unmount(gomock.Eq(targetPath)).Return(nil)
+				mockMounter.EXPECT().Unpublish(gomock.Eq(targetPath)).Return(nil)
 				mockMounter.EXPECT().Mount(gomock.Eq(stagingTargetPath), gomock.Eq(targetPath), gomock.Eq(defaultFsType), gomock.Eq([]string{"bind"})).Return(nil)
 
 				req := &csi.NodePublishVolumeRequest{
@@ -1048,7 +1048,7 @@ func TestNodePublishVolume(t *testing.T) {
 
 				mockMounter.EXPECT().MakeDir(gomock.Eq("/test")).Return(nil)
 				mockMounter.EXPECT().MakeFile(targetPath).Return(nil)
-				mockMounter.EXPECT().Unmount(gomock.Eq(targetPath)).Return(nil)
+				mockMounter.EXPECT().Unpublish(gomock.Eq(targetPath)).Return(nil)
 				mockMounter.EXPECT().IsLikelyNotMountPoint(gomock.Eq(targetPath)).Return(true, errors.New("Internal System Error"))
 				mockMounter.EXPECT().Mount(gomock.Eq(devicePath), gomock.Eq(targetPath), gomock.Any(), gomock.Any()).Return(nil)
 				mockDeviceIdentifier.EXPECT().Lstat(gomock.Eq(nvmeName)).Return(nil, os.ErrNotExist)
@@ -1595,7 +1595,7 @@ func TestNodeUnpublishVolume(t *testing.T) {
 					VolumeId:   volumeID,
 				}
 
-				mockMounter.EXPECT().Unmount(gomock.Eq(targetPath)).Return(nil)
+				mockMounter.EXPECT().Unpublish(gomock.Eq(targetPath)).Return(nil)
 				_, err := awsDriver.NodeUnpublishVolume(context.TODO(), req)
 				if err != nil {
 					t.Fatalf("Expect no error but got: %v", err)
@@ -1653,7 +1653,7 @@ func TestNodeUnpublishVolume(t *testing.T) {
 			},
 		},
 		{
-			name: "fail error on unmount",
+			name: "fail error on unpublish",
 			testFunc: func(t *testing.T) {
 				mockCtl := gomock.NewController(t)
 				defer mockCtl.Finish()
@@ -1674,7 +1674,7 @@ func TestNodeUnpublishVolume(t *testing.T) {
 					VolumeId:   volumeID,
 				}
 
-				mockMounter.EXPECT().Unmount(gomock.Eq(targetPath)).Return(errors.New("test Unmount error"))
+				mockMounter.EXPECT().Unpublish(gomock.Eq(targetPath)).Return(errors.New("test Unpublish error"))
 				_, err := awsDriver.NodeUnpublishVolume(context.TODO(), req)
 				expectErr(t, err, codes.Internal)
 			},
