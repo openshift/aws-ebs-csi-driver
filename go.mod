@@ -12,7 +12,7 @@ require (
 	github.com/onsi/gomega v1.27.2
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.8.2
-	golang.org/x/sys v0.11.0
+	golang.org/x/sys v0.13.0
 	google.golang.org/grpc v1.53.0
 	google.golang.org/protobuf v1.29.0
 	k8s.io/api v0.26.2
@@ -89,12 +89,12 @@ require (
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.10.0 // indirect
 	go.uber.org/zap v1.24.0 // indirect
-	golang.org/x/crypto v0.12.0 // indirect
+	golang.org/x/crypto v0.14.0 // indirect
 	golang.org/x/mod v0.9.0 // indirect
-	golang.org/x/net v0.14.0 // indirect
+	golang.org/x/net v0.17.0 // indirect
 	golang.org/x/oauth2 v0.6.0 // indirect
-	golang.org/x/term v0.11.0 // indirect
-	golang.org/x/text v0.12.0 // indirect
+	golang.org/x/term v0.13.0 // indirect
+	golang.org/x/text v0.13.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	golang.org/x/tools v0.7.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
