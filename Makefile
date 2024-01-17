@@ -18,6 +18,21 @@
 
 ## Variables/Functions
 
+# Carry: clear all Kubernetes env. variables. generate-kustomize target below
+# would get the actual namespace where this Makefile runs and file it into
+# generated kustomize yaml files.
+undefine KUBECONFIG
+undefine KUBERNETES_PORT
+undefine KUBERNETES_PORT_443_TCP
+undefine KUBERNETES_PORT_443_TCP_ADDR
+undefine KUBERNETES_PORT_443_TCP_PORT
+undefine KUBERNETES_PORT_443_TCP_PROTO
+undefine KUBERNETES_SERVICE_HOST
+undefine KUBERNETES_SERVICE_PORT
+undefine KUBERNETES_SERVICE_PORT_HTTPS
+# Carry: VERSION is set by CI to go version, not CSI driver version
+undefine VERSION
+
 VERSION?=v1.30.0
 
 PKG=github.com/kubernetes-sigs/aws-ebs-csi-driver
@@ -202,7 +217,8 @@ bin:
 	@mkdir -p $@
 
 bin/$(BINARY): $(GO_SOURCES) | bin
-	CGO_ENABLED=0 GOOS=$(OS) GOARCH=$(ARCH) go build -mod=readonly -ldflags ${LDFLAGS} -o $@ ./cmd/
+	# OpenShift carry: build with embedded vendor/ directory in this repo.
+	CGO_ENABLED=0 GOOS=$(OS) GOARCH=$(ARCH) go build -mod=vendor -ldflags ${LDFLAGS} -o $@ ./cmd/
 
 .PHONY: all-image-registry
 all-image-registry: $(addprefix sub-image-,$(ALL_OS_ARCH_OSVERSION))
