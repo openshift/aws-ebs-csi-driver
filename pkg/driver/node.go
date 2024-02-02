@@ -729,19 +729,29 @@ func (d *nodeService) getVolumesLimit() int64 {
 
 	isNitro := cloud.IsNitroInstanceType(instanceType)
 	availableAttachments := cloud.GetMaxAttachments(isNitro)
-	blockVolumes := d.metadata.GetNumBlockDeviceMappings()
+
+	reservedVolumeAttachments := d.driverOptions.reservedVolumeAttachments
+	if reservedVolumeAttachments == -1 {
+		reservedVolumeAttachments = d.metadata.GetNumBlockDeviceMappings() + 1 // +1 for the root device
+	}
 
 	// For Nitro instances, attachments are shared between EBS volumes, ENIs and NVMe instance stores
 	if isNitro {
 		enis := d.metadata.GetNumAttachedENIs()
 		nvmeInstanceStoreVolumes := cloud.GetNVMeInstanceStoreVolumesForInstanceType(instanceType)
-		availableAttachments = availableAttachments - enis - blockVolumes - nvmeInstanceStoreVolumes
+		availableAttachments = availableAttachments - enis - reservedVolumeAttachments - nvmeInstanceStoreVolumes
 	} else {
-		availableAttachments -= blockVolumes
+		availableAttachments = availableAttachments - reservedVolumeAttachments
 	}
 	maxEBSAttachments, ok := cloud.GetEBSLimitForInstanceType(instanceType)
 	if ok {
 		availableAttachments = min(maxEBSAttachments, availableAttachments)
+	}
+
+	// This comes from upstream commit https://github.com/kubernetes-sigs/aws-ebs-csi-driver/commit/f66f30ac1e1cfe73596e14613b747e17a28b0d2d
+	// It's not required for the bugfix, however, it fixes a very related bug (nr. of attachments should not be negative).
+	if availableAttachments < 0 {
+		availableAttachments = 0
 	}
 
 	return int64(availableAttachments)
