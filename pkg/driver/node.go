@@ -777,7 +777,12 @@ func (d *nodeService) getVolumesLimit() int64 {
 
 	isNitro := cloud.IsNitroInstanceType(instanceType)
 	availableAttachments := cloud.GetMaxAttachments(isNitro)
-	blockVolumes := d.metadata.GetNumBlockDeviceMappings()
+
+	reservedVolumeAttachments := d.driverOptions.reservedVolumeAttachments
+	if reservedVolumeAttachments == -1 {
+		reservedVolumeAttachments = d.metadata.GetNumBlockDeviceMappings() + 1 // +1 for the root device
+	}
+
 	dedicatedLimit := cloud.GetDedicatedLimitForInstanceType(instanceType)
 
 	// For special dedicated limit instance types, the limit is only for EBS volumes
@@ -789,7 +794,7 @@ func (d *nodeService) getVolumesLimit() int64 {
 		nvmeInstanceStoreVolumes := cloud.GetNVMeInstanceStoreVolumesForInstanceType(instanceType)
 		availableAttachments = availableAttachments - enis - nvmeInstanceStoreVolumes
 	}
-	availableAttachments = availableAttachments - blockVolumes - 1 // -1 for root device
+	availableAttachments = availableAttachments - reservedVolumeAttachments
 	if availableAttachments < 0 {
 		availableAttachments = 0
 	}
