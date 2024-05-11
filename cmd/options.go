@@ -91,6 +91,14 @@ func GetOptions(fs *flag.FlagSet) *Options {
 		panic(err)
 	}
 
+	if mode != driver.ControllerMode {
+		// nodeOptions must have been populated from the cmdline, validate them.
+		if err := nodeOptions.Validate(); err != nil {
+			klog.Error(err.Error())
+			klog.FlushAndExit(klog.ExitFlushTimeout, 1)
+		}
+	}
+
 	if *version {
 		info, err := driver.GetVersionJSON()
 		if err != nil {

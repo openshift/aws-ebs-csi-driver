@@ -24,6 +24,7 @@ import (
 	"testing"
 
 	"github.com/kubernetes-sigs/aws-ebs-csi-driver/pkg/driver"
+	"k8s.io/klog/v2"
 )
 
 func TestGetOptions(t *testing.T) {
@@ -50,6 +51,8 @@ func TestGetOptions(t *testing.T) {
 		awsSdkDebugFlagValue := true
 		VolumeAttachLimitFlagName := "volume-attach-limit"
 		var VolumeAttachLimit int64 = 42
+		reservedVolumeAttachmentsFlagName := "reserved-volume-attachments"
+		reservedVolumeAttachments := -1
 
 		args := append([]string{
 			"aws-ebs-csi-driver",
@@ -106,6 +109,13 @@ func TestGetOptions(t *testing.T) {
 			}
 			if options.NodeOptions.VolumeAttachLimit != VolumeAttachLimit {
 				t.Fatalf("expected VolumeAttachLimit to be %d but it is %d", VolumeAttachLimit, options.NodeOptions.VolumeAttachLimit)
+			}
+			reservedVolumeAttachmentsFlag := flagSet.Lookup(reservedVolumeAttachmentsFlagName)
+			if reservedVolumeAttachmentsFlag == nil {
+				t.Fatalf("expected %q flag to be added but it is not", reservedVolumeAttachmentsFlagName)
+			}
+			if options.NodeOptions.ReservedVolumeAttachments != reservedVolumeAttachments {
+				t.Fatalf("expected reservedVolumeAttachmentsFlagName to be %d but it is %d", reservedVolumeAttachments, options.NodeOptions.ReservedVolumeAttachments)
 			}
 		}
 
@@ -180,6 +190,39 @@ func TestGetOptions(t *testing.T) {
 
 				if exitCode != 0 {
 					t.Fatalf("expected exit code 0 but got %d", exitCode)
+				}
+			},
+		},
+		{
+			name: "both volume-attach-limit and reserved-volume-attachments specified",
+			testFunc: func(t *testing.T) {
+				oldOSExit := klog.OsExit
+				defer func() { klog.OsExit = oldOSExit }()
+
+				var exitCode int
+				calledExit := false
+				testExit := func(code int) {
+					exitCode = code
+					calledExit = true
+				}
+				klog.OsExit = testExit
+
+				oldArgs := os.Args
+				defer func() { os.Args = oldArgs }()
+				os.Args = []string{
+					"aws-ebs-csi-driver",
+					"--volume-attach-limit=10",
+					"--reserved-volume-attachments=10",
+				}
+
+				flagSet := flag.NewFlagSet("test-flagset", flag.ContinueOnError)
+				_ = GetOptions(flagSet)
+
+				if exitCode != 1 {
+					t.Fatalf("expected exit code 1 but got %d", exitCode)
+				}
+				if !calledExit {
+					t.Fatalf("expect osExit to be called, but wasn't")
 				}
 			},
 		},
