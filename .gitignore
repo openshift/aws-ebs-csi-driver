@@ -9,8 +9,9 @@ bin
 # Test binary, build with `go test -c`
 *.test
 
-# Output of the go coverage tool, specifically when used with LiteIDE
+# Output of the go coverage tool
 *.out
+coverage.html
 
 # Vagrant
 .vagrant
@@ -33,3 +34,7 @@ Vagrantfile
 
 # Files used by Makefile when upgrading sidecars
 hack/release-scripts/image-digests.yaml
+
+# E2E artifacts
+_rundir/
+_artifacts/

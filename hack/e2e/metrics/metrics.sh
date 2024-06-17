@@ -13,7 +13,7 @@ metrics_collector() {
   readonly METRICS_BASE_DIR=$(dirname "$(realpath "${BASH_SOURCE[0]}")")
   readonly METRICS_DIR_NAME="metrics-$(git rev-parse HEAD)1-${NODE_OS_DISTRO}-${DRIVER_VERSION}"
   readonly METRICS_DIR_PATH="${METRICS_BASE_DIR}/../csi-test-artifacts/${METRICS_DIR_NAME}"
-  readonly METRICS_SERVER_URL="https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml"
+  readonly METRICS_SERVER_URL="https://github.com/kubernetes-sigs/metrics-server/releases/download/v0.6.4/components.yaml"
   readonly STORAGE_CLASS="${METRICS_BASE_DIR}/storageclass.yaml"
   readonly CLUSTER_LOADER_CONFIG="${METRICS_BASE_DIR}/cl2-config.yaml"
   readonly CLUSTER_LOADER_OVERRIDE="${METRICS_BASE_DIR}/override.yaml"
@@ -46,9 +46,9 @@ check_dependencies() {
 collect_metrics() {
   log "Collecting metrics in $METRICS_DIR_PATH"
   mkdir -p "$METRICS_DIR_PATH"
-  
+
   log "Collecting deployment time"
-  echo -e "$DEPLOYMENT_TIME" > "$METRICS_DIR_PATH/deployment_time.txt"
+  echo -e "$DEPLOYMENT_TIME" >"$METRICS_DIR_PATH/deployment_time.txt"
 
   log "Collecting resource metrics"
   install_metrics_server
@@ -95,7 +95,7 @@ collect_resource_metrics() {
   local readonly label="$2"
   local readonly output_file="$3"
 
-  kubectl get PodMetrics --kubeconfig "$KUBECONFIG" -n "${namespace}" -l "${label}" -o yaml > "${output_file}"
+  kubectl get PodMetrics --kubeconfig "$KUBECONFIG" -n "${namespace}" -l "${label}" -o yaml >"${output_file}"
 }
 
 collect_clusterloader2_metrics() {
@@ -112,7 +112,7 @@ collect_clusterloader2_metrics() {
     --repo-root="$PERF_TESTS_DIR" \
     --test-configs="$CLUSTER_LOADER_CONFIG" \
     --test-overrides="$CLUSTER_LOADER_OVERRIDE" \
-    --report-dir="$METRICS_DIR_PATH" \
+    --report-dir="$METRICS_DIR_PATH"
 
   local readonly exit_code=$?
   if [[ ${exit_code} -ne 0 ]]; then
@@ -161,9 +161,9 @@ upload_metrics() {
   }'
 
   aws s3api put-bucket-policy \
-  --bucket "$SOURCE_BUCKET" \
-  --policy "$bucket_policy" \
-  --region "$AWS_REGION"
+    --bucket "$SOURCE_BUCKET" \
+    --policy "$bucket_policy" \
+    --region "$AWS_REGION"
 
   log "Setting lifecycle policy on S3 bucket $SOURCE_BUCKET"
   local readonly lifecycle_policy='{

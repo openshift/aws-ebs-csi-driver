@@ -9,6 +9,7 @@ metadata:
     app.kubernetes.io/name: aws-ebs-csi-driver
 spec:
   replicas: 2
+  revisionHistoryLimit: 10
   strategy:
     rollingUpdate:
       maxUnavailable: 1
@@ -61,7 +62,7 @@ spec:
         runAsUser: 1000
       containers:
         - name: ebs-plugin
-          image: public.ecr.aws/ebs-csi-driver/aws-ebs-csi-driver:v1.26.0
+          image: public.ecr.aws/ebs-csi-driver/aws-ebs-csi-driver:v1.30.0
           imagePullPolicy: IfNotPresent
           args:
             # - {all,controller,node} # specify the driver mode
@@ -128,7 +129,7 @@ spec:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
         - name: csi-provisioner
-          image: public.ecr.aws/eks-distro/kubernetes-csi/external-provisioner:v3.6.3-eks-1-29-2
+          image: public.ecr.aws/eks-distro/kubernetes-csi/external-provisioner:v4.0.1-eks-1-30-4
           imagePullPolicy: IfNotPresent
           args:
             - --timeout=60s
@@ -157,7 +158,7 @@ spec:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
         - name: csi-attacher
-          image: public.ecr.aws/eks-distro/kubernetes-csi/external-attacher:v4.4.3-eks-1-29-2
+          image: public.ecr.aws/eks-distro/kubernetes-csi/external-attacher:v4.5.1-eks-1-30-4
           imagePullPolicy: IfNotPresent
           args:
             - --timeout=60s
@@ -183,7 +184,7 @@ spec:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
         - name: csi-snapshotter
-          image: public.ecr.aws/eks-distro/kubernetes-csi/external-snapshotter/csi-snapshotter:v6.3.3-eks-1-29-2
+          image: public.ecr.aws/eks-distro/kubernetes-csi/external-snapshotter/csi-snapshotter:v7.0.2-eks-1-30-4
           imagePullPolicy: IfNotPresent
           args:
             - --csi-address=$(ADDRESS)
@@ -208,7 +209,7 @@ spec:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
         - name: csi-resizer
-          image: public.ecr.aws/eks-distro/kubernetes-csi/external-resizer:v1.9.3-eks-1-29-2
+          image: public.ecr.aws/eks-distro/kubernetes-csi/external-resizer:v1.10.1-eks-1-30-4
           imagePullPolicy: IfNotPresent
           args:
             - --timeout=60s
@@ -235,7 +236,7 @@ spec:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
         - name: liveness-probe
-          image: public.ecr.aws/eks-distro/kubernetes-csi/livenessprobe:v2.11.0-eks-1-29-2
+          image: public.ecr.aws/eks-distro/kubernetes-csi/livenessprobe:v2.12.0-eks-1-30-4
           imagePullPolicy: IfNotPresent
           args:
             - --csi-address=/csi/csi.sock
