@@ -19,6 +19,8 @@
 
 set -euo pipefail
 
+export GOFLAGS=-mod=readonly
+
 BIN="$(dirname "$(realpath "${BASH_SOURCE[0]}")")/../bin"
 TEMP_DIR=$(mktemp -d)
 trap "rm -rf \"${TEMP_DIR}\"" EXIT

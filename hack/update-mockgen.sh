@@ -16,6 +16,8 @@
 
 set -euo pipefail
 
+export GOFLAGS=-mod=readonly
+
 BIN="$(dirname "$(realpath "${BASH_SOURCE[0]}")")/../bin"
 
 # Source-based mocking for internal interfaces

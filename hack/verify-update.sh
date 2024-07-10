@@ -20,6 +20,8 @@
 
 set -euo pipefail
 
+export GOFLAGS=-mod=readonly
+
 ROOT="$(dirname "${0}")/../"
 TEST_DIR=$(mktemp -d)
 trap "rm -rf \"${TEST_DIR}\"" EXIT
