@@ -13,7 +13,7 @@
 # limitations under the License.
 
 run:
-  modules-download-mode: readonly
+  modules-download-mode: vendor
 issues:
   exclude-rules:
     # gosec recommends ignoring test files
