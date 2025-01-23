@@ -38,7 +38,7 @@ undefine VERSION
 # Note that the final driver binary is still explicitly built with `-mod=vendor`.
 export GOFLAGS := -mod=readonly
 
-VERSION?=v1.38.1
+VERSION?=v1.39.0
 
 PKG=github.com/kubernetes-sigs/aws-ebs-csi-driver
 GIT_COMMIT?=$(shell git rev-parse HEAD)
