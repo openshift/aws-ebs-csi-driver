@@ -20,7 +20,11 @@ All other tools are downloaded for you at runtime.
 
 ### `make cluster/image`
 
-Build and push a single image of the driver based on the local platform (the same overrides as `make` apply, as well as `OSVERSION` to override container OS version). In most cases, `make all-push` is more suitable. Environment variables are accepted to override the `REGISTRY`, `IMAGE` name, and image `TAG`.
+Build and push an image of the driver for local development. Environment variables are accepted to override the `REGISTRY`, `IMAGE` name, and image `TAG`. Setting `FIPS` to `true` will build an image using a FIPS-validated cryptographic library.
+
+### `make all-push`
+
+Build and push all image variants of the driver needed for an official release. This target is not intended or designed to be run outside of CI.
 
 ## Local Development
 
@@ -55,6 +59,8 @@ Creates a cluster for running E2E tests against. There are many parameters that 
 - `WINDOWS`: Whether or not to create a Windows node group for the cluster (`eksctl` clusters only) - defaults to `false`
 - `AWS_REGION`: Which region to create the cluster in - defaults to `us-west-2`
 - `AWS_AVAILABILITY_ZONES`: Which AZs to create nodes for the cluster in - defaults to `us-west-2a,us-west-2b,us-west-2c`
+- `OUTPOST_ARN`: If set, create an additional nodegroup on an [outpost](https://aws.amazon.com/outposts/) (`eksctl clusters only)
+- `OUTPOST_INSTANCE_TYPE`: The instance type to use for the outpost nodegroup (only used when `OUTPOST_ARN` is non-empty) - defaults to `INSTANCE_TYPE`
 
 #### Example: Create a default (`kops`) cluster
 
@@ -88,6 +94,15 @@ make cluster/create
 ```bash
 export WINDOWS="true"
 export CLUSTER_TYPE="eksctl"
+make cluster/create
+```
+
+#### Example: Create a cluster with an outpost nodegroup
+
+```bash
+export CLUSTER_TYPE="eksctl"
+export OUTPOST_ARN="arn:aws:outposts:us-east-1:123456789012:outpost/op-0f39f7c0af9b166a3"
+export OUTPOST_INSTANCE_TYPE=c5.xlarge
 make cluster/create
 ```
 
@@ -188,9 +203,13 @@ Test the EBS CSI Driver Helm chart via the [Helm `chart-testing` tool](https://g
 
 ## Release Scripts
 
+### 'make update-image-dependencies'
+
+Convenience target to perform all image updates (including sidecars, kubekins-e2e-v2, and gcb-docker-gcloud). This is the primary target to use unless more granular control is needed.
+
 ### `make update-sidecar-dependencies`
 
-Convenience target to perform all sidecar updates and regenerate the manifests. This is the primary target to use unless more granular control is needed.
+Convenience target to perform all sidecar updates and regenerate the manifests. 
 
 ### `make update-truth-sidecars`
 

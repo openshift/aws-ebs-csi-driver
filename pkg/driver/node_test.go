@@ -14,13 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+//nolint:forcetypeassert
 package driver
 
 import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"reflect"
 	"runtime"
 	"testing"
@@ -50,16 +50,11 @@ func TestNewNodeService(t *testing.T) {
 	mockMounter := mounter.NewMockMounter(ctrl)
 	mockKubernetesClient := NewMockKubernetesClient(ctrl)
 
-	os.Setenv("AWS_REGION", "us-west-2")
-	defer os.Unsetenv("AWS_REGION")
+	t.Setenv("AWS_REGION", "us-west-2")
 
 	options := &Options{}
 
 	nodeService := NewNodeService(options, mockMetadataService, mockMounter, mockKubernetesClient)
-
-	if nodeService == nil {
-		t.Fatal("Expected NewNodeService to return a non-nil NodeService")
-	}
 
 	if nodeService.metadata != mockMetadataService {
 		t.Error("Expected NodeService.metadata to be set to the mock MetadataService")
@@ -84,6 +79,7 @@ func TestNodeStageVolume(t *testing.T) {
 		req          *csi.NodeStageVolumeRequest
 		mounterMock  func(ctrl *gomock.Controller) *mounter.MockMounter
 		metadataMock func(ctrl *gomock.Controller) *metadata.MockMetadataService
+		options      *Options
 		expectedErr  error
 		inflight     bool
 	}{
@@ -646,7 +642,7 @@ func TestNodeStageVolume(t *testing.T) {
 				m.EXPECT().GetRegion().Return("us-west-2")
 				return m
 			},
-			expectedErr: status.Errorf(codes.Internal, "Failed to find device path %s. %v", "/dev/xvdba", errors.New("find device path error")),
+			expectedErr: status.Errorf(codes.NotFound, "Failed to find device path %s. %v", "/dev/xvdba", errors.New("find device path error")),
 		},
 		{
 			name: "path_exists_error",
@@ -966,6 +962,45 @@ func TestNodeStageVolume(t *testing.T) {
 			},
 			expectedErr: nil,
 		},
+		{
+			name: "format_options_xfs_legacy",
+			req: &csi.NodeStageVolumeRequest{
+				VolumeId:          "vol-test",
+				StagingTargetPath: "/staging/path",
+				VolumeCapability: &csi.VolumeCapability{
+					AccessType: &csi.VolumeCapability_Mount{
+						Mount: &csi.VolumeCapability_MountVolume{
+							FsType: "xfs",
+						},
+					},
+					AccessMode: &csi.VolumeCapability_AccessMode{
+						Mode: csi.VolumeCapability_AccessMode_SINGLE_NODE_WRITER,
+					},
+				},
+				VolumeContext: map[string]string{
+					InodeSizeKey: "512",
+				},
+				PublishContext: map[string]string{
+					DevicePathKey: "/dev/xvdba",
+				},
+			},
+			mounterMock: func(ctrl *gomock.Controller) *mounter.MockMounter {
+				m := mounter.NewMockMounter(ctrl)
+				m.EXPECT().FindDevicePath(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("/dev/xvdba", nil)
+				m.EXPECT().PathExists(gomock.Eq("/staging/path")).Return(true, nil)
+				m.EXPECT().GetDeviceNameFromMount(gomock.Eq("/staging/path")).Return("", 1, nil)
+				m.EXPECT().FormatAndMountSensitiveWithFormatOptions(gomock.Eq("/dev/xvdba"), gomock.Eq("/staging/path"), gomock.Eq("xfs"), gomock.Any(), gomock.Any(), gomock.Eq([]string{"-i", "size=512", "-m", "bigtime=0,inobtcount=0,reflink=0"})).Return(nil)
+				m.EXPECT().NeedResize(gomock.Eq("/dev/xvdba"), gomock.Eq("/staging/path")).Return(false, nil)
+				return m
+			},
+			metadataMock: func(ctrl *gomock.Controller) *metadata.MockMetadataService {
+				m := metadata.NewMockMetadataService(ctrl)
+				m.EXPECT().GetRegion().Return("us-west-2")
+				return m
+			},
+			options:     &Options{LegacyXFSProgs: true},
+			expectedErr: nil,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -983,9 +1018,15 @@ func TestNodeStageVolume(t *testing.T) {
 				metadata = tc.metadataMock(ctrl)
 			}
 
+			options := tc.options
+			if options == nil {
+				options = &Options{} // Initialize struct to avoid nil pointer dereference
+			}
+
 			driver := &NodeService{
 				metadata: metadata,
 				mounter:  mounter,
+				options:  options,
 				inFlight: internal.NewInFlight(),
 			}
 
@@ -1702,7 +1743,7 @@ func TestNodePublishVolume(t *testing.T) {
 				m.EXPECT().GetRegion().Return("us-west-2")
 				return m
 			},
-			expectedErr: status.Error(codes.Internal, "Failed to find device path /dev/xvdba. device path error"),
+			expectedErr: status.Error(codes.NotFound, "Failed to find device path /dev/xvdba. device path error"),
 		},
 	}
 	for _, tc := range testCases {
@@ -2230,7 +2271,7 @@ func TestNodeExpandVolume(t *testing.T) {
 				return m
 			},
 			expectedResp: nil,
-			expectedErr:  status.Error(codes.Internal, "failed to find device path for device name device-name for mount /volume/path: failed to find device path"),
+			expectedErr:  status.Error(codes.NotFound, "failed to find device path for device name device-name for mount /volume/path: failed to find device path"),
 		},
 		{
 			name: "resize_error",
@@ -2314,7 +2355,7 @@ func TestNodeExpandVolume(t *testing.T) {
 func TestNodeGetVolumeStats(t *testing.T) {
 	testCases := []struct {
 		name           string
-		validVolId     bool
+		validVolID     bool
 		validPath      bool
 		metricsStatErr bool
 		mounterMock    func(mockCtl *gomock.Controller, dir string) *mounter.MockMounter
@@ -2322,7 +2363,7 @@ func TestNodeGetVolumeStats(t *testing.T) {
 	}{
 		{
 			name:       "success normal",
-			validVolId: true,
+			validVolID: true,
 			validPath:  true,
 			mounterMock: func(ctrl *gomock.Controller, dir string) *mounter.MockMounter {
 				m := mounter.NewMockMounter(ctrl)
@@ -2336,14 +2377,14 @@ func TestNodeGetVolumeStats(t *testing.T) {
 		},
 		{
 			name:       "invalid_volume_id",
-			validVolId: false,
+			validVolID: false,
 			expectedErr: func(dir string) error {
 				return status.Error(codes.InvalidArgument, "NodeGetVolumeStats volume ID was empty")
 			},
 		},
 		{
 			name:       "invalid_volume_path",
-			validVolId: true,
+			validVolID: true,
 			validPath:  false,
 			expectedErr: func(dir string) error {
 				return status.Error(codes.InvalidArgument, "NodeGetVolumeStats volume path was empty")
@@ -2351,7 +2392,7 @@ func TestNodeGetVolumeStats(t *testing.T) {
 		},
 		{
 			name:       "path_exists_error",
-			validVolId: true,
+			validVolID: true,
 			validPath:  true,
 			mounterMock: func(ctrl *gomock.Controller, dir string) *mounter.MockMounter {
 				m := mounter.NewMockMounter(ctrl)
@@ -2364,7 +2405,7 @@ func TestNodeGetVolumeStats(t *testing.T) {
 		},
 		{
 			name:       "path_does_not_exist",
-			validVolId: true,
+			validVolID: true,
 			validPath:  true,
 			mounterMock: func(ctrl *gomock.Controller, dir string) *mounter.MockMounter {
 				m := mounter.NewMockMounter(ctrl)
@@ -2377,7 +2418,7 @@ func TestNodeGetVolumeStats(t *testing.T) {
 		},
 		{
 			name:       "is_block_device_error",
-			validVolId: true,
+			validVolID: true,
 			validPath:  true,
 			mounterMock: func(ctrl *gomock.Controller, dir string) *mounter.MockMounter {
 				m := mounter.NewMockMounter(ctrl)
@@ -2391,7 +2432,7 @@ func TestNodeGetVolumeStats(t *testing.T) {
 		},
 		{
 			name:       "get_block_size_bytes_error",
-			validVolId: true,
+			validVolID: true,
 			validPath:  true,
 			mounterMock: func(ctrl *gomock.Controller, dir string) *mounter.MockMounter {
 				m := mounter.NewMockMounter(ctrl)
@@ -2406,7 +2447,7 @@ func TestNodeGetVolumeStats(t *testing.T) {
 		},
 		{
 			name:       "success block device",
-			validVolId: true,
+			validVolID: true,
 			validPath:  true,
 			mounterMock: func(ctrl *gomock.Controller, dir string) *mounter.MockMounter {
 				m := mounter.NewMockMounter(ctrl)
@@ -2440,7 +2481,7 @@ func TestNodeGetVolumeStats(t *testing.T) {
 			}
 
 			req := &csi.NodeGetVolumeStatsRequest{}
-			if tc.validVolId {
+			if tc.validVolID {
 				req.VolumeId = "vol-test"
 			}
 			if tc.validPath {
@@ -2469,18 +2510,20 @@ func TestRemoveNotReadyTaint(t *testing.T) {
 		{
 			name: "failed to get node",
 			setup: func(t *testing.T, mockCtl *gomock.Controller) func() (kubernetes.Interface, error) {
+				t.Helper()
 				t.Setenv("CSI_NODE_NAME", nodeName)
-				getNodeMock, _ := getNodeMock(mockCtl, nodeName, nil, fmt.Errorf("Failed to get node!"))
+				getNodeMock, _ := getNodeMock(mockCtl, nodeName, nil, errors.New("Failed to get node!"))
 
 				return func() (kubernetes.Interface, error) {
 					return getNodeMock, nil
 				}
 			},
-			expResult: fmt.Errorf("Failed to get node!"),
+			expResult: errors.New("Failed to get node!"),
 		},
 		{
 			name: "no taints to remove",
 			setup: func(t *testing.T, mockCtl *gomock.Controller) func() (kubernetes.Interface, error) {
+				t.Helper()
 				t.Setenv("CSI_NODE_NAME", nodeName)
 				getNodeMock, _ := getNodeMock(mockCtl, nodeName, &corev1.Node{}, nil)
 
@@ -2522,6 +2565,7 @@ func TestRemoveNotReadyTaint(t *testing.T) {
 		{
 			name: "failed to patch node",
 			setup: func(t *testing.T, mockCtl *gomock.Controller) func() (kubernetes.Interface, error) {
+				t.Helper()
 				t.Setenv("CSI_NODE_NAME", nodeName)
 				getNodeMock, mockNode := getNodeMock(mockCtl, nodeName, &corev1.Node{
 					ObjectMeta: metav1.ObjectMeta{
@@ -2568,18 +2612,19 @@ func TestRemoveNotReadyTaint(t *testing.T) {
 
 				mockNode.EXPECT().
 					Patch(gomock.Any(), gomock.Eq(nodeName), gomock.Any(), gomock.Any(), gomock.Any()).
-					Return(nil, fmt.Errorf("Failed to patch node!")).
+					Return(nil, errors.New("Failed to patch node!")).
 					Times(1)
 
 				return func() (kubernetes.Interface, error) {
 					return getNodeMock, nil
 				}
 			},
-			expResult: fmt.Errorf("Failed to patch node!"),
+			expResult: errors.New("Failed to patch node!"),
 		},
 		{
 			name: "success",
 			setup: func(t *testing.T, mockCtl *gomock.Controller) func() (kubernetes.Interface, error) {
+				t.Helper()
 				t.Setenv("CSI_NODE_NAME", nodeName)
 				getNodeMock, mockNode := getNodeMock(mockCtl, nodeName, &corev1.Node{
 					ObjectMeta: metav1.ObjectMeta{
@@ -2638,6 +2683,7 @@ func TestRemoveNotReadyTaint(t *testing.T) {
 		{
 			name: "failed to get CSINode",
 			setup: func(t *testing.T, mockCtl *gomock.Controller) func() (kubernetes.Interface, error) {
+				t.Helper()
 				t.Setenv("CSI_NODE_NAME", nodeName)
 				getNodeMock, _ := getNodeMock(mockCtl, nodeName, &corev1.Node{
 					ObjectMeta: metav1.ObjectMeta{
@@ -2661,7 +2707,7 @@ func TestRemoveNotReadyTaint(t *testing.T) {
 
 				csiNodesMock.EXPECT().
 					Get(gomock.Any(), gomock.Eq(nodeName), gomock.Any()).
-					Return(nil, fmt.Errorf("Failed to get CSINode")).
+					Return(nil, errors.New("Failed to get CSINode")).
 					Times(1)
 
 				return func() (kubernetes.Interface, error) {
@@ -2673,6 +2719,7 @@ func TestRemoveNotReadyTaint(t *testing.T) {
 		{
 			name: "allocatable value not set for driver on node",
 			setup: func(t *testing.T, mockCtl *gomock.Controller) func() (kubernetes.Interface, error) {
+				t.Helper()
 				t.Setenv("CSI_NODE_NAME", nodeName)
 				getNodeMock, _ := getNodeMock(mockCtl, nodeName, &corev1.Node{
 					ObjectMeta: metav1.ObjectMeta{
@@ -2722,6 +2769,7 @@ func TestRemoveNotReadyTaint(t *testing.T) {
 		{
 			name: "driver not found on node",
 			setup: func(t *testing.T, mockCtl *gomock.Controller) func() (kubernetes.Interface, error) {
+				t.Helper()
 				t.Setenv("CSI_NODE_NAME", nodeName)
 				getNodeMock, _ := getNodeMock(mockCtl, nodeName, &corev1.Node{
 					ObjectMeta: metav1.ObjectMeta{
@@ -2794,7 +2842,7 @@ func TestRemoveTaintInBackground(t *testing.T) {
 			if mockRemovalCount == 3 {
 				return nil
 			} else {
-				return fmt.Errorf("Taint removal failed!")
+				return errors.New("Taint removal failed!")
 			}
 		}
 		removeTaintInBackground(nil, taintRemovalBackoff, mockRemovalFunc)
@@ -2805,7 +2853,7 @@ func TestRemoveTaintInBackground(t *testing.T) {
 		mockRemovalCount := 0
 		mockRemovalFunc := func(_ kubernetes.Interface) error {
 			mockRemovalCount += 1
-			return fmt.Errorf("Taint removal failed!")
+			return errors.New("Taint removal failed!")
 		}
 		removeTaintInBackground(nil, wait.Backoff{
 			Steps:    5,

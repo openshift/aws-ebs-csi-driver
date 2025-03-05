@@ -71,14 +71,10 @@ spec:
       {{- end }}
       containers:
         - name: ebs-plugin
-          image: {{ printf "%s%s:%s" (default "" .Values.image.containerRegistry) .Values.image.repository (default (printf "v%s" .Chart.AppVersion) (.Values.image.tag | toString)) }}
+          image: {{ include "aws-ebs-csi-driver.fullImagePath" $ }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           args:
-            {{- if ne .Release.Name "kustomize" }}
             - controller
-            {{- else }}
-            # - {all,controller,node} # specify the driver mode
-            {{- end }}
             - --endpoint=$(CSI_ENDPOINT)
             {{- if .Values.controller.extraVolumeTags }}
               {{- include "aws-ebs-csi-driver.extra-volume-tags" . | nindent 12 }}
@@ -153,6 +149,10 @@ spec:
               value: {{ .otelServiceName }}
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: {{ .otelExporterEndpoint }}
+            {{- end }}
+            {{- if .Values.fips }}
+            - name: AWS_USE_FIPS_ENDPOINT
+              value: "true"
             {{- end }}
           {{- with .Values.controller.envFrom }}
           envFrom:
@@ -230,6 +230,9 @@ spec:
             {{- end }}
             {{- if not (regexMatch "(-retry-interval-max)" (join " " .Values.sidecars.provisioner.additionalArgs)) }}
             - --retry-interval-max=30m
+            {{- end }}
+            {{- if .Capabilities.APIVersions.Has "storage.k8s.io/v1beta1/VolumeAttributesClass" }}
+            - --feature-gates=VolumeAttributesClass=true
             {{- end }}
             {{- range .Values.sidecars.provisioner.additionalArgs }}
             - {{ . }}
@@ -448,6 +451,9 @@ spec:
             {{- end }}
             {{- if not (regexMatch "(-retry-interval-max)" (join " " .Values.sidecars.resizer.additionalArgs)) }}
             - --retry-interval-max=30m
+            {{- end }}
+            {{- if .Capabilities.APIVersions.Has "storage.k8s.io/v1beta1/VolumeAttributesClass" }}
+            - --feature-gates=VolumeAttributesClass=true
             {{- end }}
             {{- range .Values.sidecars.resizer.additionalArgs }}
             - {{ . }}

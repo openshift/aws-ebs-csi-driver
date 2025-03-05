@@ -52,6 +52,9 @@ func TestAddFlags(t *testing.T) {
 	if err := f.Set("aws-sdk-debug-log", "true"); err != nil {
 		t.Errorf("error setting aws-sdk-debug-log: %v", err)
 	}
+	if err := f.Set("deprecated-metrics", "true"); err != nil {
+		t.Errorf("error setting deprecated-metrics: %v", err)
+	}
 	if err := f.Set("warn-on-invalid-tag", "true"); err != nil {
 		t.Errorf("error setting warn-on-invalid-tag: %v", err)
 	}
@@ -70,12 +73,19 @@ func TestAddFlags(t *testing.T) {
 	if err := f.Set("reserved-volume-attachments", "5"); err != nil {
 		t.Errorf("error setting reserved-volume-attachments: %v", err)
 	}
+	if err := f.Set("legacy-xfs", "true"); err != nil {
+		t.Errorf("error setting legacy-xfs: %v", err)
+	}
+
+	if err := f.Set("csi-mount-point-prefix", "/var/lib/kubelet"); err != nil {
+		t.Errorf("error setting csi-mount-point-prefix: %v", err)
+	}
 
 	if o.Endpoint != "custom-endpoint" {
 		t.Errorf("unexpected Endpoint: got %s, want custom-endpoint", o.Endpoint)
 	}
-	if o.HttpEndpoint != ":8080" {
-		t.Errorf("unexpected HttpEndpoint: got %s, want :8080", o.HttpEndpoint)
+	if o.HTTPEndpoint != ":8080" {
+		t.Errorf("unexpected HTTPEndpoint: got %s, want :8080", o.HTTPEndpoint)
 	}
 	if !o.EnableOtelTracing {
 		t.Error("unexpected EnableOtelTracing: got false, want true")
@@ -106,6 +116,9 @@ func TestAddFlags(t *testing.T) {
 	}
 	if o.ReservedVolumeAttachments != 5 {
 		t.Errorf("unexpected ReservedVolumeAttachments: got %d, want 5", o.ReservedVolumeAttachments)
+	}
+	if !o.LegacyXFSProgs {
+		t.Errorf("unexpected LegacyXFSProgs: got false, want true")
 	}
 }
 
@@ -209,7 +222,7 @@ func TestValidateMetricsHTTPS(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			o := &Options{
 				Mode:            ControllerMode,
-				HttpEndpoint:    tt.httpEndpoint,
+				HTTPEndpoint:    tt.httpEndpoint,
 				MetricsCertFile: tt.metricsCertFile,
 				MetricsKeyFile:  tt.metricsKeyFile,
 			}
