@@ -38,7 +38,7 @@ undefine VERSION
 # Note that the final driver binary is still explicitly built with `-mod=vendor`.
 export GOFLAGS := -mod=readonly
 
-VERSION?=v1.34.0
+VERSION?=v1.39.0
 
 PKG=github.com/kubernetes-sigs/aws-ebs-csi-driver
 GIT_COMMIT?=$(shell git rev-parse HEAD)
@@ -53,6 +53,10 @@ ifeq ($(OS),windows)
 else
 	BINARY=aws-ebs-csi-driver
 	OSVERSION?=al2023
+endif
+FIPS?=false
+ifeq ($(FIPS),true)
+	FIPS_DOCKER_ARGS=--build-arg=GOEXPERIMENT=boringcrypto
 endif
 
 GO_SOURCES=go.mod go.sum $(shell find pkg cmd -type f -name "*.go")
@@ -89,7 +93,7 @@ clean:
 
 .PHONY: test
 test:
-	go test -v -race ./cmd/... ./pkg/...
+	go test -v -race ./cmd/... ./pkg/... ./tests/sanity/...
 
 .PHONY: test/coverage
 test/coverage:
@@ -97,13 +101,6 @@ test/coverage:
 	grep -v "mock" cover.out > filtered_cover.out
 	go tool cover -html=filtered_cover.out -o coverage.html
 	rm cover.out filtered_cover.out
-
-# TODO: Re-enable sanity tests
-# sanity tests have been disabled with the removal of NewFakeDriver, which was previously created to instantiate a fake driver utilized for testing. 
-# to re-enable tests, implement sanity tests creating a new driver instance by injecting mocked dependencies.
-#.PHONY: test-sanity
-#test-sanity:
-#	go test -v -race ./tests/sanity/...
 
 .PHONY: tools
 tools: bin/aws bin/ct bin/eksctl bin/ginkgo bin/golangci-lint bin/gomplate bin/helm bin/kops bin/kubetest2 bin/mockgen bin/shfmt
@@ -149,7 +146,7 @@ e2e/single-az: bin/helm bin/ginkgo
 	TEST_PATH=./tests/e2e/... \
 	GINKGO_FOCUS="\[ebs-csi-e2e\] \[single-az\]" \
 	GINKGO_PARALLEL=5 \
-	HELM_EXTRA_FLAGS="--set=controller.volumeModificationFeature.enabled=true,sidecars.provisioner.additionalArgs[0]='--feature-gates=VolumeAttributesClass=true',sidecars.resizer.additionalArgs[0]='--feature-gates=VolumeAttributesClass=true'" \
+	HELM_EXTRA_FLAGS="--set=controller.volumeModificationFeature.enabled=true,sidecars.provisioner.additionalArgs[0]='--feature-gates=VolumeAttributesClass=true',sidecars.resizer.additionalArgs[0]='--feature-gates=VolumeAttributesClass=true',node.enableMetrics=true" \
 	./hack/e2e/run.sh
 
 .PHONY: e2e/multi-az
@@ -205,14 +202,25 @@ generate-sidecar-tags: update-truth-sidecars charts/aws-ebs-csi-driver/values.ya
 .PHONY: update-sidecar-dependencies
 update-sidecar-dependencies: update-truth-sidecars generate-sidecar-tags update/kustomize
 
+.PHONY: update-image-dependencies
+update-image-dependencies: update-sidecar-dependencies
+	./hack/release-scripts/update-e2e-images
+
 ## CI aliases
 # Targets intended to be executed mostly or only by CI jobs
 
-.PHONY: all-push
-all-push: all-image-registry push-manifest
+.PHONY: sub-push
+sub-push: all-image-registry push-manifest
 
-.PHONY: all-push-with-a1compat
-all-push-with-a1compat: sub-image-linux-arm64-al2 all-image-registry push-manifest
+.PHONY: sub-push-fips
+sub-push-fips:
+	$(MAKE) FIPS=true TAG=$(TAG)-fips sub-push
+
+.PHONY: sub-push-a1compat
+sub-push-a1compat: sub-image-linux-arm64-al2
+
+.PHONY: all-push
+all-push: sub-push sub-push-fips sub-push-a1compat
 
 test-e2e-%:
 	./hack/prow-e2e.sh test-e2e-$*
@@ -245,6 +253,7 @@ image:
 		-t=$(IMAGE):$(TAG)-$(OS)-$(ARCH)-$(OSVERSION) \
 		--build-arg=GOPROXY=$(GOPROXY) \
 		--build-arg=VERSION=$(VERSION) \
+		$(FIPS_DOCKER_ARGS) \
 		`./hack/provenance.sh` \
 		.
 

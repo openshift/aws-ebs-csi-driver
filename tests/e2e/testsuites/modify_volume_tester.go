@@ -21,7 +21,7 @@ import (
 	"github.com/kubernetes-sigs/aws-ebs-csi-driver/tests/e2e/driver"
 	. "github.com/onsi/ginkgo/v2"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/api/storage/v1alpha1"
+	"k8s.io/api/storage/v1beta1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clientset "k8s.io/client-go/kubernetes"
@@ -74,7 +74,7 @@ func (modifyVolumeTest *ModifyVolumeTest) Run(c clientset.Interface, ns *v1.Name
 	if testType == VolumeModifierForK8s {
 		AnnotatePvc(modifyingPvc, parametersWithPrefix)
 	} else if testType == ExternalResizer {
-		vac, err := c.StorageV1alpha1().VolumeAttributesClasses().Create(context.Background(), &v1alpha1.VolumeAttributesClass{
+		vac, err := c.StorageV1beta1().VolumeAttributesClasses().Create(context.Background(), &v1beta1.VolumeAttributesClass{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      formatOptionMountPod.pod.Name,
 				Namespace: ns.Name,
@@ -102,13 +102,13 @@ func (modifyVolumeTest *ModifyVolumeTest) Run(c clientset.Interface, ns *v1.Name
 
 	By("wait for and confirm pv modification")
 	if testType == VolumeModifierForK8s {
-		err = WaitForPvToModify(c, ns, testVolume.persistentVolume.Name, parametersWithPrefix, DefaultModificationTimeout, DefaultK8sApiPollingInterval)
+		err = WaitForPvToModify(c, ns, testVolume.persistentVolume.Name, parametersWithPrefix, DefaultModificationTimeout, DefaultK8sAPIPollingInterval)
 	} else if testType == ExternalResizer {
-		err = WaitForVacToApplyToPv(c, ns, testVolume.persistentVolume.Name, *modifyingPvc.Spec.VolumeAttributesClassName, DefaultModificationTimeout, DefaultK8sApiPollingInterval)
+		err = WaitForVacToApplyToPv(c, ns, testVolume.persistentVolume.Name, *modifyingPvc.Spec.VolumeAttributesClassName, DefaultModificationTimeout, DefaultK8sAPIPollingInterval)
 	}
 	framework.ExpectNoError(err, fmt.Sprintf("fail to modify pv(%s): %v", modifyingPvc.Name, err))
 	if modifyVolumeTest.ShouldResizeVolume {
-		err = WaitForPvToResize(c, ns, testVolume.persistentVolume.Name, updatedPvcSize, DefaultResizeTimout, DefaultK8sApiPollingInterval)
+		err = WaitForPvToResize(c, ns, testVolume.persistentVolume.Name, updatedPvcSize, DefaultResizeTimout, DefaultK8sAPIPollingInterval)
 		framework.ExpectNoError(err, fmt.Sprintf("fail to resize pv(%s): %v", modifyingPvc.Name, err))
 	}
 }
