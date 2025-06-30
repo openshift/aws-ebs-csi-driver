@@ -307,7 +307,14 @@ update/generate-license-header:
 
 .PHONY: verify/golangci-lint
 verify/golangci-lint: bin/golangci-lint
+	@echo "Running golangci-lint..."
 	./bin/golangci-lint run --timeout=10m --verbose
+
+bin/golangci-lint:
+	@echo "Re-installing golangci-lint v1.64.8..."
+	rm -f ./bin/golangci-lint
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh \
+	  | sh -s -- -b ./bin v1.64.8
 
 .PHONY: verify/govet
 verify/govet:
