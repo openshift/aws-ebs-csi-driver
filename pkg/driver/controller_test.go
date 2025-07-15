@@ -108,7 +108,7 @@ func TestCreateVolume(t *testing.T) {
 					Parameters:         nil,
 				}
 
-				ctx := context.Background()
+				ctx := t.Context()
 
 				mockDisk := &cloud.Disk{
 					VolumeID:         req.GetName(),
@@ -178,7 +178,7 @@ func TestCreateVolume(t *testing.T) {
 					},
 				}
 
-				ctx := context.Background()
+				ctx := t.Context()
 
 				mockDisk := &cloud.Disk{
 					VolumeID:         req.GetName(),
@@ -208,7 +208,6 @@ func TestCreateVolume(t *testing.T) {
 					t.Fatalf("Unexpected error: %v", srvErr.Code())
 				}
 
-				// mockCloud.EXPECT().GetDiskByName(gomock.Eq(ctx), gomock.Eq(req.GetName()), gomock.Eq(stdVolSize)).Return(mockDisk, nil)
 				vol := resp.GetVolume()
 				if vol == nil {
 					t.Fatalf("Expected volume %v, got nil", expVol)
@@ -246,7 +245,7 @@ func TestCreateVolume(t *testing.T) {
 					},
 				}
 
-				ctx := context.Background()
+				ctx := t.Context()
 
 				mockDisk := &cloud.Disk{
 					VolumeID:         req.GetName(),
@@ -303,7 +302,7 @@ func TestCreateVolume(t *testing.T) {
 					},
 				}
 
-				ctx := context.Background()
+				ctx := t.Context()
 
 				mockDisk := &cloud.Disk{
 					VolumeID:         req.GetName(),
@@ -360,7 +359,7 @@ func TestCreateVolume(t *testing.T) {
 					},
 				}
 
-				ctx := context.Background()
+				ctx := t.Context()
 
 				mockCtl := gomock.NewController(t)
 				defer mockCtl.Finish()
@@ -379,6 +378,101 @@ func TestCreateVolume(t *testing.T) {
 			},
 		},
 		{
+			name: "success with valid initialization rate from snapshot",
+			testFunc: func(t *testing.T) {
+				t.Helper()
+				req := &csi.CreateVolumeRequest{
+					Name:               "vol-test",
+					CapacityRange:      stdCapRange,
+					VolumeCapabilities: stdVolCap,
+					Parameters: map[string]string{
+						VolumeInitializationRateKey: "200",
+					},
+					VolumeContentSource: &csi.VolumeContentSource{
+						Type: &csi.VolumeContentSource_Snapshot{
+							Snapshot: &csi.VolumeContentSource_SnapshotSource{
+								SnapshotId: "snapshot-test",
+							},
+						},
+					},
+				}
+
+				mockDisk := &cloud.Disk{
+					VolumeID:         req.GetName(),
+					AvailabilityZone: expZone,
+					CapacityGiB:      util.BytesToGiB(stdVolSize),
+					SnapshotID:       "snapshot-test",
+				}
+
+				mockCtl := gomock.NewController(t)
+				defer mockCtl.Finish()
+
+				mockCloud := cloud.NewMockCloud(mockCtl)
+				mockCloud.EXPECT().CreateDisk(gomock.Eq(t.Context()), gomock.Eq(req.GetName()),
+					gomock.Any()).DoAndReturn(func(_ context.Context, _ string, diskOptions *cloud.DiskOptions) (*cloud.Disk, error) {
+					if diskOptions.VolumeInitializationRate != 200 {
+						t.Errorf("Expected VolumeInitializationRate to be 200, got %d", diskOptions.VolumeInitializationRate)
+					}
+					return mockDisk, nil
+				})
+
+				awsDriver := ControllerService{
+					cloud:    mockCloud,
+					inFlight: internal.NewInFlight(),
+					options:  &Options{},
+				}
+
+				if _, err := awsDriver.CreateVolume(t.Context(), req); err != nil {
+					t.Fatalf("CreateVolume failed: %v", err)
+				}
+			},
+		},
+		{
+			name: "fail with invalid initialization rate value",
+			testFunc: func(t *testing.T) {
+				t.Helper()
+				req := &csi.CreateVolumeRequest{
+					Name:               "vol-test",
+					CapacityRange:      stdCapRange,
+					VolumeCapabilities: stdVolCap,
+					Parameters: map[string]string{
+						VolumeInitializationRateKey: "invalid",
+					},
+					VolumeContentSource: &csi.VolumeContentSource{
+						Type: &csi.VolumeContentSource_Snapshot{
+							Snapshot: &csi.VolumeContentSource_SnapshotSource{
+								SnapshotId: "snapshot-test",
+							},
+						},
+					},
+				}
+
+				mockCtl := gomock.NewController(t)
+				defer mockCtl.Finish()
+
+				mockCloud := cloud.NewMockCloud(mockCtl)
+
+				awsDriver := ControllerService{
+					cloud:    mockCloud,
+					inFlight: internal.NewInFlight(),
+					options:  &Options{},
+				}
+
+				_, err := awsDriver.CreateVolume(t.Context(), req)
+				if err == nil {
+					t.Fatal("Expected CreateVolume to fail but got no error")
+				}
+
+				srvErr, ok := status.FromError(err)
+				if !ok {
+					t.Fatalf("Could not get error status code from error: %v", srvErr)
+				}
+				if srvErr.Code() != codes.InvalidArgument {
+					t.Fatalf("Expected InvalidArgument but got: %s", srvErr.Code())
+				}
+			},
+		},
+		{
 			name: "fail no name",
 			testFunc: func(t *testing.T) {
 				t.Helper()
@@ -389,7 +483,7 @@ func TestCreateVolume(t *testing.T) {
 					Parameters:         stdParams,
 				}
 
-				ctx := context.Background()
+				ctx := t.Context()
 
 				mockCtl := gomock.NewController(t)
 				defer mockCtl.Finish()
@@ -437,7 +531,7 @@ func TestCreateVolume(t *testing.T) {
 					VolumeContext: map[string]string{},
 				}
 
-				ctx := context.Background()
+				ctx := t.Context()
 
 				mockDisk := &cloud.Disk{
 					VolumeID:         req.GetName(),
@@ -520,7 +614,7 @@ func TestCreateVolume(t *testing.T) {
 					Parameters:         stdParams,
 				}
 
-				ctx := context.Background()
+				ctx := t.Context()
 
 				mockDisk := &cloud.Disk{
 					VolumeID:         req.GetName(),
@@ -583,7 +677,7 @@ func TestCreateVolume(t *testing.T) {
 					VolumeContext: map[string]string{},
 				}
 
-				ctx := context.Background()
+				ctx := t.Context()
 
 				mockDisk := &cloud.Disk{
 					VolumeID:         req.GetName(),
@@ -645,7 +739,7 @@ func TestCreateVolume(t *testing.T) {
 					VolumeContext: map[string]string{},
 				}
 
-				ctx := context.Background()
+				ctx := t.Context()
 
 				mockDisk := &cloud.Disk{
 					VolumeID:         req.GetName(),
@@ -702,7 +796,7 @@ func TestCreateVolume(t *testing.T) {
 					},
 				}
 
-				ctx := context.Background()
+				ctx := t.Context()
 
 				mockDisk := &cloud.Disk{
 					VolumeID:         req.GetName(),
@@ -745,7 +839,7 @@ func TestCreateVolume(t *testing.T) {
 					},
 				}
 
-				ctx := context.Background()
+				ctx := t.Context()
 
 				mockDisk := &cloud.Disk{
 					VolumeID:         req.GetName(),
@@ -788,7 +882,7 @@ func TestCreateVolume(t *testing.T) {
 					},
 				}
 
-				ctx := context.Background()
+				ctx := t.Context()
 
 				mockDisk := &cloud.Disk{
 					VolumeID:         req.GetName(),
@@ -831,7 +925,7 @@ func TestCreateVolume(t *testing.T) {
 					},
 				}
 
-				ctx := context.Background()
+				ctx := t.Context()
 
 				mockDisk := &cloud.Disk{
 					VolumeID:         req.GetName(),
@@ -874,7 +968,7 @@ func TestCreateVolume(t *testing.T) {
 					},
 				}
 
-				ctx := context.Background()
+				ctx := t.Context()
 
 				mockDisk := &cloud.Disk{
 					VolumeID:         req.GetName(),
@@ -916,7 +1010,7 @@ func TestCreateVolume(t *testing.T) {
 					},
 				}
 
-				ctx := context.Background()
+				ctx := t.Context()
 
 				mockDisk := &cloud.Disk{
 					VolumeID:         req.GetName(),
@@ -958,7 +1052,7 @@ func TestCreateVolume(t *testing.T) {
 					},
 				}
 
-				ctx := context.Background()
+				ctx := t.Context()
 
 				mockDisk := &cloud.Disk{
 					VolumeID:         req.GetName(),
@@ -1000,7 +1094,7 @@ func TestCreateVolume(t *testing.T) {
 					},
 				}
 
-				ctx := context.Background()
+				ctx := t.Context()
 
 				mockDisk := &cloud.Disk{
 					VolumeID:         req.GetName(),
@@ -1043,7 +1137,7 @@ func TestCreateVolume(t *testing.T) {
 					},
 				}
 
-				ctx := context.Background()
+				ctx := t.Context()
 
 				mockDisk := &cloud.Disk{
 					VolumeID:         req.GetName(),
@@ -1091,7 +1185,7 @@ func TestCreateVolume(t *testing.T) {
 					},
 				}
 
-				ctx := context.Background()
+				ctx := t.Context()
 
 				mockDisk := &cloud.Disk{
 					VolumeID:         req.GetName(),
@@ -1137,7 +1231,7 @@ func TestCreateVolume(t *testing.T) {
 					},
 				}
 
-				ctx := context.Background()
+				ctx := t.Context()
 
 				mockCtl := gomock.NewController(t)
 				defer mockCtl.Finish()
@@ -1178,7 +1272,7 @@ func TestCreateVolume(t *testing.T) {
 					},
 				}
 
-				ctx := context.Background()
+				ctx := t.Context()
 
 				mockCtl := gomock.NewController(t)
 				defer mockCtl.Finish()
@@ -1219,7 +1313,7 @@ func TestCreateVolume(t *testing.T) {
 					},
 				}
 
-				ctx := context.Background()
+				ctx := t.Context()
 
 				mockCtl := gomock.NewController(t)
 				defer mockCtl.Finish()
@@ -1287,7 +1381,7 @@ func TestCreateVolume(t *testing.T) {
 					},
 				}
 
-				ctx := context.Background()
+				ctx := t.Context()
 
 				mockDisk := &cloud.Disk{
 					VolumeID:         req.GetName(),
@@ -1360,7 +1454,7 @@ func TestCreateVolume(t *testing.T) {
 					Parameters:         nil,
 				}
 
-				ctx := context.Background()
+				ctx := t.Context()
 
 				mockDisk := &cloud.Disk{
 					VolumeID:         req.GetName(),
@@ -1404,6 +1498,83 @@ func TestCreateVolume(t *testing.T) {
 			},
 		},
 		{
+			name: "success with string interpolation in tags",
+			testFunc: func(t *testing.T) {
+				t.Helper()
+				const (
+					volumeName        = "test-vol-name"
+					pvcName           = "test-pvc"
+					pvcNamespace      = "test-namespace"
+					pvName            = "test-pv"
+					tagKey1           = "PVCNameTag"
+					tagKey2           = "PVCNamespaceTag"
+					tagKey3           = "PVNameTag"
+					cliTagKey         = "cliPVNameKey"
+					tagTemplateValue1 = "PVCNameTag={{.PVCName}}"
+					tagTemplateValue2 = "PVCNamespaceTag={{.PVCNamespace}}"
+					tagTemplateValue3 = "PVNameTag={{.PVName}}"
+				)
+
+				req := &csi.CreateVolumeRequest{
+					Name:               volumeName,
+					CapacityRange:      stdCapRange,
+					VolumeCapabilities: stdVolCap,
+					Parameters: map[string]string{
+						"csi.storage.k8s.io/pvc/name":      pvcName,
+						"csi.storage.k8s.io/pvc/namespace": pvcNamespace,
+						"csi.storage.k8s.io/pv/name":       pvName,
+						"tagSpecification_1":               tagTemplateValue1,
+						"tagSpecification_2":               tagTemplateValue2,
+						"tagSpecification_3":               tagTemplateValue3,
+					},
+				}
+
+				ctx := t.Context()
+
+				mockDisk := &cloud.Disk{
+					VolumeID:         req.GetName(),
+					AvailabilityZone: expZone,
+					CapacityGiB:      util.BytesToGiB(stdVolSize),
+				}
+
+				diskOptions := &cloud.DiskOptions{
+					CapacityBytes: stdVolSize,
+					Tags: map[string]string{
+						cloud.VolumeNameTagKey:                    volumeName,
+						cloud.AwsEbsDriverTagKey:                  "true",
+						"kubernetes.io/created-for/pvc/name":      pvcName,
+						"kubernetes.io/created-for/pvc/namespace": pvcNamespace,
+						"kubernetes.io/created-for/pv/name":       pvName,
+						tagKey1:                                   pvcName,
+						tagKey2:                                   pvcNamespace,
+						tagKey3:                                   pvName,
+						cliTagKey:                                 pvName,
+					},
+				}
+
+				mockCtl := gomock.NewController(t)
+				defer mockCtl.Finish()
+
+				mockCloud := cloud.NewMockCloud(mockCtl)
+				mockCloud.EXPECT().CreateDisk(gomock.Eq(ctx), gomock.Eq(req.GetName()), gomock.Eq(diskOptions)).Return(mockDisk, nil)
+
+				awsDriver := ControllerService{
+					cloud:    mockCloud,
+					inFlight: internal.NewInFlight(),
+					options:  &Options{ExtraTags: map[string]string{"cliPVNameKey": "{{.PVName}}"}},
+				}
+
+				_, err := awsDriver.CreateVolume(ctx, req)
+				if err != nil {
+					srvErr, ok := status.FromError(err)
+					if !ok {
+						t.Fatalf("Could not get error status code from error: %v", srvErr)
+					}
+					t.Fatalf("Unexpected error: %v", srvErr.Code())
+				}
+			},
+		},
+		{
 			name: "success with cluster-id",
 			testFunc: func(t *testing.T) {
 				t.Helper()
@@ -1424,7 +1595,7 @@ func TestCreateVolume(t *testing.T) {
 					Parameters:         nil,
 				}
 
-				ctx := context.Background()
+				ctx := t.Context()
 
 				mockDisk := &cloud.Disk{
 					VolumeID:         req.GetName(),
@@ -1491,7 +1662,7 @@ func TestCreateVolume(t *testing.T) {
 					},
 				}
 
-				ctx := context.Background()
+				ctx := t.Context()
 
 				mockDisk := &cloud.Disk{
 					VolumeID:         req.GetName(),
@@ -1547,7 +1718,7 @@ func TestCreateVolume(t *testing.T) {
 					},
 				}
 
-				ctx := context.Background()
+				ctx := t.Context()
 
 				mockCtl := gomock.NewController(t)
 				defer mockCtl.Finish()
@@ -1585,7 +1756,7 @@ func TestCreateVolume(t *testing.T) {
 					Parameters:         nil,
 				}
 
-				ctx := context.Background()
+				ctx := t.Context()
 
 				mockCtl := gomock.NewController(t)
 				defer mockCtl.Finish()
@@ -1617,7 +1788,7 @@ func TestCreateVolume(t *testing.T) {
 					VolumeCapabilities: stdVolCap,
 				}
 
-				ctx := context.Background()
+				ctx := t.Context()
 
 				mockCtl := gomock.NewController(t)
 				defer mockCtl.Finish()
@@ -1646,7 +1817,7 @@ func TestCreateVolume(t *testing.T) {
 					Parameters:         nil,
 				}
 
-				ctx := context.Background()
+				ctx := t.Context()
 
 				mockDisk := &cloud.Disk{
 					VolumeID:         req.GetName(),
@@ -1685,7 +1856,7 @@ func TestCreateVolume(t *testing.T) {
 					VolumeCapabilities: invalidMultiAttachVolCap,
 				}
 
-				ctx := context.Background()
+				ctx := t.Context()
 
 				mockCtl := gomock.NewController(t)
 				defer mockCtl.Finish()
@@ -1849,7 +2020,7 @@ func TestCreateVolumeWithFormattingParameters(t *testing.T) {
 				Parameters:         tc.formattingOptionParameters,
 			}
 
-			ctx := context.Background()
+			ctx := t.Context()
 
 			mockDisk := &cloud.Disk{
 				VolumeID:         req.GetName(),
@@ -1910,7 +2081,7 @@ func TestDeleteVolume(t *testing.T) {
 				}
 				expResp := &csi.DeleteVolumeResponse{}
 
-				ctx := context.Background()
+				ctx := t.Context()
 				mockCtl := gomock.NewController(t)
 				defer mockCtl.Finish()
 
@@ -1943,7 +2114,7 @@ func TestDeleteVolume(t *testing.T) {
 				}
 				expResp := &csi.DeleteVolumeResponse{}
 
-				ctx := context.Background()
+				ctx := t.Context()
 				mockCtl := gomock.NewController(t)
 				defer mockCtl.Finish()
 
@@ -1975,7 +2146,7 @@ func TestDeleteVolume(t *testing.T) {
 					VolumeId: "test-vol",
 				}
 
-				ctx := context.Background()
+				ctx := t.Context()
 				mockCtl := gomock.NewController(t)
 				defer mockCtl.Finish()
 
@@ -2012,7 +2183,7 @@ func TestDeleteVolume(t *testing.T) {
 					VolumeId: "vol-test",
 				}
 
-				ctx := context.Background()
+				ctx := t.Context()
 				mockCtl := gomock.NewController(t)
 				defer mockCtl.Finish()
 
@@ -2281,7 +2452,7 @@ func TestCreateSnapshot(t *testing.T) {
 					ReadyToUse: true,
 				}
 
-				ctx := context.Background()
+				ctx := t.Context()
 				mockSnapshot := &cloud.Snapshot{
 					SnapshotID:     fmt.Sprintf("snapshot-%d", rand.New(rand.NewSource(time.Now().UnixNano())).Uint64()),
 					SourceVolumeID: req.GetSourceVolumeId(),
@@ -2300,7 +2471,7 @@ func TestCreateSnapshot(t *testing.T) {
 					inFlight: internal.NewInFlight(),
 					options:  &Options{},
 				}
-				resp, err := awsDriver.CreateSnapshot(context.Background(), req)
+				resp, err := awsDriver.CreateSnapshot(t.Context(), req)
 				if err != nil {
 					t.Fatalf("Unexpected error: %v", err)
 				}
@@ -2325,7 +2496,7 @@ func TestCreateSnapshot(t *testing.T) {
 					ReadyToUse: true,
 				}
 
-				ctx := context.Background()
+				ctx := t.Context()
 				mockSnapshot := &cloud.Snapshot{
 					SnapshotID:     fmt.Sprintf("snapshot-%d", rand.New(rand.NewSource(time.Now().UnixNano())).Uint64()),
 					SourceVolumeID: req.GetSourceVolumeId(),
@@ -2344,7 +2515,7 @@ func TestCreateSnapshot(t *testing.T) {
 					inFlight: internal.NewInFlight(),
 					options:  &Options{},
 				}
-				resp, err := awsDriver.CreateSnapshot(context.Background(), req)
+				resp, err := awsDriver.CreateSnapshot(t.Context(), req)
 				if err != nil {
 					t.Fatalf("Unexpected error: %v", err)
 				}
@@ -2375,7 +2546,7 @@ func TestCreateSnapshot(t *testing.T) {
 					ReadyToUse: true,
 				}
 
-				ctx := context.Background()
+				ctx := t.Context()
 				mockSnapshot := &cloud.Snapshot{
 					SnapshotID:     fmt.Sprintf("snapshot-%d", rand.New(rand.NewSource(time.Now().UnixNano())).Uint64()),
 					SourceVolumeID: req.GetSourceVolumeId(),
@@ -2404,7 +2575,7 @@ func TestCreateSnapshot(t *testing.T) {
 						KubernetesClusterID: clusterID,
 					},
 				}
-				resp, err := awsDriver.CreateSnapshot(context.Background(), req)
+				resp, err := awsDriver.CreateSnapshot(t.Context(), req)
 				if err != nil {
 					t.Fatalf("Unexpected error: %v", err)
 				}
@@ -2432,7 +2603,7 @@ func TestCreateSnapshot(t *testing.T) {
 					ReadyToUse: true,
 				}
 
-				ctx := context.Background()
+				ctx := t.Context()
 				mockSnapshot := &cloud.Snapshot{
 					SnapshotID:     fmt.Sprintf("snapshot-%d", rand.New(rand.NewSource(time.Now().UnixNano())).Uint64()),
 					SourceVolumeID: req.GetSourceVolumeId(),
@@ -2462,7 +2633,7 @@ func TestCreateSnapshot(t *testing.T) {
 						},
 					},
 				}
-				resp, err := awsDriver.CreateSnapshot(context.Background(), req)
+				resp, err := awsDriver.CreateSnapshot(t.Context(), req)
 				if err != nil {
 					t.Fatalf("Unexpected error: %v", err)
 				}
@@ -2491,7 +2662,7 @@ func TestCreateSnapshot(t *testing.T) {
 					inFlight: internal.NewInFlight(),
 					options:  &Options{},
 				}
-				if _, err := awsDriver.CreateSnapshot(context.Background(), req); err != nil {
+				if _, err := awsDriver.CreateSnapshot(t.Context(), req); err != nil {
 					srvErr, ok := status.FromError(err)
 					if !ok {
 						t.Fatalf("Could not get error status code from error: %v", srvErr)
@@ -2516,7 +2687,7 @@ func TestCreateSnapshot(t *testing.T) {
 					SourceVolumeId: "vol-test",
 				}
 
-				ctx := context.Background()
+				ctx := t.Context()
 
 				mockCtl := gomock.NewController(t)
 				defer mockCtl.Finish()
@@ -2529,7 +2700,7 @@ func TestCreateSnapshot(t *testing.T) {
 					inFlight: internal.NewInFlight(),
 					options:  &Options{},
 				}
-				_, err := awsDriver.CreateSnapshot(context.Background(), req)
+				_, err := awsDriver.CreateSnapshot(t.Context(), req)
 				checkExpectedErrorCode(t, err, codes.InvalidArgument)
 			},
 		},
@@ -2551,7 +2722,7 @@ func TestCreateSnapshot(t *testing.T) {
 					ReadyToUse: true,
 				}
 
-				ctx := context.Background()
+				ctx := t.Context()
 				mockSnapshot := &cloud.Snapshot{
 					SnapshotID:     fmt.Sprintf("snapshot-%d", rand.New(rand.NewSource(time.Now().UnixNano())).Uint64()),
 					SourceVolumeID: req.GetSourceVolumeId(),
@@ -2570,7 +2741,7 @@ func TestCreateSnapshot(t *testing.T) {
 					inFlight: internal.NewInFlight(),
 					options:  &Options{},
 				}
-				resp, err := awsDriver.CreateSnapshot(context.Background(), req)
+				resp, err := awsDriver.CreateSnapshot(t.Context(), req)
 				if err != nil {
 					srvErr, ok := status.FromError(err)
 					if !ok {
@@ -2619,7 +2790,7 @@ func TestCreateSnapshot(t *testing.T) {
 					ReadyToUse: true,
 				}
 
-				ctx := context.Background()
+				ctx := t.Context()
 				mockSnapshot := &cloud.Snapshot{
 					SnapshotID:     fmt.Sprintf("snapshot-%d", rand.New(rand.NewSource(time.Now().UnixNano())).Uint64()),
 					SourceVolumeID: req.GetSourceVolumeId(),
@@ -2638,7 +2809,7 @@ func TestCreateSnapshot(t *testing.T) {
 					inFlight: internal.NewInFlight(),
 					options:  &Options{},
 				}
-				resp, err := awsDriver.CreateSnapshot(context.Background(), req)
+				resp, err := awsDriver.CreateSnapshot(t.Context(), req)
 				if err != nil {
 					t.Fatalf("Unexpected error: %v", err)
 				}
@@ -2678,7 +2849,7 @@ func TestCreateSnapshot(t *testing.T) {
 					inFlight: inFlight,
 					options:  &Options{},
 				}
-				_, err := awsDriver.CreateSnapshot(context.Background(), req)
+				_, err := awsDriver.CreateSnapshot(t.Context(), req)
 
 				checkExpectedErrorCode(t, err, codes.Aborted)
 			},
@@ -2704,7 +2875,7 @@ func TestCreateSnapshot(t *testing.T) {
 					ReadyToUse: true,
 				}
 
-				ctx := context.Background()
+				ctx := t.Context()
 				mockSnapshot := &cloud.Snapshot{
 					SnapshotID:     fmt.Sprintf("snapshot-%d", rand.New(rand.NewSource(time.Now().UnixNano())).Uint64()),
 					SourceVolumeID: req.GetSourceVolumeId(),
@@ -2731,7 +2902,7 @@ func TestCreateSnapshot(t *testing.T) {
 					inFlight: internal.NewInFlight(),
 					options:  &Options{},
 				}
-				resp, err := awsDriver.CreateSnapshot(context.Background(), req)
+				resp, err := awsDriver.CreateSnapshot(t.Context(), req)
 				if err != nil {
 					t.Fatalf("Unexpected error: %v", err)
 				}
@@ -2762,7 +2933,7 @@ func TestCreateSnapshot(t *testing.T) {
 					ReadyToUse: true,
 				}
 
-				ctx := context.Background()
+				ctx := t.Context()
 				mockSnapshot := &cloud.Snapshot{
 					SnapshotID:     fmt.Sprintf("snapshot-%d", rand.New(rand.NewSource(time.Now().UnixNano())).Uint64()),
 					SourceVolumeID: req.GetSourceVolumeId(),
@@ -2790,7 +2961,7 @@ func TestCreateSnapshot(t *testing.T) {
 					inFlight: internal.NewInFlight(),
 					options:  &Options{KubernetesClusterID: clusterID},
 				}
-				resp, err := awsDriver.CreateSnapshot(context.Background(), req)
+				resp, err := awsDriver.CreateSnapshot(t.Context(), req)
 				if err != nil {
 					t.Fatalf("Unexpected error: %v", err)
 				}
@@ -2819,7 +2990,7 @@ func TestCreateSnapshot(t *testing.T) {
 					ReadyToUse: true,
 				}
 
-				ctx := context.Background()
+				ctx := t.Context()
 				mockSnapshot := &cloud.Snapshot{
 					SnapshotID:     fmt.Sprintf("snapshot-%d", rand.New(rand.NewSource(time.Now().UnixNano())).Uint64()),
 					SourceVolumeID: req.GetSourceVolumeId(),
@@ -2856,7 +3027,7 @@ func TestCreateSnapshot(t *testing.T) {
 					options:  &Options{},
 				}
 
-				resp, err := awsDriver.CreateSnapshot(context.Background(), req)
+				resp, err := awsDriver.CreateSnapshot(t.Context(), req)
 				if err != nil {
 					t.Fatalf("Unexpected error: %v", err)
 				}
@@ -2885,7 +3056,7 @@ func TestCreateSnapshot(t *testing.T) {
 					ReadyToUse: true,
 				}
 
-				ctx := context.Background()
+				ctx := t.Context()
 				mockSnapshot := &cloud.Snapshot{
 					SnapshotID:     fmt.Sprintf("snapshot-%d", rand.New(rand.NewSource(time.Now().UnixNano())).Uint64()),
 					SourceVolumeID: req.GetSourceVolumeId(),
@@ -2921,7 +3092,7 @@ func TestCreateSnapshot(t *testing.T) {
 					options:  &Options{},
 				}
 
-				resp, err := awsDriver.CreateSnapshot(context.Background(), req)
+				resp, err := awsDriver.CreateSnapshot(t.Context(), req)
 				if err != nil {
 					t.Fatalf("Unexpected error: %v", err)
 				}
@@ -2947,7 +3118,7 @@ func TestCreateSnapshot(t *testing.T) {
 					SourceVolumeId: "vol-test",
 				}
 
-				ctx := context.Background()
+				ctx := t.Context()
 				mockSnapshot := &cloud.Snapshot{
 					SnapshotID:     fmt.Sprintf("snapshot-%d", rand.New(rand.NewSource(time.Now().UnixNano())).Uint64()),
 					SourceVolumeID: req.GetSourceVolumeId(),
@@ -2991,7 +3162,7 @@ func TestCreateSnapshot(t *testing.T) {
 					options:  &Options{},
 				}
 
-				_, err := awsDriver.CreateSnapshot(context.Background(), req)
+				_, err := awsDriver.CreateSnapshot(t.Context(), req)
 				if err == nil {
 					t.Fatalf("Expected error, got nil")
 				}
@@ -3013,7 +3184,7 @@ func TestCreateSnapshot(t *testing.T) {
 					SourceVolumeId: "vol-test",
 				}
 
-				ctx := context.Background()
+				ctx := t.Context()
 				mockCtl := gomock.NewController(t)
 				defer mockCtl.Finish()
 
@@ -3028,7 +3199,7 @@ func TestCreateSnapshot(t *testing.T) {
 					options:  &Options{},
 				}
 
-				_, err := awsDriver.CreateSnapshot(context.Background(), req)
+				_, err := awsDriver.CreateSnapshot(t.Context(), req)
 				if err == nil {
 					t.Fatalf("Expected error, got nil")
 				}
@@ -3050,7 +3221,7 @@ func TestCreateSnapshot(t *testing.T) {
 					SourceVolumeId: "vol-test",
 				}
 
-				ctx := context.Background()
+				ctx := t.Context()
 				mockSnapshot := &cloud.Snapshot{
 					SnapshotID:     fmt.Sprintf("snapshot-%d", rand.New(rand.NewSource(time.Now().UnixNano())).Uint64()),
 					SourceVolumeID: req.GetSourceVolumeId(),
@@ -3082,7 +3253,7 @@ func TestCreateSnapshot(t *testing.T) {
 					options:  &Options{},
 				}
 
-				_, err := awsDriver.CreateSnapshot(context.Background(), req)
+				_, err := awsDriver.CreateSnapshot(t.Context(), req)
 				if err == nil {
 					t.Fatalf("Expected error, got nil")
 				}
@@ -3104,7 +3275,7 @@ func TestDeleteSnapshot(t *testing.T) {
 			name: "success normal",
 			testFunc: func(t *testing.T) {
 				t.Helper()
-				ctx := context.Background()
+				ctx := t.Context()
 
 				mockCtl := gomock.NewController(t)
 				defer mockCtl.Finish()
@@ -3130,7 +3301,7 @@ func TestDeleteSnapshot(t *testing.T) {
 			name: "success not found",
 			testFunc: func(t *testing.T) {
 				t.Helper()
-				ctx := context.Background()
+				ctx := t.Context()
 
 				mockCtl := gomock.NewController(t)
 				defer mockCtl.Finish()
@@ -3156,7 +3327,7 @@ func TestDeleteSnapshot(t *testing.T) {
 			name: "fail with another request in-flight",
 			testFunc: func(t *testing.T) {
 				t.Helper()
-				ctx := context.Background()
+				ctx := t.Context()
 
 				mockCtl := gomock.NewController(t)
 				defer mockCtl.Finish()
@@ -3216,7 +3387,7 @@ func TestListSnapshots(t *testing.T) {
 					NextToken: "",
 				}
 
-				ctx := context.Background()
+				ctx := t.Context()
 				mockCtl := gomock.NewController(t)
 				defer mockCtl.Finish()
 
@@ -3229,7 +3400,7 @@ func TestListSnapshots(t *testing.T) {
 					options:  &Options{},
 				}
 
-				resp, err := awsDriver.ListSnapshots(context.Background(), req)
+				resp, err := awsDriver.ListSnapshots(t.Context(), req)
 				if err != nil {
 					t.Fatalf("Unexpected error: %v", err)
 				}
@@ -3244,7 +3415,7 @@ func TestListSnapshots(t *testing.T) {
 			testFunc: func(t *testing.T) {
 				t.Helper()
 				req := &csi.ListSnapshotsRequest{}
-				ctx := context.Background()
+				ctx := t.Context()
 				mockCtl := gomock.NewController(t)
 				defer mockCtl.Finish()
 
@@ -3257,7 +3428,7 @@ func TestListSnapshots(t *testing.T) {
 					options:  &Options{},
 				}
 
-				resp, err := awsDriver.ListSnapshots(context.Background(), req)
+				resp, err := awsDriver.ListSnapshots(t.Context(), req)
 				if err != nil {
 					t.Fatalf("Unexpected error: %v", err)
 				}
@@ -3281,7 +3452,7 @@ func TestListSnapshots(t *testing.T) {
 					CreationTime:   time.Now(),
 				}
 
-				ctx := context.Background()
+				ctx := t.Context()
 				mockCtl := gomock.NewController(t)
 				defer mockCtl.Finish()
 
@@ -3294,7 +3465,7 @@ func TestListSnapshots(t *testing.T) {
 					options:  &Options{},
 				}
 
-				resp, err := awsDriver.ListSnapshots(context.Background(), req)
+				resp, err := awsDriver.ListSnapshots(t.Context(), req)
 				if err != nil {
 					t.Fatalf("Unexpected error: %v", err)
 				}
@@ -3312,7 +3483,7 @@ func TestListSnapshots(t *testing.T) {
 					SnapshotId: "snapshot-1",
 				}
 
-				ctx := context.Background()
+				ctx := t.Context()
 				mockCtl := gomock.NewController(t)
 				defer mockCtl.Finish()
 
@@ -3325,7 +3496,7 @@ func TestListSnapshots(t *testing.T) {
 					options:  &Options{},
 				}
 
-				resp, err := awsDriver.ListSnapshots(context.Background(), req)
+				resp, err := awsDriver.ListSnapshots(t.Context(), req)
 				if err != nil {
 					t.Fatalf("Unexpected error: %v", err)
 				}
@@ -3343,7 +3514,7 @@ func TestListSnapshots(t *testing.T) {
 					SnapshotId: "snapshot-1",
 				}
 
-				ctx := context.Background()
+				ctx := t.Context()
 				mockCtl := gomock.NewController(t)
 				defer mockCtl.Finish()
 
@@ -3356,7 +3527,7 @@ func TestListSnapshots(t *testing.T) {
 					options:  &Options{},
 				}
 
-				if _, err := awsDriver.ListSnapshots(context.Background(), req); err != nil {
+				if _, err := awsDriver.ListSnapshots(t.Context(), req); err != nil {
 					srvErr, ok := status.FromError(err)
 					if !ok {
 						t.Fatalf("Could not get error status code from error: %v", srvErr)
@@ -3377,7 +3548,7 @@ func TestListSnapshots(t *testing.T) {
 					MaxEntries: 4,
 				}
 
-				ctx := context.Background()
+				ctx := t.Context()
 				mockCtl := gomock.NewController(t)
 				defer mockCtl.Finish()
 				mockCloud := cloud.NewMockCloud(mockCtl)
@@ -3389,7 +3560,7 @@ func TestListSnapshots(t *testing.T) {
 					options:  &Options{},
 				}
 
-				if _, err := awsDriver.ListSnapshots(context.Background(), req); err != nil {
+				if _, err := awsDriver.ListSnapshots(t.Context(), req); err != nil {
 					srvErr, ok := status.FromError(err)
 					if !ok {
 						t.Fatalf("Could not get error status code from error: %v", srvErr)
@@ -3441,6 +3612,16 @@ func TestControllerPublishVolume(t *testing.T) {
 				PublishContext: map[string]string{DevicePathKey: expDevicePath},
 			},
 			errorCode: codes.OK,
+		},
+		{
+			name:             "ResourceExhausted error when attachment limit is exceeded",
+			volumeID:         "vol-test",
+			nodeID:           expInstanceID,
+			volumeCapability: stdVolCap,
+			mockAttach: func(mockCloud *cloud.MockCloud, ctx context.Context, volumeID string, nodeID string) {
+				mockCloud.EXPECT().AttachDisk(gomock.Eq(ctx), gomock.Eq(volumeID), gomock.Eq(expInstanceID)).Return("", cloud.ErrAttachmentLimitExceeded)
+			},
+			errorCode: codes.ResourceExhausted,
 		},
 		{
 			name:             "AttachDisk when volume is already attached to the node",
@@ -3538,7 +3719,7 @@ func TestControllerPublishVolume(t *testing.T) {
 				VolumeCapability: tc.volumeCapability,
 				VolumeId:         tc.volumeID,
 			}
-			ctx := context.Background()
+			ctx := t.Context()
 
 			awsDriver, mockCtl, mockCloud := createControllerService(t)
 			defer mockCtl.Finish()
@@ -3633,7 +3814,7 @@ func TestControllerUnpublishVolume(t *testing.T) {
 				VolumeId: tc.volumeID,
 			}
 
-			ctx := context.Background()
+			ctx := t.Context()
 
 			awsDriver, mockCtl, mockCloud := createControllerService(t)
 			defer mockCtl.Finish()
@@ -3699,7 +3880,7 @@ func TestControllerExpandVolume(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			ctx := context.Background()
+			ctx := t.Context()
 			mockCtl := gomock.NewController(t)
 			defer mockCtl.Finish()
 

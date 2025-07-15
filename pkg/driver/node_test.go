@@ -14,7 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-//nolint:forcetypeassert
 package driver
 
 import (
@@ -32,14 +31,15 @@ import (
 	"github.com/kubernetes-sigs/aws-ebs-csi-driver/pkg/cloud/metadata"
 	"github.com/kubernetes-sigs/aws-ebs-csi-driver/pkg/driver/internal"
 	"github.com/kubernetes-sigs/aws-ebs-csi-driver/pkg/mounter"
-	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/storage/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	k8stypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/fake"
 )
 
 func TestNewNodeService(t *testing.T) {
@@ -1034,7 +1034,7 @@ func TestNodeStageVolume(t *testing.T) {
 				driver.inFlight.Insert("vol-test")
 			}
 
-			_, err := driver.NodeStageVolume(context.Background(), tc.req)
+			_, err := driver.NodeStageVolume(t.Context(), tc.req)
 			if !reflect.DeepEqual(err, tc.expectedErr) {
 				t.Fatalf("Expected error '%v' but got '%v'", tc.expectedErr, err)
 			}
@@ -1059,18 +1059,6 @@ func TestGetVolumesLimit(t *testing.T) {
 			expectedVal: 10,
 		},
 		{
-			name: "sbeDeviceVolumeAttachmentLimit",
-			options: &Options{
-				VolumeAttachLimit: -1,
-			},
-			expectedVal: sbeDeviceVolumeAttachmentLimit,
-			metadataMock: func(ctrl *gomock.Controller) *metadata.MockMetadataService {
-				m := metadata.NewMockMetadataService(ctrl)
-				m.EXPECT().GetRegion().Return("snow")
-				return m
-			},
-		},
-		{
 			name: "t2.medium_volume_attach_limit",
 			options: &Options{
 				VolumeAttachLimit:         -1,
@@ -1079,7 +1067,6 @@ func TestGetVolumesLimit(t *testing.T) {
 			expectedVal: 38,
 			metadataMock: func(ctrl *gomock.Controller) *metadata.MockMetadataService {
 				m := metadata.NewMockMetadataService(ctrl)
-				m.EXPECT().GetRegion().Return("us-west-2")
 				m.EXPECT().GetNumBlockDeviceMappings().Return(0)
 				m.EXPECT().GetInstanceType().Return("t2.medium")
 				return m
@@ -1094,7 +1081,6 @@ func TestGetVolumesLimit(t *testing.T) {
 			expectedVal: 36,
 			metadataMock: func(ctrl *gomock.Controller) *metadata.MockMetadataService {
 				m := metadata.NewMockMetadataService(ctrl)
-				m.EXPECT().GetRegion().Return("us-west-2")
 				m.EXPECT().GetInstanceType().Return("t2.medium")
 				return m
 			},
@@ -1108,7 +1094,6 @@ func TestGetVolumesLimit(t *testing.T) {
 			expectedVal: 23,
 			metadataMock: func(ctrl *gomock.Controller) *metadata.MockMetadataService {
 				m := metadata.NewMockMetadataService(ctrl)
-				m.EXPECT().GetRegion().Return("us-west-2")
 				m.EXPECT().GetInstanceType().Return("m5d.large")
 				m.EXPECT().GetNumBlockDeviceMappings().Return(0)
 				m.EXPECT().GetNumAttachedENIs().Return(3)
@@ -1124,7 +1109,6 @@ func TestGetVolumesLimit(t *testing.T) {
 			expectedVal: 1,
 			metadataMock: func(ctrl *gomock.Controller) *metadata.MockMetadataService {
 				m := metadata.NewMockMetadataService(ctrl)
-				m.EXPECT().GetRegion().Return("us-west-2")
 				m.EXPECT().GetInstanceType().Return("d3en.12xlarge")
 				m.EXPECT().GetNumBlockDeviceMappings().Return(0)
 				m.EXPECT().GetNumAttachedENIs().Return(1)
@@ -1140,7 +1124,6 @@ func TestGetVolumesLimit(t *testing.T) {
 			expectedVal: 1,
 			metadataMock: func(ctrl *gomock.Controller) *metadata.MockMetadataService {
 				m := metadata.NewMockMetadataService(ctrl)
-				m.EXPECT().GetRegion().Return("us-west-2")
 				m.EXPECT().GetInstanceType().Return("d3.8xlarge")
 				m.EXPECT().GetNumBlockDeviceMappings().Return(0)
 				m.EXPECT().GetNumAttachedENIs().Return(1)
@@ -1156,7 +1139,6 @@ func TestGetVolumesLimit(t *testing.T) {
 			expectedVal: 127,
 			metadataMock: func(ctrl *gomock.Controller) *metadata.MockMetadataService {
 				m := metadata.NewMockMetadataService(ctrl)
-				m.EXPECT().GetRegion().Return("us-west-2")
 				m.EXPECT().GetInstanceType().Return("m7i.48xlarge")
 				m.EXPECT().GetNumBlockDeviceMappings().Return(0)
 				return m
@@ -1170,7 +1152,6 @@ func TestGetVolumesLimit(t *testing.T) {
 			expectedVal: 1,
 			metadataMock: func(ctrl *gomock.Controller) *metadata.MockMetadataService {
 				m := metadata.NewMockMetadataService(ctrl)
-				m.EXPECT().GetRegion().Return("us-west-2")
 				m.EXPECT().GetInstanceType().Return("t3.xlarge")
 				m.EXPECT().GetNumAttachedENIs().Return(40)
 				return m
@@ -1185,7 +1166,6 @@ func TestGetVolumesLimit(t *testing.T) {
 			expectedVal: 15,
 			metadataMock: func(ctrl *gomock.Controller) *metadata.MockMetadataService {
 				m := metadata.NewMockMetadataService(ctrl)
-				m.EXPECT().GetRegion().Return("us-west-2")
 				m.EXPECT().GetInstanceType().Return("mac1.metal")
 				m.EXPECT().GetNumBlockDeviceMappings().Return(0)
 				m.EXPECT().GetNumAttachedENIs().Return(1)
@@ -1201,7 +1181,6 @@ func TestGetVolumesLimit(t *testing.T) {
 			expectedVal: 18,
 			metadataMock: func(ctrl *gomock.Controller) *metadata.MockMetadataService {
 				m := metadata.NewMockMetadataService(ctrl)
-				m.EXPECT().GetRegion().Return("us-west-2")
 				m.EXPECT().GetInstanceType().Return("u-12tb1.metal")
 				m.EXPECT().GetNumBlockDeviceMappings().Return(0)
 				m.EXPECT().GetNumAttachedENIs().Return(1)
@@ -1217,7 +1196,6 @@ func TestGetVolumesLimit(t *testing.T) {
 			expectedVal: 24,
 			metadataMock: func(ctrl *gomock.Controller) *metadata.MockMetadataService {
 				m := metadata.NewMockMetadataService(ctrl)
-				m.EXPECT().GetRegion().Return("us-west-2")
 				m.EXPECT().GetInstanceType().Return("g4dn.xlarge")
 				m.EXPECT().GetNumBlockDeviceMappings().Return(0)
 				m.EXPECT().GetNumAttachedENIs().Return(1)
@@ -1233,7 +1211,6 @@ func TestGetVolumesLimit(t *testing.T) {
 			expectedVal: 24,
 			metadataMock: func(ctrl *gomock.Controller) *metadata.MockMetadataService {
 				m := metadata.NewMockMetadataService(ctrl)
-				m.EXPECT().GetRegion().Return("us-west-2")
 				m.EXPECT().GetInstanceType().Return("g4ad.xlarge")
 				m.EXPECT().GetNumBlockDeviceMappings().Return(0)
 				m.EXPECT().GetNumAttachedENIs().Return(1)
@@ -1249,7 +1226,6 @@ func TestGetVolumesLimit(t *testing.T) {
 			expectedVal: 21,
 			metadataMock: func(ctrl *gomock.Controller) *metadata.MockMetadataService {
 				m := metadata.NewMockMetadataService(ctrl)
-				m.EXPECT().GetRegion().Return("us-west-2")
 				m.EXPECT().GetInstanceType().Return("g4dn.12xlarge")
 				m.EXPECT().GetNumBlockDeviceMappings().Return(0)
 				m.EXPECT().GetNumAttachedENIs().Return(1)
@@ -1265,7 +1241,6 @@ func TestGetVolumesLimit(t *testing.T) {
 			expectedVal: 14,
 			metadataMock: func(ctrl *gomock.Controller) *metadata.MockMetadataService {
 				m := metadata.NewMockMetadataService(ctrl)
-				m.EXPECT().GetRegion().Return("us-west-2")
 				m.EXPECT().GetInstanceType().Return("dl1.24xlarge")
 				m.EXPECT().GetNumBlockDeviceMappings().Return(0)
 				m.EXPECT().GetNumAttachedENIs().Return(1)
@@ -1282,7 +1257,6 @@ func TestGetVolumesLimit(t *testing.T) {
 			expectedVal: 8,
 			metadataMock: func(ctrl *gomock.Controller) *metadata.MockMetadataService {
 				m := metadata.NewMockMetadataService(ctrl)
-				m.EXPECT().GetRegion().Return("us-west-2")
 				m.EXPECT().GetInstanceType().Return("g5.48xlarge")
 				m.EXPECT().GetNumBlockDeviceMappings().Return(0)
 				m.EXPECT().GetNumAttachedENIs().Return(1)
@@ -1299,7 +1273,6 @@ func TestGetVolumesLimit(t *testing.T) {
 			expectedVal: 25,
 			metadataMock: func(ctrl *gomock.Controller) *metadata.MockMetadataService {
 				m := metadata.NewMockMetadataService(ctrl)
-				m.EXPECT().GetRegion().Return("us-west-2")
 				m.EXPECT().GetInstanceType().Return("inf1.xlarge")
 				m.EXPECT().GetNumBlockDeviceMappings().Return(0)
 				m.EXPECT().GetNumAttachedENIs().Return(1)
@@ -1316,7 +1289,6 @@ func TestGetVolumesLimit(t *testing.T) {
 			expectedVal: 25,
 			metadataMock: func(ctrl *gomock.Controller) *metadata.MockMetadataService {
 				m := metadata.NewMockMetadataService(ctrl)
-				m.EXPECT().GetRegion().Return("us-west-2")
 				m.EXPECT().GetInstanceType().Return("inf1.2xlarge")
 				m.EXPECT().GetNumBlockDeviceMappings().Return(0)
 				m.EXPECT().GetNumAttachedENIs().Return(1)
@@ -1333,7 +1305,6 @@ func TestGetVolumesLimit(t *testing.T) {
 			expectedVal: 22,
 			metadataMock: func(ctrl *gomock.Controller) *metadata.MockMetadataService {
 				m := metadata.NewMockMetadataService(ctrl)
-				m.EXPECT().GetRegion().Return("us-west-2")
 				m.EXPECT().GetInstanceType().Return("inf1.6xlarge")
 				m.EXPECT().GetNumBlockDeviceMappings().Return(0)
 				m.EXPECT().GetNumAttachedENIs().Return(1)
@@ -1350,7 +1321,6 @@ func TestGetVolumesLimit(t *testing.T) {
 			expectedVal: 10,
 			metadataMock: func(ctrl *gomock.Controller) *metadata.MockMetadataService {
 				m := metadata.NewMockMetadataService(ctrl)
-				m.EXPECT().GetRegion().Return("us-west-2")
 				m.EXPECT().GetInstanceType().Return("inf1.24xlarge")
 				m.EXPECT().GetNumBlockDeviceMappings().Return(0)
 				m.EXPECT().GetNumAttachedENIs().Return(1)
@@ -1771,7 +1741,7 @@ func TestNodePublishVolume(t *testing.T) {
 				driver.inFlight.Insert("vol-test")
 			}
 
-			_, err := driver.NodePublishVolume(context.Background(), tc.req)
+			_, err := driver.NodePublishVolume(t.Context(), tc.req)
 			if !reflect.DeepEqual(err, tc.expectedErr) {
 				t.Fatalf("Expected error '%v' but got '%v'", tc.expectedErr, err)
 			}
@@ -1896,7 +1866,7 @@ func TestNodeUnstageVolume(t *testing.T) {
 				driver.inFlight.Insert("vol-test")
 			}
 
-			_, err := driver.NodeUnstageVolume(context.Background(), tc.req)
+			_, err := driver.NodeUnstageVolume(t.Context(), tc.req)
 			if !reflect.DeepEqual(err, tc.expectedErr) {
 				t.Fatalf("Expected error '%v' but got '%v'", tc.expectedErr, err)
 			}
@@ -1932,7 +1902,7 @@ func TestNodeGetCapabilities(t *testing.T) {
 
 	driver := &NodeService{}
 
-	resp, err := driver.NodeGetCapabilities(context.Background(), req)
+	resp, err := driver.NodeGetCapabilities(t.Context(), req)
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -1960,6 +1930,29 @@ func TestNodeGetInfo(t *testing.T) {
 				m := metadata.NewMockMetadataService(ctrl)
 				m.EXPECT().GetInstanceID().Return("i-1234567890abcdef0")
 				m.EXPECT().GetAvailabilityZone().Return("us-west-2a")
+				m.EXPECT().UpdateMetadata().Return(nil)
+				m.EXPECT().GetOutpostArn().Return(arn.ARN{})
+				return m
+			},
+			expectedResp: &csi.NodeGetInfoResponse{
+				NodeId: "i-1234567890abcdef0",
+				AccessibleTopology: &csi.Topology{
+					Segments: map[string]string{
+						ZoneTopologyKey:          "us-west-2a",
+						WellKnownZoneTopologyKey: "us-west-2a",
+						OSTopologyKey:            runtime.GOOS,
+					},
+				},
+			},
+		},
+		{
+			name: "update_metadata_error",
+			metadataMock: func(ctrl *gomock.Controller) *metadata.MockMetadataService {
+				m := metadata.NewMockMetadataService(ctrl)
+				// When UpdateMedata returns an error, NodeGetInfo should continue execution.
+				m.EXPECT().UpdateMetadata().Return(errors.New("metadata update failed"))
+				m.EXPECT().GetInstanceID().Return("i-1234567890abcdef0")
+				m.EXPECT().GetAvailabilityZone().Return("us-west-2a")
 				m.EXPECT().GetOutpostArn().Return(arn.ARN{})
 				return m
 			},
@@ -1980,6 +1973,7 @@ func TestNodeGetInfo(t *testing.T) {
 				m := metadata.NewMockMetadataService(ctrl)
 				m.EXPECT().GetInstanceID().Return("i-1234567890abcdef0")
 				m.EXPECT().GetAvailabilityZone().Return("us-west-2a")
+				m.EXPECT().UpdateMetadata().Return(nil)
 				m.EXPECT().GetOutpostArn().Return(arn.ARN{
 					Partition: "aws",
 					Service:   "outposts",
@@ -2021,7 +2015,7 @@ func TestNodeGetInfo(t *testing.T) {
 				options:  &Options{},
 			}
 
-			resp, err := driver.NodeGetInfo(context.Background(), &csi.NodeGetInfoRequest{})
+			resp, err := driver.NodeGetInfo(t.Context(), &csi.NodeGetInfoRequest{})
 			if err != nil {
 				t.Fatalf("Unexpected error: %v", err)
 			}
@@ -2110,7 +2104,7 @@ func TestNodeUnpublishVolume(t *testing.T) {
 				driver.inFlight.Insert("vol-test")
 			}
 
-			_, err := driver.NodeUnpublishVolume(context.Background(), tc.req)
+			_, err := driver.NodeUnpublishVolume(t.Context(), tc.req)
 			if !reflect.DeepEqual(err, tc.expectedErr) {
 				t.Fatalf("Expected error '%v' but got '%v'", tc.expectedErr, err)
 			}
@@ -2126,6 +2120,7 @@ func TestNodeExpandVolume(t *testing.T) {
 		metadataMock func(ctrl *gomock.Controller) *metadata.MockMetadataService
 		expectedResp *csi.NodeExpandVolumeResponse
 		expectedErr  error
+		inflight     bool
 	}{
 		{
 			name: "success",
@@ -2318,6 +2313,15 @@ func TestNodeExpandVolume(t *testing.T) {
 			expectedResp: nil,
 			expectedErr:  status.Error(codes.Internal, "failed to get block capacity on path /volume/path: failed to get block size"),
 		},
+		{
+			name: "operation_already_exists",
+			req: &csi.NodeExpandVolumeRequest{
+				VolumeId:   "vol-test",
+				VolumePath: "/staging/path",
+			},
+			expectedErr: status.Error(codes.Aborted, "An operation with the given volume=\"vol-test\" is already in progress"),
+			inflight:    true,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -2338,9 +2342,14 @@ func TestNodeExpandVolume(t *testing.T) {
 			driver := &NodeService{
 				mounter:  mounter,
 				metadata: metadata,
+				inFlight: internal.NewInFlight(),
 			}
 
-			resp, err := driver.NodeExpandVolume(context.Background(), tc.req)
+			if tc.inflight {
+				driver.inFlight.Insert("vol-test")
+			}
+
+			resp, err := driver.NodeExpandVolume(t.Context(), tc.req)
 			if !reflect.DeepEqual(err, tc.expectedErr) {
 				t.Fatalf("Expected error '%v' but got '%v'", tc.expectedErr, err)
 			}
@@ -2369,6 +2378,7 @@ func TestNodeGetVolumeStats(t *testing.T) {
 				m := mounter.NewMockMounter(ctrl)
 				m.EXPECT().PathExists(dir).Return(true, nil)
 				m.EXPECT().IsBlockDevice(gomock.Eq(dir)).Return(false, nil)
+				m.EXPECT().GetVolumeStats(gomock.Eq(dir)).Return(mounter.VolumeStats{}, nil)
 				return m
 			},
 			expectedErr: func(dir string) error {
@@ -2491,7 +2501,7 @@ func TestNodeGetVolumeStats(t *testing.T) {
 				req.VolumePath = "fake-path"
 			}
 
-			_, err := driver.NodeGetVolumeStats(context.TODO(), req)
+			_, err := driver.NodeGetVolumeStats(t.Context(), req)
 
 			if !reflect.DeepEqual(err, tc.expectedErr(dir)) {
 				t.Fatalf("Expected error '%v' but got '%v'", tc.expectedErr(dir), err)
@@ -2504,40 +2514,70 @@ func TestRemoveNotReadyTaint(t *testing.T) {
 	nodeName := "test-node-123"
 	testCases := []struct {
 		name      string
-		setup     func(t *testing.T, mockCtl *gomock.Controller) func() (kubernetes.Interface, error)
+		setup     func(t *testing.T, mockCtl *gomock.Controller) (kubernetes.Interface, *corev1.Node)
 		expResult error
 	}{
 		{
-			name: "failed to get node",
-			setup: func(t *testing.T, mockCtl *gomock.Controller) func() (kubernetes.Interface, error) {
+			name: "checkAllocatable returns error",
+			setup: func(t *testing.T, mockCtl *gomock.Controller) (kubernetes.Interface, *corev1.Node) {
 				t.Helper()
-				t.Setenv("CSI_NODE_NAME", nodeName)
-				getNodeMock, _ := getNodeMock(mockCtl, nodeName, nil, errors.New("Failed to get node!"))
 
-				return func() (kubernetes.Interface, error) {
-					return getNodeMock, nil
+				node := &corev1.Node{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: nodeName,
+					},
 				}
+
+				mockClient := NewMockKubernetesClient(mockCtl)
+				storageV1Mock := NewMockStorageV1Interface(mockCtl)
+				mockClient.EXPECT().StorageV1().Return(storageV1Mock).AnyTimes()
+
+				csiNodesMock := NewMockCSINodeInterface(mockCtl)
+				storageV1Mock.EXPECT().CSINodes().Return(csiNodesMock).Times(1)
+
+				csiNodesMock.EXPECT().
+					Get(gomock.Any(), gomock.Eq(nodeName), gomock.Any()).
+					Return(nil, errors.New("failed to get CSINode")).
+					Times(1)
+
+				return mockClient, node
 			},
-			expResult: errors.New("Failed to get node!"),
+			expResult: fmt.Errorf("isAllocatableSet: failed to get CSINode for %s: failed to get CSINode", nodeName),
 		},
 		{
 			name: "no taints to remove",
-			setup: func(t *testing.T, mockCtl *gomock.Controller) func() (kubernetes.Interface, error) {
+			setup: func(t *testing.T, mockCtl *gomock.Controller) (kubernetes.Interface, *corev1.Node) {
 				t.Helper()
-				t.Setenv("CSI_NODE_NAME", nodeName)
-				getNodeMock, _ := getNodeMock(mockCtl, nodeName, &corev1.Node{}, nil)
 
+				node := &corev1.Node{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: nodeName,
+					},
+					Spec: corev1.NodeSpec{
+						Taints: []corev1.Taint{
+							{
+								Key:    "some-other-taint",
+								Effect: corev1.TaintEffectNoSchedule,
+							},
+							{
+								Key:    "another-taint",
+								Effect: corev1.TaintEffectNoExecute,
+							},
+						},
+					},
+				}
+
+				mockClient := NewMockKubernetesClient(mockCtl)
 				storageV1Mock := NewMockStorageV1Interface(mockCtl)
-				getNodeMock.(*MockKubernetesClient).EXPECT().StorageV1().Return(storageV1Mock).AnyTimes()
+				mockClient.EXPECT().StorageV1().Return(storageV1Mock).AnyTimes()
 
 				csiNodesMock := NewMockCSINodeInterface(mockCtl)
 				storageV1Mock.EXPECT().CSINodes().Return(csiNodesMock).Times(1)
 
 				count := int32(1)
-
 				mockCSINode := &v1.CSINode{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: "test-node-123",
+						Name: nodeName,
 					},
 					Spec: v1.CSINodeSpec{
 						Drivers: []v1.CSINodeDriver{
@@ -2552,22 +2592,20 @@ func TestRemoveNotReadyTaint(t *testing.T) {
 				}
 
 				csiNodesMock.EXPECT().
-					Get(gomock.Any(), gomock.Eq("test-node-123"), gomock.Any()).
+					Get(gomock.Any(), gomock.Eq(nodeName), gomock.Any()).
 					Return(mockCSINode, nil).
 					Times(1)
 
-				return func() (kubernetes.Interface, error) {
-					return getNodeMock, nil
-				}
+				return mockClient, node
 			},
 			expResult: nil,
 		},
 		{
-			name: "failed to patch node",
-			setup: func(t *testing.T, mockCtl *gomock.Controller) func() (kubernetes.Interface, error) {
+			name: "successfully removes taint",
+			setup: func(t *testing.T, mockCtl *gomock.Controller) (kubernetes.Interface, *corev1.Node) {
 				t.Helper()
-				t.Setenv("CSI_NODE_NAME", nodeName)
-				getNodeMock, mockNode := getNodeMock(mockCtl, nodeName, &corev1.Node{
+
+				node := &corev1.Node{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: nodeName,
 					},
@@ -2575,14 +2613,19 @@ func TestRemoveNotReadyTaint(t *testing.T) {
 						Taints: []corev1.Taint{
 							{
 								Key:    AgentNotReadyNodeTaintKey,
+								Effect: corev1.TaintEffectNoSchedule,
+							},
+							{
+								Key:    "some-other-taint",
 								Effect: corev1.TaintEffectNoExecute,
 							},
 						},
 					},
-				}, nil)
+				}
+				mockClient := NewMockKubernetesClient(mockCtl)
 
 				storageV1Mock := NewMockStorageV1Interface(mockCtl)
-				getNodeMock.(*MockKubernetesClient).EXPECT().StorageV1().Return(storageV1Mock).AnyTimes()
+				mockClient.EXPECT().StorageV1().Return(storageV1Mock).AnyTimes()
 
 				csiNodesMock := NewMockCSINodeInterface(mockCtl)
 				storageV1Mock.EXPECT().CSINodes().Return(csiNodesMock).Times(1)
@@ -2595,8 +2638,7 @@ func TestRemoveNotReadyTaint(t *testing.T) {
 					Spec: v1.CSINodeSpec{
 						Drivers: []v1.CSINodeDriver{
 							{
-								Name:   DriverName,
-								NodeID: nodeName,
+								Name: DriverName,
 								Allocatable: &v1.VolumeNodeResources{
 									Count: &count,
 								},
@@ -2610,267 +2652,145 @@ func TestRemoveNotReadyTaint(t *testing.T) {
 					Return(mockCSINode, nil).
 					Times(1)
 
-				mockNode.EXPECT().
-					Patch(gomock.Any(), gomock.Eq(nodeName), gomock.Any(), gomock.Any(), gomock.Any()).
-					Return(nil, errors.New("Failed to patch node!")).
+				coreV1Mock := NewMockCoreV1Interface(mockCtl)
+				mockClient.EXPECT().CoreV1().Return(coreV1Mock).AnyTimes()
+
+				nodesMock := NewMockNodeInterface(mockCtl)
+				coreV1Mock.EXPECT().Nodes().Return(nodesMock).Times(1)
+
+				nodesMock.EXPECT().
+					Patch(
+						gomock.Any(),
+						gomock.Eq(nodeName),
+						gomock.Eq(k8stypes.JSONPatchType),
+						gomock.Any(),
+						gomock.Any(),
+					).
+					Return(node, nil).
 					Times(1)
 
-				return func() (kubernetes.Interface, error) {
-					return getNodeMock, nil
-				}
-			},
-			expResult: errors.New("Failed to patch node!"),
-		},
-		{
-			name: "success",
-			setup: func(t *testing.T, mockCtl *gomock.Controller) func() (kubernetes.Interface, error) {
-				t.Helper()
-				t.Setenv("CSI_NODE_NAME", nodeName)
-				getNodeMock, mockNode := getNodeMock(mockCtl, nodeName, &corev1.Node{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: nodeName,
-					},
-					Spec: corev1.NodeSpec{
-						Taints: []corev1.Taint{
-							{
-								Key:    AgentNotReadyNodeTaintKey,
-								Effect: corev1.TaintEffectNoSchedule,
-							},
-						},
-					},
-				}, nil)
-
-				storageV1Mock := NewMockStorageV1Interface(mockCtl)
-				getNodeMock.(*MockKubernetesClient).EXPECT().StorageV1().Return(storageV1Mock).AnyTimes()
-
-				csiNodesMock := NewMockCSINodeInterface(mockCtl)
-				storageV1Mock.EXPECT().CSINodes().Return(csiNodesMock).Times(1)
-
-				count := int32(1)
-				mockCSINode := &v1.CSINode{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: nodeName,
-					},
-					Spec: v1.CSINodeSpec{
-						Drivers: []v1.CSINodeDriver{
-							{
-								Name:   DriverName,
-								NodeID: nodeName,
-								Allocatable: &v1.VolumeNodeResources{
-									Count: &count,
-								},
-							},
-						},
-					},
-				}
-
-				csiNodesMock.EXPECT().
-					Get(gomock.Any(), gomock.Eq(nodeName), gomock.Any()).
-					Return(mockCSINode, nil).
-					Times(1)
-
-				mockNode.EXPECT().
-					Patch(gomock.Any(), gomock.Eq(nodeName), gomock.Any(), gomock.Any(), gomock.Any()).
-					Return(nil, nil).
-					Times(1)
-
-				return func() (kubernetes.Interface, error) {
-					return getNodeMock, nil
-				}
+				return mockClient, node
 			},
 			expResult: nil,
 		},
-		{
-			name: "failed to get CSINode",
-			setup: func(t *testing.T, mockCtl *gomock.Controller) func() (kubernetes.Interface, error) {
-				t.Helper()
-				t.Setenv("CSI_NODE_NAME", nodeName)
-				getNodeMock, _ := getNodeMock(mockCtl, nodeName, &corev1.Node{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: nodeName,
-					},
-					Spec: corev1.NodeSpec{
-						Taints: []corev1.Taint{
-							{
-								Key:    AgentNotReadyNodeTaintKey,
-								Effect: corev1.TaintEffectNoSchedule,
-							},
-						},
-					},
-				}, nil)
-
-				storageV1Mock := NewMockStorageV1Interface(mockCtl)
-				getNodeMock.(*MockKubernetesClient).EXPECT().StorageV1().Return(storageV1Mock).AnyTimes()
-
-				csiNodesMock := NewMockCSINodeInterface(mockCtl)
-				storageV1Mock.EXPECT().CSINodes().Return(csiNodesMock).Times(1)
-
-				csiNodesMock.EXPECT().
-					Get(gomock.Any(), gomock.Eq(nodeName), gomock.Any()).
-					Return(nil, errors.New("Failed to get CSINode")).
-					Times(1)
-
-				return func() (kubernetes.Interface, error) {
-					return getNodeMock, nil
-				}
-			},
-			expResult: fmt.Errorf("isAllocatableSet: failed to get CSINode for %s: Failed to get CSINode", nodeName),
-		},
-		{
-			name: "allocatable value not set for driver on node",
-			setup: func(t *testing.T, mockCtl *gomock.Controller) func() (kubernetes.Interface, error) {
-				t.Helper()
-				t.Setenv("CSI_NODE_NAME", nodeName)
-				getNodeMock, _ := getNodeMock(mockCtl, nodeName, &corev1.Node{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: nodeName,
-					},
-					Spec: corev1.NodeSpec{
-						Taints: []corev1.Taint{
-							{
-								Key:    AgentNotReadyNodeTaintKey,
-								Effect: corev1.TaintEffectNoSchedule,
-							},
-						},
-					},
-				}, nil)
-
-				storageV1Mock := NewMockStorageV1Interface(mockCtl)
-				getNodeMock.(*MockKubernetesClient).EXPECT().StorageV1().Return(storageV1Mock).AnyTimes()
-
-				csiNodesMock := NewMockCSINodeInterface(mockCtl)
-				storageV1Mock.EXPECT().CSINodes().Return(csiNodesMock).Times(1)
-
-				mockCSINode := &v1.CSINode{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: nodeName,
-					},
-					Spec: v1.CSINodeSpec{
-						Drivers: []v1.CSINodeDriver{
-							{
-								Name:   DriverName,
-								NodeID: nodeName,
-							},
-						},
-					},
-				}
-
-				csiNodesMock.EXPECT().
-					Get(gomock.Any(), gomock.Eq(nodeName), gomock.Any()).
-					Return(mockCSINode, nil).
-					Times(1)
-
-				return func() (kubernetes.Interface, error) {
-					return getNodeMock, nil
-				}
-			},
-			expResult: fmt.Errorf("isAllocatableSet: allocatable value not set for driver on node %s", nodeName),
-		},
-		{
-			name: "driver not found on node",
-			setup: func(t *testing.T, mockCtl *gomock.Controller) func() (kubernetes.Interface, error) {
-				t.Helper()
-				t.Setenv("CSI_NODE_NAME", nodeName)
-				getNodeMock, _ := getNodeMock(mockCtl, nodeName, &corev1.Node{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: nodeName,
-					},
-					Spec: corev1.NodeSpec{
-						Taints: []corev1.Taint{
-							{
-								Key:    AgentNotReadyNodeTaintKey,
-								Effect: corev1.TaintEffectNoSchedule,
-							},
-						},
-					},
-				}, nil)
-
-				storageV1Mock := NewMockStorageV1Interface(mockCtl)
-				getNodeMock.(*MockKubernetesClient).EXPECT().StorageV1().Return(storageV1Mock).AnyTimes()
-
-				csiNodesMock := NewMockCSINodeInterface(mockCtl)
-				storageV1Mock.EXPECT().CSINodes().Return(csiNodesMock).Times(1)
-
-				mockCSINode := &v1.CSINode{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: nodeName,
-					},
-					Spec: v1.CSINodeSpec{},
-				}
-
-				csiNodesMock.EXPECT().
-					Get(gomock.Any(), gomock.Eq(nodeName), gomock.Any()).
-					Return(mockCSINode, nil).
-					Times(1)
-
-				return func() (kubernetes.Interface, error) {
-					return getNodeMock, nil
-				}
-			},
-			expResult: fmt.Errorf("isAllocatableSet: driver not found on node %s", nodeName),
-		},
 	}
+
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			mockCtl := gomock.NewController(t)
 			defer mockCtl.Finish()
 
-			k8sClientGetter := tc.setup(t, mockCtl)
-			client, err := k8sClientGetter()
-			if err != nil {
-				t.Fatalf("Unexpected error: %v", err)
-			}
-			result := removeNotReadyTaint(client)
+			client, node := tc.setup(t, mockCtl)
+			result := removeNotReadyTaint(t.Context(), client, node)
 
-			if (result == nil) != (tc.expResult == nil) {
-				t.Fatalf("expected %v, got %v", tc.expResult, result)
-			}
-			if result != nil && tc.expResult != nil {
+			if tc.expResult == nil {
+				if result != nil {
+					t.Fatalf("expected no error, got %v", result)
+				}
+			} else {
+				if result == nil {
+					t.Fatalf("expected error %v, got nil", tc.expResult)
+				}
 				if result.Error() != tc.expResult.Error() {
-					t.Fatalf("Expected error message `%v`, got `%v`", tc.expResult.Error(), result.Error())
+					t.Fatalf("expected error %v, got %v", tc.expResult, result)
 				}
 			}
 		})
 	}
 }
 
-func TestRemoveTaintInBackground(t *testing.T) {
-	t.Run("Successful taint removal", func(t *testing.T) {
-		mockRemovalCount := 0
-		mockRemovalFunc := func(_ kubernetes.Interface) error {
-			mockRemovalCount += 1
-			if mockRemovalCount == 3 {
-				return nil
-			} else {
-				return errors.New("Taint removal failed!")
+func TestStartNotReadyTaintWatcher(t *testing.T) {
+	const nodeName = "ip-10-0-0-1"
+	t.Setenv("CSI_NODE_NAME", nodeName)
+
+	tests := []struct {
+		name          string
+		seedWithTaint bool
+		addTaintLater bool
+		expectPatched bool
+	}{
+		{
+			name:          "taint-present-at-startup",
+			seedWithTaint: true,
+			expectPatched: true,
+		},
+		{
+			name:          "taint-added-later",
+			addTaintLater: true,
+			expectPatched: true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			node := &corev1.Node{ObjectMeta: metav1.ObjectMeta{Name: nodeName}}
+			if tc.seedWithTaint {
+				node.Spec.Taints = []corev1.Taint{{
+					Key:    AgentNotReadyNodeTaintKey,
+					Value:  "true",
+					Effect: corev1.TaintEffectNoSchedule,
+				}}
 			}
-		}
-		removeTaintInBackground(nil, taintRemovalBackoff, mockRemovalFunc)
-		assert.Equal(t, 3, mockRemovalCount)
-	})
 
-	t.Run("Retries exhausted", func(t *testing.T) {
-		mockRemovalCount := 0
-		mockRemovalFunc := func(_ kubernetes.Interface) error {
-			mockRemovalCount += 1
-			return errors.New("Taint removal failed!")
-		}
-		removeTaintInBackground(nil, wait.Backoff{
-			Steps:    5,
-			Duration: 1 * time.Millisecond,
-		}, mockRemovalFunc)
-		assert.Equal(t, 5, mockRemovalCount)
-	})
-}
+			count := int32(1)
+			csiNode := &v1.CSINode{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: nodeName,
+				},
+				Spec: v1.CSINodeSpec{
+					Drivers: []v1.CSINodeDriver{
+						{
+							Name: DriverName,
+							Allocatable: &v1.VolumeNodeResources{
+								Count: &count,
+							},
+						},
+					},
+				},
+			}
 
-func getNodeMock(mockCtl *gomock.Controller, nodeName string, returnNode *corev1.Node, returnError error) (kubernetes.Interface, *MockNodeInterface) {
-	mockClient := NewMockKubernetesClient(mockCtl)
-	mockCoreV1 := NewMockCoreV1Interface(mockCtl)
-	mockNode := NewMockNodeInterface(mockCtl)
+			client := fake.NewSimpleClientset(node, csiNode)
 
-	mockClient.EXPECT().CoreV1().Return(mockCoreV1).MinTimes(1)
-	mockCoreV1.EXPECT().Nodes().Return(mockNode).MinTimes(1)
-	mockNode.EXPECT().Get(gomock.Any(), gomock.Eq(nodeName), gomock.Any()).Return(returnNode, returnError).MinTimes(1)
+			startNotReadyTaintWatcher(client, 1*time.Second)
 
-	return mockClient, mockNode
+			if tc.addTaintLater {
+				time.AfterFunc(5*time.Millisecond, func() {
+					nodeCopy := node.DeepCopy()
+					nodeCopy.Spec.Taints = []corev1.Taint{{
+						Key:    AgentNotReadyNodeTaintKey,
+						Value:  "true",
+						Effect: corev1.TaintEffectNoSchedule,
+					}}
+					_, _ = client.CoreV1().Nodes().
+						Update(t.Context(), nodeCopy, metav1.UpdateOptions{})
+				})
+			}
+
+			patched := false
+			err := wait.PollUntilContextTimeout(
+				t.Context(),
+				5*time.Millisecond,
+				100*time.Millisecond,
+				true,
+				func(ctx context.Context) (bool, error) {
+					updated, _ := client.CoreV1().Nodes().
+						Get(ctx, nodeName, metav1.GetOptions{})
+					for _, taint := range updated.Spec.Taints {
+						if taint.Key == AgentNotReadyNodeTaintKey {
+							return false, nil // still tainted
+						}
+					}
+					patched = true
+					return true, nil
+				},
+			)
+
+			if tc.expectPatched && (err != nil || !patched) {
+				t.Fatalf("taint was not removed before timeout: %v", err)
+			}
+			if !tc.expectPatched && patched {
+				t.Fatalf("taint unexpectedly removed")
+			}
+		})
+	}
 }

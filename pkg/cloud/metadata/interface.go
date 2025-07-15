@@ -30,9 +30,10 @@ type MetadataService interface {
 	GetNumAttachedENIs() int
 	GetNumBlockDeviceMappings() int
 	GetOutpostArn() arn.ARN
+	UpdateMetadata() error
 }
 
-type EC2Metadata interface {
+type IMDS interface {
 	GetDynamicData(ctx context.Context, params *imds.GetDynamicDataInput, optFns ...func(*imds.Options)) (*imds.GetDynamicDataOutput, error)
 	GetIAMInfo(ctx context.Context, params *imds.GetIAMInfoInput, optFns ...func(*imds.Options)) (*imds.GetIAMInfoOutput, error)
 	GetInstanceIdentityDocument(ctx context.Context, params *imds.GetInstanceIdentityDocumentInput, optFns ...func(*imds.Options)) (*imds.GetInstanceIdentityDocumentOutput, error)

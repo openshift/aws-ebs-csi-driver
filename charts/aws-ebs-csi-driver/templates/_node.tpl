@@ -83,6 +83,9 @@ spec:
             {{- with .Values.node.volumeAttachLimit }}
             - --volume-attach-limit={{ . }}
             {{- end }}
+            {{- with .Values.node.metadataSources }}
+            - --metadata-sources={{ . }}
+            {{- end }}
             {{- if .Values.node.legacyXFS }}
             - --legacy-xfs=true
             {{- end}}
@@ -136,6 +139,7 @@ spec:
               mountPath: /sys/fs/selinux
             - name: selinux-config
               mountPath: /etc/selinux/config
+              readOnly: true
             {{- end }}
           {{- with .Values.node.volumeMounts }}
           {{- toYaml . | nindent 12 }}
@@ -259,12 +263,10 @@ spec:
           hostPath:
             path: /sys/fs/selinux
             type: Directory
-            readOnly: true
         - name: selinux-config
           hostPath:
             path: /etc/selinux/config
             type: File
-            readOnly: true
         {{- end }}
         - name: probe-dir
           {{- if .Values.node.probeDirVolume }}

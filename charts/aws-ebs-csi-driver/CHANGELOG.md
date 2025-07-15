@@ -1,5 +1,107 @@
 # Helm chart
 
+## v2.45.1
+- Bump csi-sidecars to new eksbuild versions to fix livenessprobe
+
+## v2.45.0
+
+### Feature
+
+- Bump driver version to `v1.45.0`.
+- Switch sidecar image repositories from deprecated `public.ecr.aws/eks-distro/kubernetes-csi` to `public.ecr.aws/csi-components/` ([#2518](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2518), [@AndrewSirenko](https://github.com/AndrewSirenko))
+
+## v2.44.0
+
+### Feature
+
+- Bump driver version to `v1.44.0`.
+
+## v2.43.0
+
+### Feature
+
+- Bump driver version to `v1.43.0`.
+
+## v2.42.0
+
+### Feature
+
+- Set internal traffic policy to local for node metric service ([#2432](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2432), [@ElijahQuinones](https://github.com/ElijahQuinones))
+
+## v2.41.0
+
+### Feature
+
+- Add `enabled` flag to schema for use in sub-charting ([#2361](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2361), [@ConnorJC3](https://github.com/ConnorJC3))
+- Add Prometheus Annotations to the Node Service ([#2363](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2363), [@mdzraf](https://github.com/mdzraf))
+
+### Bug or regression
+
+- Prevent nil pointer deref in Helm chart when `node.enableWindows` and `node.otelTracing` are both set ([#2357](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2357), [@ConnorJC3](https://github.com/ConnorJC3))
+
+## v2.40.3
+
+### Feature
+
+- Upgrade csi-attacher to v4.8.1, csi-snapshotter to v8.2.1, csi-resizer to v1.13.2
+
+### Bug or regression
+
+- Fix incorrect schema entry for controller.podDisruptionBudget.unhealthyPodEvictionPolicy ([#2389](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2389),[@jamesalford](https://github.com/jamesalford))
+
+## v2.40.2
+
+### Bug or Regression
+
+- Add enabled flag to schema for sub-charting ([#2359](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2359), [@ConnorJC3](https://github.com/ConnorJC3))
+
+## v2.40.1
+
+### Bug or Regression
+
+- Prevent null deref when enableWindows and otelTracing enabled on node ([#2357](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2357), [@ConnorJC3](https://github.com/ConnorJC3)) 
+- Fix incorrect properties validation in Helm schema ([#2356](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2356), [@ConnorJC3](https://github.com/ConnorJC3))
+
+## v2.40.0
+
+#### Default for enable windows changed
+
+The default value for enableWindows has been changed from false to true. This change makes it so the node damemonset will be scheduled on windows nodes by default. If you wish to not have the node daemonset scheduled on your windows nodes you will need to change enableWindows to false.
+
+### Feature
+
+- Add values.schema.json to validate changes in values.yaml. ([#2286](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2286), [@ElijahQuinones](https://github.com/ElijahQuinones))
+
+### Bug or Regression
+
+- Fix helm regression with values.schema.yaml. ([#2322](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2322), [@ElijahQuinones](https://github.com/ElijahQuinones))
+- `global` has been added to the values schema, allowing aws-ebs-csi-driver to be used in a Helm sub chart ([#2321](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2321), [@kejne](https://github.com/kejne))
+- Reconcile some differences between helm chart and values.schema.json ([#2335](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2335), [@ElijahQuinones](https://github.com/ElijahQuinones))
+- Fix helm regression with a1CompatibilityDaemonSet=true ([#2316](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2316), [@AndrewSirenko](https://github.com/AndrewSirenko))
+
+## v2.39.3
+
+### Urgent Upgrade Notes
+
+Please upgrade from v2.39.2 directly to v2.39.3 to avoid upgrade failures if you are using this chart as a subchart.
+
+### Bug or Regression
+- Fix sub-charting by removing values schema ([#2322](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2322), [@ElijahQuinones]((https://github.com/ElijahQuinones)
+
+## v2.39.2
+
+### Urgent Upgrade Notes
+
+Please upgrade from v2.38.1 directly to v2.39.2 to avoid upgrade failures if you are relying on `a1CompatibilityDaemonSet`. 
+
+### Bug or Regression
+- Fix helm regression when `a1CompatibilityDaemonSet=true` ([#2316](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2316), [@AndrewSirenko](https://github.com/AndrewSirenko))
+
+## v2.39.1
+
+### Bug or Regression
+- Fix `node.selinux` to properly set SELinux-specific mounts as ReadOnly ([#2311](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2311), [@AndrewSirenko](https://github.com/AndrewSirenko))
+
 ## v2.39.0
 
 ### Feature

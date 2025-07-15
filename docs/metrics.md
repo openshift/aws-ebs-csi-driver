@@ -23,6 +23,15 @@ Installing the Prometheus Operator and enabling metrics will deploy a [Service](
 
 The EBS CSI Driver will emit [AWS API](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/OperationList-query.html) metrics to the following TCP endpoint: `0.0.0.0:3301/metrics` if `controller.enableMetrics: true` has been configured in the Helm chart.
 
+The following metrics are currently supported:
+
+| Metric name | Metric type | Description | Labels                                                                                                                                                                     |
+|-------------|-------------|-------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|aws_ebs_csi_api_request_duration_seconds|Histogram|Duration by request type in seconds| request=\<AWS SDK API Request Type\> <br/> le=\<Time In Seconds\>                                                                                                          | 
+|aws_ebs_csi_api_request_errors_total|Counter|Total number of errors by error code and request type| request=\<AWS SDK API Request Type\> <br/> error=\<Error Code\>                                                                                                            | 
+|aws_ebs_csi_api_request_throttles_total|Counter|Total number of throttled requests per request type| request=\<AWS SDK API Request Type\>                                                                                                                                       |
+|aws_ebs_csi_ec2_detach_pending_seconds|Counter|Number of seconds csi driver has been waiting for volume to be detached from instance| attachment_state=<Last observed attachment state\><br/>volume_id=<EBS Volume ID of associated volume\><br/>instance_id=<EC2 Instance ID associated with detaching volume\> |
+
 The metrics will appear in the following format: 
 ```sh
 aws_ebs_csi_api_request_duration_seconds_bucket{request="AttachVolume",le="0.005"} 0
@@ -41,11 +50,12 @@ aws_ebs_csi_api_request_duration_seconds_sum{request="AttachVolume"} 0.547694574
 aws_ebs_csi_api_request_duration_seconds_count{request="AttachVolume"} 1
 ...
 ```
+By default, the driver deploys 2 replicas of the controller pod. However, each CSI sidecar (such as the attacher and resizer) uses a leader election mechanism to designate one leader pod per sidecar.
 
-To manually scrape AWS metrics: 
+To manually scrape metrics for specific operations, you must identify and target the leader pod for the relevant sidecar. As an example, to manually scrape metrics for AttachVolume operations (handled by the external attacher), follow these steps:
 ```sh
-$ export ebs_csi_controller=$(kubectl get lease -n kube-system ebs-csi-aws-com -o=jsonpath="{.spec.holderIdentity}")
-$ kubectl port-forward $ebs_csi_controller 3301:3301 -n kube-system
+$ export ebs_csi_attacher_leader=$(kubectl get lease external-attacher-leader-ebs-csi-aws-com -n kube-system -o=jsonpath='{.spec.holderIdentity}')
+$ kubectl port-forward $ebs_csi_attacher_leader 3301:3301 -n kube-system &
 $ curl 127.0.0.1:3301/metrics
 ```
 
@@ -55,20 +65,20 @@ The EBS CSI Driver will emit [container storage Interface managed devices metric
 
 The metrics will appear in the following format: 
 ```sh
-nvme_collector_duration_seconds_bucket{instance_id="{instance-id}",le="0.001"} 0
-nvme_collector_duration_seconds_bucket{instance_id="{instance-id}",le="0.0025"} 0
-nvme_collector_duration_seconds_bucket{instance_id="{instance-id}",le="0.005"} 1
-nvme_collector_duration_seconds_bucket{instance_id="{instance-id}",le="0.01"} 1
-nvme_collector_duration_seconds_bucket{instance_id="{instance-id}",le="0.025"} 1
-nvme_collector_duration_seconds_bucket{instance_id="instance-id}",le="0.05"} 1
-nvme_collector_duration_seconds_bucket{instance_id="{instance-id}",le="0.1"} 1
-nvme_collector_duration_seconds_bucket{instance_id="{instance-id}",le="0.25"} 1
-nvme_collector_duration_seconds_bucket{instance_id="{instance-id}",le="0.5"} 1
-nvme_collector_duration_seconds_bucket{instance_id="{instance-id}",le="1"} 1
-nvme_collector_duration_seconds_bucket{instance_id="instance-id}",le="2.5"} 1
-nvme_collector_duration_seconds_bucket{instance_id="instance-id}",le="5"} 1
-nvme_collector_duration_seconds_bucket{instance_id="{instance-id}",le="10"} 1
-nvme_collector_duration_seconds_bucket{instance_id="{instance-id}",le="+Inf"} 1
+aws_ebs_csi_nvme_collector_duration_seconds_bucket{instance_id="{instance-id}",le="0.001"} 0
+aws_ebs_csi_nvme_collector_duration_seconds_bucket{instance_id="{instance-id}",le="0.0025"} 0
+aws_ebs_csi_nvme_collector_duration_seconds_bucket{instance_id="{instance-id}",le="0.005"} 1
+aws_ebs_csi_nvme_collector_duration_seconds_bucket{instance_id="{instance-id}",le="0.01"} 1
+aws_ebs_csi_nvme_collector_duration_seconds_bucket{instance_id="{instance-id}",le="0.025"} 1
+aws_ebs_csi_nvme_collector_duration_seconds_bucket{instance_id="instance-id}",le="0.05"} 1
+aws_ebs_csi_nvme_collector_duration_seconds_bucket{instance_id="{instance-id}",le="0.1"} 1
+aws_ebs_csi_nvme_collector_duration_seconds_bucket{instance_id="{instance-id}",le="0.25"} 1
+aws_ebs_csi_nvme_collector_duration_seconds_bucket{instance_id="{instance-id}",le="0.5"} 1
+aws_ebs_csi_nvme_collector_duration_seconds_bucket{instance_id="{instance-id}",le="1"} 1
+aws_ebs_csi_nvme_collector_duration_seconds_bucket{instance_id="instance-id}",le="2.5"} 1
+aws_ebs_csi_nvme_collector_duration_seconds_bucket{instance_id="instance-id}",le="5"} 1
+aws_ebs_csi_nvme_collector_duration_seconds_bucket{instance_id="{instance-id}",le="10"} 1
+aws_ebs_csi_nvme_collector_duration_seconds_bucket{instance_id="{instance-id}",le="+Inf"} 1
 ...
 ```
 

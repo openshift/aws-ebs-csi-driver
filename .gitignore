@@ -17,9 +17,6 @@ coverage.html
 .vagrant
 Vagrantfile
 
-# For Konflux
-!vendor/github.com/mistifyio/go-zfs/Vagrantfile
-
 # vim
 *.swp
 

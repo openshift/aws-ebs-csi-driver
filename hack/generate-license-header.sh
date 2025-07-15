@@ -22,6 +22,10 @@ current_year=$(date +%Y)
 # Carry: do not add license to files in vendor/ directory
 find . -type d \( -name "deploy" -o -name "charts" -o -name "vendor" \) -prune -o -type f \( -name "*.go" -o -name "*.sh" -o -name "*.yaml" -o -name "*.yml" \) -print | while read -r file; do
   case "$file" in
+  **/mock_*.go)
+    # Do not add license to auto-generated mock files
+    continue
+    ;;
   *.go)
     comment_prefix="//"
     ;;

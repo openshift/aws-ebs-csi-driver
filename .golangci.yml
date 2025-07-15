@@ -1,4 +1,4 @@
-# Copyright 2024 The Kubernetes Authors.
+# Copyright 2025 The Kubernetes Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the 'License');
 # you may not use this file except in compliance with the License.
@@ -37,6 +37,9 @@ linters-settings:
     dot-import-whitelist:
       - "github.com/onsi/gomega"
       - "github.com/onsi/ginkgo/v2"
+  usetesting:
+    # Turning check for os.MkdirTemp() off as t.TempDir() is not sufficient for mounter and sanity tests in their current state.
+    os-mkdir-temp: false 
 linters:
   enable-all: true
   disable:
@@ -45,14 +48,11 @@ linters:
     - cyclop # Cyclomatic complexity
     - depguard # We don't guard against dependencies
     - dupl # Tracks code duplication. Too much duplication in tests. False positives in non-tests
-    - execinquery # Deprecated but enabled-by-default
     - exhaustruct # Explicitly instantiating all structs is painful for K8s structs
-    - exportloopref # Deprecated but enabled-by-default
     - funlen # Long func names happen
     - gocognit # Cognitive complexity
     - gocyclo # Cyclomatic complexity
     - gofumpt # We don't rely on gofumpt
-    - gomnd # Magic Number Detection. Many false positives.
     - gomoddirectives # We need `replace` in `go.mod`
     - interfacebloat # No more than 10 interface methods
     - ireturn # Accept interfaces return concrete types
@@ -71,4 +71,3 @@ linters:
     - godox # Do not allow TODOs
     - nonamedreturns # Need to nolint/refactor a few places our code
     - paralleltest # There are many tests that aren't parallelized
-    - usetesting # TODO consider adding usetesting linter

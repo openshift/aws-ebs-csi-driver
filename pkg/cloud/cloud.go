@@ -36,6 +36,7 @@ import (
 	"github.com/kubernetes-sigs/aws-ebs-csi-driver/pkg/batcher"
 	dm "github.com/kubernetes-sigs/aws-ebs-csi-driver/pkg/cloud/devicemanager"
 	"github.com/kubernetes-sigs/aws-ebs-csi-driver/pkg/expiringcache"
+	"github.com/kubernetes-sigs/aws-ebs-csi-driver/pkg/metrics"
 	"github.com/kubernetes-sigs/aws-ebs-csi-driver/pkg/util"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/klog/v2"
@@ -55,10 +56,6 @@ const (
 	VolumeTypeSC1 = "sc1"
 	// VolumeTypeST1 represents a throughput-optimized HDD type of volume.
 	VolumeTypeST1 = "st1"
-	// VolumeTypeSBG1 represents a capacity-optimized HDD type of volume. Only for SBE devices.
-	VolumeTypeSBG1 = "sbg1"
-	// VolumeTypeSBP1 represents a performance-optimized SSD type of volume. Only for SBE devices.
-	VolumeTypeSBP1 = "sbp1"
 	// VolumeTypeStandard represents a previous type of  volume.
 	VolumeTypeStandard = "standard"
 )
@@ -72,7 +69,7 @@ const (
 	io2MinTotalIOPS             = 100
 	io2MaxTotalIOPS             = 64000
 	io2BlockExpressMaxTotalIOPS = 256000
-	io2MaxIOPSPerGB             = 500
+	io2MaxIOPSPerGB             = 1000
 	gp3MaxTotalIOPS             = 16000
 	gp3MinTotalIOPS             = 3000
 	gp3MaxIOPSPerGB             = 500
@@ -91,9 +88,7 @@ var (
 )
 
 const (
-	volumeDetachedState = "detached"
-	volumeAttachedState = "attached"
-	cacheForgetDelay    = 1 * time.Hour
+	cacheForgetDelay = 1 * time.Hour
 )
 
 // AWS provisioning limits.
@@ -176,6 +171,9 @@ var (
 
 	// ErrInvalidRequest is returned if parameters were rejected by driver.
 	ErrInvalidRequest = errors.New("invalid request")
+
+	// ErrAttachmentLimitExceeded is returned if the attachment limit is exceeded.
+	ErrAttachmentLimitExceeded = errors.New("attachment limit exceeded")
 )
 
 // Set during build time via -ldflags.
@@ -218,8 +216,9 @@ type DiskOptions struct {
 	MultiAttachEnabled     bool
 	// KmsKeyID represents a fully qualified resource name to the key to use for encryption.
 	// example: arn:aws:kms:us-east-1:012345678910:key/abcd1234-a123-456a-a12b-a123b4cd56ef
-	KmsKeyID   string
-	SnapshotID string
+	KmsKeyID                 string
+	SnapshotID               string
+	VolumeInitializationRate int32
 }
 
 // ModifyDiskOptions represents parameters to modify an EBS volume.
@@ -547,7 +546,7 @@ func (c *cloud) CreateDisk(ctx context.Context, volumeName string, diskOptions *
 	}
 
 	switch createType {
-	case VolumeTypeGP2, VolumeTypeSC1, VolumeTypeST1, VolumeTypeSBG1, VolumeTypeSBP1, VolumeTypeStandard:
+	case VolumeTypeGP2, VolumeTypeSC1, VolumeTypeST1, VolumeTypeStandard:
 	case VolumeTypeIO1:
 		maxIops = io1MaxTotalIOPS
 		minIops = io1MinTotalIOPS
@@ -624,10 +623,7 @@ func (c *cloud) CreateDisk(ctx context.Context, volumeName string, diskOptions *
 		VolumeType:         types.VolumeType(createType),
 		Encrypted:          aws.Bool(diskOptions.Encrypted),
 		MultiAttachEnabled: aws.Bool(diskOptions.MultiAttachEnabled),
-	}
-
-	if !util.IsSBE(zone) {
-		requestInput.TagSpecifications = []types.TagSpecification{tagSpec}
+		TagSpecifications:  []types.TagSpecification{tagSpec},
 	}
 
 	// EBS doesn't handle empty outpost arn, so we have to include it only when it's non-empty
@@ -648,6 +644,9 @@ func (c *cloud) CreateDisk(ctx context.Context, volumeName string, diskOptions *
 	snapshotID := diskOptions.SnapshotID
 	if len(snapshotID) > 0 {
 		requestInput.SnapshotId = aws.String(snapshotID)
+	}
+	if diskOptions.VolumeInitializationRate > 0 {
+		requestInput.VolumeInitializationRate = aws.Int32(diskOptions.VolumeInitializationRate)
 	}
 
 	response, err := c.ec2.CreateVolume(ctx, requestInput, func(o *ec2.Options) {
@@ -682,26 +681,7 @@ func (c *cloud) CreateDisk(ctx context.Context, volumeName string, diskOptions *
 		return nil, fmt.Errorf("timed out waiting for volume to create: %w", err)
 	}
 
-	outpostArn := aws.ToString(response.OutpostArn)
-	var resources []string
-	if util.IsSBE(zone) {
-		requestTagsInput := &ec2.CreateTagsInput{
-			Resources: append(resources, volumeID),
-			Tags:      tags,
-		}
-		_, err := c.ec2.CreateTags(ctx, requestTagsInput)
-		if err != nil {
-			// To avoid leaking volume, we should delete the volume just created
-			// TODO: Need to figure out how to handle DeleteDisk failed scenario instead of just log the error
-			if _, deleteDiskErr := c.DeleteDisk(ctx, volumeID); deleteDiskErr != nil {
-				klog.ErrorS(deleteDiskErr, "failed to be deleted, this may cause volume leak", "volumeID", volumeID)
-			} else {
-				klog.V(5).InfoS("volume is deleted because there was an error while attaching the tags", "volumeID", volumeID)
-			}
-			return nil, fmt.Errorf("could not attach tags to volume: %v. %w", volumeID, err)
-		}
-	}
-	return &Disk{CapacityGiB: size, VolumeID: volumeID, AvailabilityZone: zone, SnapshotID: snapshotID, OutpostArn: outpostArn}, nil
+	return &Disk{CapacityGiB: size, VolumeID: volumeID, AvailabilityZone: zone, SnapshotID: snapshotID, OutpostArn: aws.ToString(response.OutpostArn)}, nil
 }
 
 // execBatchDescribeVolumesModifications executes a batched DescribeVolumesModifications API call.
@@ -953,13 +933,16 @@ func (c *cloud) AttachDisk(ctx context.Context, volumeID, nodeID string) (string
 				// Store such bad names in the "likely bad" map to be considered last in future attempts
 				likelyBadDeviceNames.Store(device.Path, struct{}{})
 			}
+			if isAWSErrorAttachmentLimitExceeded(attachErr) {
+				return "", fmt.Errorf("%w: %w", ErrAttachmentLimitExceeded, attachErr)
+			}
 			return "", fmt.Errorf("could not attach volume %q to node %q: %w", volumeID, nodeID, attachErr)
 		}
 		likelyBadDeviceNames.Delete(device.Path)
 		klog.V(5).InfoS("[Debug] AttachVolume", "volumeID", volumeID, "nodeID", nodeID, "resp", resp)
 	}
 
-	_, err = c.WaitForAttachmentState(ctx, volumeID, volumeAttachedState, *instance.InstanceId, device.Path, device.IsAlreadyAssigned)
+	_, err = c.WaitForAttachmentState(ctx, types.VolumeAttachmentStateAttached, volumeID, *instance.InstanceId, device.Path, device.IsAlreadyAssigned)
 
 	// This is the only situation where we taint the device
 	if err != nil {
@@ -1002,12 +985,13 @@ func (c *cloud) DetachDisk(ctx context.Context, volumeID, nodeID string) error {
 		if isAWSErrorIncorrectState(err) ||
 			isAWSErrorInvalidAttachmentNotFound(err) ||
 			isAWSErrorVolumeNotFound(err) {
+			metrics.AsyncEC2Metrics().ClearDetachMetric(volumeID, nodeID)
 			return ErrNotFound
 		}
 		return fmt.Errorf("could not detach volume %q from node %q: %w", volumeID, nodeID, err)
 	}
 
-	attachment, err := c.WaitForAttachmentState(ctx, volumeID, volumeDetachedState, *instance.InstanceId, "", false)
+	attachment, err := c.WaitForAttachmentState(ctx, types.VolumeAttachmentStateDetached, volumeID, *instance.InstanceId, "", false)
 	if err != nil {
 		return err
 	}
@@ -1015,12 +999,13 @@ func (c *cloud) DetachDisk(ctx context.Context, volumeID, nodeID string) error {
 		// We expect it to be nil, it is (maybe) interesting if it is not
 		klog.V(2).InfoS("waitForAttachmentState returned non-nil attachment with state=detached", "attachment", attachment)
 	}
+	metrics.AsyncEC2Metrics().ClearDetachMetric(volumeID, nodeID)
 
 	return nil
 }
 
 // WaitForAttachmentState polls until the attachment status is the expected value.
-func (c *cloud) WaitForAttachmentState(ctx context.Context, volumeID, expectedState string, expectedInstance string, expectedDevice string, alreadyAssigned bool) (*types.VolumeAttachment, error) {
+func (c *cloud) WaitForAttachmentState(ctx context.Context, expectedState types.VolumeAttachmentState, volumeID string, expectedInstance string, expectedDevice string, alreadyAssigned bool) (*types.VolumeAttachment, error) {
 	var attachment *types.VolumeAttachment
 
 	verifyVolumeFunc := func(ctx context.Context) (bool, error) {
@@ -1032,12 +1017,12 @@ func (c *cloud) WaitForAttachmentState(ctx context.Context, volumeID, expectedSt
 		if err != nil {
 			// The VolumeNotFound error is special -- we don't need to wait for it to repeat
 			if isAWSErrorVolumeNotFound(err) {
-				if expectedState == volumeDetachedState {
+				if expectedState == types.VolumeAttachmentStateDetached {
 					// The disk doesn't exist, assume it's detached, log warning and stop waiting
 					klog.InfoS("Waiting for volume to be detached but the volume does not exist", "volumeID", volumeID)
 					return true, nil
 				}
-				if expectedState == volumeAttachedState {
+				if expectedState == types.VolumeAttachmentStateAttached {
 					// The disk doesn't exist, complain, give up waiting and report error
 					klog.InfoS("Waiting for volume to be attached but the volume does not exist", "volumeID", volumeID)
 					return false, err
@@ -1053,22 +1038,22 @@ func (c *cloud) WaitForAttachmentState(ctx context.Context, volumeID, expectedSt
 			return false, fmt.Errorf("volume %q has multiple attachments", volumeID)
 		}
 
-		attachmentState := ""
+		var attachmentState types.VolumeAttachmentState
 
 		for _, a := range volume.Attachments {
 			if a.InstanceId != nil {
 				if aws.ToString(a.InstanceId) == expectedInstance {
-					attachmentState = string(a.State)
+					attachmentState = a.State
 					attachment = &a
 				}
 			}
 		}
 
 		if attachmentState == "" {
-			attachmentState = volumeDetachedState
+			attachmentState = types.VolumeAttachmentStateDetached
 		}
 
-		if attachment != nil && attachment.Device != nil && expectedState == volumeAttachedState {
+		if attachment != nil && attachment.Device != nil && expectedState == types.VolumeAttachmentStateAttached {
 			device := aws.ToString(attachment.Device)
 			if device != expectedDevice {
 				klog.InfoS("WaitForAttachmentState: device mismatch", "device", device, "expectedDevice", expectedDevice, "attachment", attachment)
@@ -1079,7 +1064,7 @@ func (c *cloud) WaitForAttachmentState(ctx context.Context, volumeID, expectedSt
 		// if we expected volume to be attached and it was reported as already attached via DescribeInstance call
 		// but DescribeVolume told us volume is detached, we will short-circuit this long wait loop and return error
 		// so as AttachDisk can be retried without waiting for 20 minutes.
-		if (expectedState == volumeAttachedState) && alreadyAssigned && (attachmentState == volumeDetachedState) {
+		if (expectedState == types.VolumeAttachmentStateAttached) && alreadyAssigned && (attachmentState == types.VolumeAttachmentStateDetached) {
 			request := &ec2.AttachVolumeInput{
 				Device:     aws.String(expectedDevice),
 				InstanceId: aws.String(expectedInstance),
@@ -1096,13 +1081,17 @@ func (c *cloud) WaitForAttachmentState(ctx context.Context, volumeID, expectedSt
 		if attachmentState == expectedState {
 			// But first, reset attachment to nil if expectedState equals volumeDetachedState.
 			// Caller will not expect an attachment to be returned for a detached volume if we're not also returning an error.
-			if expectedState == volumeDetachedState {
+			if expectedState == types.VolumeAttachmentStateDetached {
 				attachment = nil
 			}
 			return true, nil
 		}
 		// continue waiting
 		klog.InfoS("Waiting for volume state", "volumeID", volumeID, "actual", attachmentState, "desired", expectedState)
+
+		if expectedState == types.VolumeAttachmentStateDetached {
+			metrics.AsyncEC2Metrics().TrackDetachment(volumeID, expectedInstance, attachmentState)
+		}
 		return false, nil
 	}
 
@@ -1431,7 +1420,13 @@ func (c *cloud) EnableFastSnapshotRestores(ctx context.Context, availabilityZone
 		return nil, err
 	}
 	if len(response.Unsuccessful) > 0 {
-		return response, fmt.Errorf("failed to create fast snapshot restores for snapshot %s: %v", snapshotID, response.Unsuccessful)
+		var errDetails []string
+		for _, r := range response.Unsuccessful {
+			for _, e := range r.FastSnapshotRestoreStateErrors {
+				errDetails = append(errDetails, fmt.Sprintf("Error Code: %s, Error Message: %s", aws.ToString(e.Error.Code), aws.ToString(e.Error.Message)))
+			}
+		}
+		return nil, errors.New(strings.Join(errDetails, "; "))
 	}
 	return response, nil
 }
@@ -1673,6 +1668,12 @@ func isAWSErrorBlockDeviceInUse(err error) bool {
 	return false
 }
 
+// isAWSErrorAttachmentLimitExceeded checks if the error is an AttachmentLimitExceeded error.
+// This error is reported when the maximum number of attachments for an instance is exceeded.
+func isAWSErrorAttachmentLimitExceeded(err error) bool {
+	return isAWSError(err, "AttachmentLimitExceeded")
+}
+
 // isAWSErrorInvalidParameter returns a boolean indicating whether the
 // given error is caused by invalid parameters in a EC2 API request.
 func isAWSErrorInvalidParameter(err error) bool {
@@ -1911,7 +1912,7 @@ func volumeModificationDone(state string) bool {
 func getVolumeAttachmentsList(volume types.Volume) []string {
 	var volumeAttachmentList []string
 	for _, attachment := range volume.Attachments {
-		if attachment.State == volumeAttachedState {
+		if attachment.State == types.VolumeAttachmentStateAttached {
 			volumeAttachmentList = append(volumeAttachmentList, aws.ToString(attachment.InstanceId))
 		}
 	}

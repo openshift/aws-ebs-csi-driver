@@ -30,8 +30,10 @@ iam:
         ebsCSIController: true
 managedNodeGroups:
   - name: ng-linux
-    amiFamily: AmazonLinux2
+    amiFamily: AmazonLinux2023
     desiredCapacity: 3
+    # Test against no-IMDS environment to test k8s metadata
+    # and IRSA/Pod Identity support
     disablePodIMDS: true
     instanceTypes: [{{ .Env.INSTANCE_TYPE }}]
     ssh:
@@ -51,7 +53,7 @@ managedNodeGroups:
 # Outpost nodegroups cannot be managed
 nodeGroups:
   - name: ng-outpost
-    amiFamily: AmazonLinux2
+    amiFamily: AmazonLinux2023
     desiredCapacity: 3
     # Driver needs access to IMDS on outposts for correct metadata
     disablePodIMDS: false

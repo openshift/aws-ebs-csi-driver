@@ -38,9 +38,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8stypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
-	"k8s.io/kubernetes/pkg/volume"
 )
 
 const (
@@ -49,9 +50,6 @@ const (
 
 	// VolumeOperationAlreadyExists is message fmt returned to CO when there is another in-flight call on the given volumeID.
 	VolumeOperationAlreadyExists = "An operation with the given volume=%q is already in progress"
-
-	// sbeDeviceVolumeAttachmentLimit refers to the maximum number of volumes that can be attached to an instance on snow.
-	sbeDeviceVolumeAttachmentLimit = 10
 )
 
 var (
@@ -70,15 +68,11 @@ var (
 		csi.NodeServiceCapability_RPC_EXPAND_VOLUME,
 		csi.NodeServiceCapability_RPC_GET_VOLUME_STATS,
 	}
+)
 
-	// taintRemovalInitialDelay is the initial delay for node taint removal.
-	taintRemovalInitialDelay = 1 * time.Second
-	// taintRemovalBackoff is the exponential backoff configuration for node taint removal.
-	taintRemovalBackoff = wait.Backoff{
-		Duration: 500 * time.Millisecond,
-		Factor:   2,
-		Steps:    10, // Max delay = 0.5 * 2^9 = ~4 minutes
-	}
+const (
+	// taintWatcherDuration is the maximum duration for the not-ready taint watcher to run.
+	taintWatcherDuration = 1 * time.Minute
 )
 
 // NodeService represents the node service of CSI driver.
@@ -93,11 +87,9 @@ type NodeService struct {
 // NewNodeService creates a new node service.
 func NewNodeService(o *Options, md metadata.MetadataService, m mounter.Mounter, k kubernetes.Interface) *NodeService {
 	if k != nil {
-		// Remove taint from node to indicate driver startup success
-		// This is done at the last possible moment to prevent race conditions or false positive removals
-		time.AfterFunc(taintRemovalInitialDelay, func() {
-			removeTaintInBackground(k, taintRemovalBackoff, removeNotReadyTaint)
-		})
+		// Watch for the agent‑not‑ready taint for up to one minute and remove it
+		// as soon as allocatable is available.
+		startNotReadyTaintWatcher(k, taintWatcherDuration)
 	}
 
 	return &NodeService{
@@ -357,6 +349,14 @@ func (d *NodeService) NodeExpandVolume(ctx context.Context, req *csi.NodeExpandV
 		return nil, status.Error(codes.InvalidArgument, "volume path must be provided")
 	}
 
+	if ok := d.inFlight.Insert(volumeID); !ok {
+		return nil, status.Errorf(codes.Aborted, VolumeOperationAlreadyExists, volumeID)
+	}
+	defer func() {
+		klog.V(4).InfoS("NodeExpandVolume: volume operation finished", "volumeId", volumeID)
+		d.inFlight.Delete(volumeID)
+	}()
+
 	volumeCapability := req.GetVolumeCapability()
 	// VolumeCapability is optional, if specified, use that as source of truth
 	if volumeCapability != nil {
@@ -397,7 +397,6 @@ func (d *NodeService) NodeExpandVolume(ctx context.Context, req *csi.NodeExpandV
 		return nil, status.Errorf(codes.NotFound, "failed to find device path for device name %s for mount %s: %v", deviceName, req.GetVolumePath(), err)
 	}
 
-	// TODO: lock per volume ID to have some idempotency
 	if _, err = d.mounter.Resize(devicePath, volumePath); err != nil {
 		return nil, status.Errorf(codes.Internal, "Could not resize volume %q (%q): %v", volumeID, devicePath, err)
 	}
@@ -479,7 +478,7 @@ func (d *NodeService) NodeUnpublishVolume(ctx context.Context, req *csi.NodeUnpu
 	}
 
 	defer func() {
-		klog.V(4).InfoS("NodeUnPublishVolume: volume operation finished", "volumeId", volumeID)
+		klog.V(4).InfoS("NodeUnpublishVolume: volume operation finished", "volumeId", volumeID)
 		d.inFlight.Delete(volumeID)
 	}()
 
@@ -529,28 +528,30 @@ func (d *NodeService) NodeGetVolumeStats(ctx context.Context, req *csi.NodeGetVo
 		}, nil
 	}
 
-	metricsProvider := volume.NewMetricsStatFS(req.GetVolumePath())
-
-	metrics, err := metricsProvider.GetMetrics()
+	stats, err := d.mounter.GetVolumeStats(req.GetVolumePath())
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get fs info on path %s: %v", req.GetVolumePath(), err)
 	}
 
-	return &csi.NodeGetVolumeStatsResponse{
-		Usage: []*csi.VolumeUsage{
-			{
-				Unit:      csi.VolumeUsage_BYTES,
-				Available: metrics.Available.AsDec().UnscaledBig().Int64(),
-				Total:     metrics.Capacity.AsDec().UnscaledBig().Int64(),
-				Used:      metrics.Used.AsDec().UnscaledBig().Int64(),
-			},
-			{
-				Unit:      csi.VolumeUsage_INODES,
-				Available: metrics.InodesFree.AsDec().UnscaledBig().Int64(),
-				Total:     metrics.Inodes.AsDec().UnscaledBig().Int64(),
-				Used:      metrics.InodesUsed.AsDec().UnscaledBig().Int64(),
-			},
+	usage := []*csi.VolumeUsage{
+		{
+			Unit:      csi.VolumeUsage_BYTES,
+			Available: stats.AvailableBytes,
+			Total:     stats.TotalBytes,
+			Used:      stats.UsedBytes,
 		},
+	}
+	if stats.TotalInodes != 0 {
+		usage = append(usage, &csi.VolumeUsage{
+			Unit:      csi.VolumeUsage_INODES,
+			Available: stats.AvailableInodes,
+			Total:     stats.TotalInodes,
+			Used:      stats.UsedInodes,
+		})
+	}
+
+	return &csi.NodeGetVolumeStatsResponse{
+		Usage: usage,
 	}, nil
 }
 
@@ -573,6 +574,10 @@ func (d *NodeService) NodeGetCapabilities(ctx context.Context, req *csi.NodeGetC
 func (d *NodeService) NodeGetInfo(ctx context.Context, req *csi.NodeGetInfoRequest) (*csi.NodeGetInfoResponse, error) {
 	klog.V(4).InfoS("NodeGetInfo: called", "args", req)
 
+	if err := d.metadata.UpdateMetadata(); err != nil {
+		klog.ErrorS(err, "Failed to update metadata, using cached values")
+	}
+
 	zone := d.metadata.GetAvailabilityZone()
 	osType := runtime.GOOS
 
@@ -593,10 +598,11 @@ func (d *NodeService) NodeGetInfo(ctx context.Context, req *csi.NodeGetInfoReque
 	}
 
 	topology := &csi.Topology{Segments: segments}
-
+	maxVolumesPerNode := d.getVolumesLimit()
+	klog.V(4).InfoS("NodeGetInfo:", "maxVolumesPerNode", maxVolumesPerNode)
 	return &csi.NodeGetInfoResponse{
 		NodeId:             d.metadata.GetInstanceID(),
-		MaxVolumesPerNode:  d.getVolumesLimit(),
+		MaxVolumesPerNode:  maxVolumesPerNode,
 		AccessibleTopology: topology,
 	}, nil
 }
@@ -765,21 +771,23 @@ func (d *NodeService) nodePublishVolumeForFileSystem(req *csi.NodePublishVolumeR
 // getVolumesLimit returns the limit of volumes that the node supports.
 func (d *NodeService) getVolumesLimit() int64 {
 	if d.options.VolumeAttachLimit >= 0 {
+		klog.V(4).InfoS("getVolumesLimit: VolumeAttachLimit manually set to", d.options.VolumeAttachLimit, "overriding the default value")
 		return d.options.VolumeAttachLimit
-	}
-	if util.IsSBE(d.metadata.GetRegion()) {
-		return sbeDeviceVolumeAttachmentLimit
 	}
 
 	instanceType := d.metadata.GetInstanceType()
+	klog.V(4).InfoS("getVolumesLimit:", "instanceType", instanceType)
 
 	isNitro := cloud.IsNitroInstanceType(instanceType)
 	availableAttachments := cloud.GetMaxAttachments(isNitro)
+	klog.V(4).InfoS("getVolumesLimit:", "availableAttachments", availableAttachments)
 
 	reservedVolumeAttachments := d.options.ReservedVolumeAttachments
 	if reservedVolumeAttachments == -1 {
 		reservedVolumeAttachments = d.metadata.GetNumBlockDeviceMappings() + 1 // +1 for the root device
+		klog.V(4).InfoS("getVolumesLimit:", "numBlockDevices", (reservedVolumeAttachments - 1))
 	}
+	klog.V(4).InfoS("getVolumesLimit:", "reservedVolumeAttachments", reservedVolumeAttachments)
 
 	dedicatedLimit := cloud.GetDedicatedLimitForInstanceType(instanceType)
 	maxEBSAttachments, hasMaxVolumeLimit := cloud.GetEBSLimitForInstanceType(instanceType)
@@ -790,9 +798,12 @@ func (d *NodeService) getVolumesLimit() int64 {
 	// For (all other) Nitro instances, attachments are shared between EBS volumes, ENIs and NVMe instance stores
 	if dedicatedLimit != 0 {
 		availableAttachments = dedicatedLimit
+		klog.V(4).InfoS("getVolumesLimit:", "dedicatedLimit", dedicatedLimit)
 	} else if isNitro {
 		enis := d.metadata.GetNumAttachedENIs()
+		klog.V(4).InfoS("getVolumesLimit:", "ENIs", enis)
 		reservedSlots := cloud.GetReservedSlotsForInstanceType(instanceType)
+		klog.V(4).InfoS("getVolumesLimit:", "reservedSlots", reservedSlots)
 		if hasMaxVolumeLimit {
 			availableAttachments = availableAttachments - (enis - 1) - reservedSlots
 		} else {
@@ -840,6 +851,99 @@ func collectMountOptions(fsType string, mntFlags []string) []string {
 	return options
 }
 
+// startNotReadyTaintWatcher launches a short‑lived Node informer that removes the
+// ebs.csi.aws.com/agent‑not‑ready taint. The informer is stopped after maxWatchDuration.
+func startNotReadyTaintWatcher(clientset kubernetes.Interface, maxWatchDuration time.Duration) {
+	nodeName := os.Getenv("CSI_NODE_NAME")
+	if nodeName == "" {
+		klog.V(4).InfoS("CSI_NODE_NAME missing, skipping taint watcher")
+		return
+	}
+
+	factory := informers.NewSharedInformerFactoryWithOptions(
+		clientset,
+		0, // No resync
+		informers.WithTweakListOptions(func(lo *metav1.ListOptions) {
+			lo.FieldSelector = "metadata.name=" + nodeName
+		}),
+	)
+	informer := factory.Core().V1().Nodes().Informer()
+
+	attemptTaintRemoval := func(n *corev1.Node) {
+		if !hasNotReadyTaint(n) {
+			return
+		}
+
+		backoff := wait.Backoff{
+			Duration: 2 * time.Second,
+			Factor:   1.5,
+			Steps:    5,
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), maxWatchDuration)
+		defer cancel()
+
+		err := wait.ExponentialBackoffWithContext(ctx, backoff, func(ctx context.Context) (bool, error) {
+			if err := removeNotReadyTaint(ctx, clientset, n); err != nil {
+				klog.ErrorS(err, "Failed to remove agent-not-ready taint, retrying", "node", n.Name)
+				return false, nil // Continue retrying
+			}
+			klog.V(2).InfoS("Successfully removed agent-not-ready taint", "node", n.Name)
+			return true, nil
+		})
+
+		if err != nil {
+			klog.ErrorS(err, "Timed out trying to remove agent-not-ready taint", "node", n.Name)
+		}
+	}
+
+	if _, err := informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: func(obj interface{}) {
+			if n, ok := obj.(*corev1.Node); ok {
+				attemptTaintRemoval(n)
+			}
+		},
+		UpdateFunc: func(_, newObj interface{}) {
+			if n, ok := newObj.(*corev1.Node); ok {
+				attemptTaintRemoval(n)
+			}
+		},
+	}); err != nil {
+		klog.ErrorS(err, "Taint‑watcher: failed to add event handler")
+		return
+	}
+
+	stopCh := make(chan struct{})
+
+	go func() {
+		factory.Start(stopCh)
+
+		if ok := cache.WaitForCacheSync(stopCh, informer.HasSynced); !ok {
+			klog.ErrorS(nil, "Taint-watcher: cache sync failed")
+		}
+
+		// Immediate scan in case the taint is already present and no event fires.
+		if obj, exists, err := informer.GetStore().GetByKey(nodeName); err == nil && exists {
+			if n, ok := obj.(*corev1.Node); ok {
+				attemptTaintRemoval(n)
+			}
+		}
+
+		<-time.After(maxWatchDuration)
+		klog.V(8).InfoS("Taint-watcher timeout reached; stopping")
+		close(stopCh)
+	}()
+}
+
+func hasNotReadyTaint(n *corev1.Node) bool {
+	for _, t := range n.Spec.Taints {
+		if t.Key == AgentNotReadyNodeTaintKey {
+			return true
+		}
+	}
+	return false
+}
+
 // Struct for JSON patch operations.
 type JSONPatch struct {
 	OP    string      `json:"op,omitempty"`
@@ -847,38 +951,11 @@ type JSONPatch struct {
 	Value interface{} `json:"value"`
 }
 
-// removeTaintInBackground is a goroutine that retries removeNotReadyTaint with exponential backoff.
-func removeTaintInBackground(k8sClient kubernetes.Interface, backoff wait.Backoff, removalFunc func(kubernetes.Interface) error) {
-	backoffErr := wait.ExponentialBackoff(backoff, func() (bool, error) {
-		err := removalFunc(k8sClient)
-		if err != nil {
-			klog.ErrorS(err, "Unexpected failure when attempting to remove node taint(s)")
-			return false, nil
-		}
-		return true, nil
-	})
-
-	if backoffErr != nil {
-		klog.ErrorS(backoffErr, "Retries exhausted, giving up attempting to remove node taint(s)")
-	}
-}
-
 // removeNotReadyTaint removes the taint ebs.csi.aws.com/agent-not-ready from the local node
 // This taint can be optionally applied by users to prevent startup race conditions such as
 // https://github.com/kubernetes/kubernetes/issues/95911
-func removeNotReadyTaint(clientset kubernetes.Interface) error {
-	nodeName := os.Getenv("CSI_NODE_NAME")
-	if nodeName == "" {
-		klog.V(4).InfoS("CSI_NODE_NAME missing, skipping taint removal")
-		return nil
-	}
-
-	node, err := clientset.CoreV1().Nodes().Get(context.Background(), nodeName, metav1.GetOptions{})
-	if err != nil {
-		return err
-	}
-
-	err = checkAllocatable(clientset, nodeName)
+func removeNotReadyTaint(ctx context.Context, clientset kubernetes.Interface, node *corev1.Node) error {
+	err := checkAllocatable(ctx, clientset, node.Name)
 	if err != nil {
 		return err
 	}
@@ -915,16 +992,16 @@ func removeNotReadyTaint(clientset kubernetes.Interface) error {
 		return err
 	}
 
-	_, err = clientset.CoreV1().Nodes().Patch(context.Background(), nodeName, k8stypes.JSONPatchType, patch, metav1.PatchOptions{})
+	_, err = clientset.CoreV1().Nodes().Patch(ctx, node.Name, k8stypes.JSONPatchType, patch, metav1.PatchOptions{})
 	if err != nil {
 		return err
 	}
-	klog.InfoS("Removed taint(s) from local node", "node", nodeName)
+	klog.InfoS("Removed taint(s) from local node", "node", node.Name)
 	return nil
 }
 
-func checkAllocatable(clientset kubernetes.Interface, nodeName string) error {
-	csiNode, err := clientset.StorageV1().CSINodes().Get(context.Background(), nodeName, metav1.GetOptions{})
+func checkAllocatable(ctx context.Context, clientset kubernetes.Interface, nodeName string) error {
+	csiNode, err := clientset.StorageV1().CSINodes().Get(ctx, nodeName, metav1.GetOptions{})
 	if err != nil {
 		return fmt.Errorf("isAllocatableSet: failed to get CSINode for %s: %w", nodeName, err)
 	}

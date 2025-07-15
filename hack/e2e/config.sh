@@ -18,6 +18,8 @@ set -euo pipefail
 
 BASE_DIR="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
 TEST_DIR="${BASE_DIR}/csi-test-artifacts"
+# On Prow, $ARTIFACTS indicates where to put the artifacts for skylens upload
+REPORT_DIR="${ARTIFACTS:-${TEST_DIR}/artifacts}"
 mkdir -p "${TEST_DIR}"
 CLUSTER_FILE=${TEST_DIR}/${CLUSTER_NAME}.${CLUSTER_TYPE}.yaml
 KUBECONFIG=${KUBECONFIG:-"${TEST_DIR}/${CLUSTER_NAME}.${CLUSTER_TYPE}.kubeconfig"}
@@ -31,15 +33,16 @@ WINDOWS=${WINDOWS:-"false"}
 WINDOWS_HOSTPROCESS=${WINDOWS_HOSTPROCESS:-"false"}
 OUTPOST_ARN=${OUTPOST_ARN:-}
 OUTPOST_INSTANCE_TYPE=${OUTPOST_INSTANCE_TYPE:-${INSTANCE_TYPE}}
+FIPS_TEST=${FIPS_TEST:-"false"}
 
 # kops: must include patch version (e.g. 1.19.1)
 # eksctl: mustn't include patch version (e.g. 1.19)
-# NOTE: Keep KOPS at v1.29.x until ELB usage bug fixed
-K8S_VERSION_KOPS=${K8S_VERSION_KOPS:-1.31.4}
-K8S_VERSION_EKSCTL=${K8S_VERSION_EKSCTL:-1.31}
+K8S_VERSION_KOPS=${K8S_VERSION_KOPS:-1.33.1}
+K8S_VERSION_EKSCTL=${K8S_VERSION_EKSCTL:-1.33}
 
 EBS_INSTALL_SNAPSHOT=${EBS_INSTALL_SNAPSHOT:-"true"}
-EBS_INSTALL_SNAPSHOT_VERSION=${EBS_INSTALL_SNAPSHOT_VERSION:-"v8.2.0"}
+EBS_INSTALL_SNAPSHOT_VERSION=${EBS_INSTALL_SNAPSHOT_VERSION:-"v8.2.1"}
+EBS_INSTALL_SNAPSHOT_CUSTOM_IMAGE=${EBS_INSTALL_SNAPSHOT_CUSTOM_IMAGE:-}
 
 AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 KOPS_BUCKET=${KOPS_BUCKET:-${AWS_ACCOUNT_ID}-ebs-csi-e2e-kops}
@@ -59,5 +62,5 @@ COLLECT_METRICS=${COLLECT_METRICS:-"false"}
 
 TEST_PATH=${TEST_PATH:-"./tests/e2e-kubernetes/..."}
 GINKGO_FOCUS=${GINKGO_FOCUS:-"External.Storage"}
-GINKGO_SKIP=${GINKGO_SKIP:-"\[Disruptive\]|\[Serial\]"}
+GINKGO_SKIP=${GINKGO_SKIP:-"\[Disruptive\]|\[Serial\]|\[Flaky\]"}
 GINKGO_PARALLEL=${GINKGO_PARALLEL:-25}

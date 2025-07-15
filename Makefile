@@ -38,7 +38,28 @@ undefine VERSION
 # Note that the final driver binary is still explicitly built with `-mod=vendor`.
 export GOFLAGS := -mod=readonly
 
-VERSION?=v1.39.0
+VERSION?=v1.45.0
+# Carry: clear all Kubernetes env. variables. generate-kustomize target below
+# would get the actual namespace where this Makefile runs and file it into
+# generated kustomize yaml files.
+undefine KUBECONFIG
+undefine KUBERNETES_PORT
+undefine KUBERNETES_PORT_443_TCP
+undefine KUBERNETES_PORT_443_TCP_ADDR
+undefine KUBERNETES_PORT_443_TCP_PORT
+undefine KUBERNETES_PORT_443_TCP_PROTO
+undefine KUBERNETES_SERVICE_HOST
+undefine KUBERNETES_SERVICE_PORT
+undefine KUBERNETES_SERVICE_PORT_HTTPS
+# Carry: VERSION is set by CI to go version, not CSI driver version
+undefine VERSION
+
+# Carry: set goflags to allow download from the internet.
+# Some scripts in `make verify` download their tools and it is tedious to add `mod=readonly` to each of them.
+# Note that the final driver binary is still explicitly built with `-mod=vendor`.
+export GOFLAGS := -mod=readonly
+
+VERSION?=v1.45.0
 
 PKG=github.com/kubernetes-sigs/aws-ebs-csi-driver
 GIT_COMMIT?=$(shell git rev-parse HEAD)
@@ -74,6 +95,8 @@ ALL_OS_ARCH_OSVERSION=$(foreach os, $(ALL_OS), ${ALL_OS_ARCH_OSVERSION_${os}})
 CLUSTER_NAME?=ebs-csi-e2e.k8s.local
 CLUSTER_TYPE?=kops
 
+GINKGO_WINDOWS_SKIP?="\[Disruptive\]|\[Serial\]|\[Flaky\]|\[LinuxOnly\]|\[Feature:VolumeSnapshotDataSource\]|\(xfs\)|\(ext4\)|\(block volmode\)"
+
 # split words on hyphen, access by 1-index
 word-hyphen = $(word $2,$(subst -, ,$1))
 
@@ -106,7 +129,7 @@ test/coverage:
 tools: bin/aws bin/ct bin/eksctl bin/ginkgo bin/golangci-lint bin/gomplate bin/helm bin/kops bin/kubetest2 bin/mockgen bin/shfmt
 
 .PHONY: update
-update: update/gofmt update/kustomize update/mockgen update/gomod update/shfmt update/generate-license-header
+update: update/gofix update/gofmt update/kustomize update/mockgen update/gomod update/shfmt update/generate-license-header
 	@echo "All updates succeeded!"
 
 .PHONY: verify
@@ -131,6 +154,11 @@ cluster/delete: bin/kops bin/eksctl
 
 .PHONY: cluster/install
 cluster/install: bin/helm bin/aws
+	./hack/e2e/install.sh
+
+.PHONY: cluster/helm
+cluster/helm: bin/helm bin/aws
+	HELM_USE_DEFAULT_IMAGE="true" \
 	./hack/e2e/install.sh
 
 .PHONY: cluster/uninstall
@@ -161,19 +189,38 @@ e2e/external: bin/helm bin/kubetest2
 	COLLECT_METRICS="true" \
 	./hack/e2e/run.sh
 
+.PHONY: e2e/external-a1-eks
+e2e/external-a1-eks: bin/helm bin/kubetest2
+	HELM_EXTRA_FLAGS="--set=a1CompatibilityDaemonSet=true" \
+	./hack/e2e/run.sh
+
+.PHONY: e2e/external-fips
+e2e/external-fips: bin/helm bin/kubetest2
+	HELM_EXTRA_FLAGS="--set=fips=true" \
+	./hack/e2e/run.sh
+
 .PHONY: e2e/external-windows
 e2e/external-windows: bin/helm bin/kubetest2
 	WINDOWS=true \
-	GINKGO_SKIP="\[Disruptive\]|\[Serial\]|\[LinuxOnly\]|\[Feature:VolumeSnapshotDataSource\]|\(xfs\)|\(ext4\)|\(block volmode\)" \
+	GINKGO_SKIP=$(GINKGO_WINDOWS_SKIP) \
 	GINKGO_PARALLEL=15 \
 	EBS_INSTALL_SNAPSHOT="false" \
+	./hack/e2e/run.sh
+
+.PHONY: e2e/external-windows-fips
+e2e/external-windows-fips: bin/helm bin/kubetest2
+	WINDOWS=true \
+	GINKGO_SKIP=$(GINKGO_WINDOWS_SKIP) \
+	GINKGO_PARALLEL=15 \
+	EBS_INSTALL_SNAPSHOT="false" \
+	HELM_EXTRA_FLAGS="--set=fips=true" \
 	./hack/e2e/run.sh
 
 .PHONY: e2e/external-windows-hostprocess
 e2e/external-windows-hostprocess: bin/helm bin/kubetest2
 	WINDOWS_HOSTPROCESS=true \
 	WINDOWS=true \
-	GINKGO_SKIP="\[Disruptive\]|\[Serial\]|\[LinuxOnly\]|\[Feature:VolumeSnapshotDataSource\]|\(xfs\)|\(ext4\)|\(block volmode\)" \
+	GINKGO_SKIP=$(GINKGO_WINDOWS_SKIP) \
 	GINKGO_PARALLEL=15 \
 	EBS_INSTALL_SNAPSHOT="false" \
 	./hack/e2e/run.sh
@@ -206,6 +253,10 @@ update-sidecar-dependencies: update-truth-sidecars generate-sidecar-tags update/
 update-image-dependencies: update-sidecar-dependencies
 	./hack/release-scripts/update-e2e-images
 
+.PHONY: security
+security: bin/govulncheck
+	./hack/tools/check-security.sh
+
 ## CI aliases
 # Targets intended to be executed mostly or only by CI jobs
 
@@ -217,7 +268,8 @@ sub-push-fips:
 	$(MAKE) FIPS=true TAG=$(TAG)-fips sub-push
 
 .PHONY: sub-push-a1compat
-sub-push-a1compat: sub-image-linux-arm64-al2
+sub-push-a1compat:
+	$(MAKE) DOCKER_EXTRA_ARGS="-t=$(IMAGE):$(TAG)-a1compat" sub-image-linux-arm64-al2
 
 .PHONY: all-push
 all-push: sub-push sub-push-fips sub-push-a1compat
@@ -227,6 +279,10 @@ test-e2e-%:
 
 test-helm-chart:
 	./hack/prow-e2e.sh test-helm-chart
+
+.PHONY: test-images 
+test-images: bin/aws 
+	./hack/e2e/test-images.sh 
 
 ## Builds
 
@@ -255,6 +311,7 @@ image:
 		--build-arg=VERSION=$(VERSION) \
 		$(FIPS_DOCKER_ARGS) \
 		`./hack/provenance.sh` \
+		$(DOCKER_EXTRA_ARGS) \
 		.
 
 .PHONY: create-manifest
@@ -277,6 +334,10 @@ bin/%: hack/tools/install.sh hack/tools/python-runner.sh
 ## Updaters
 # Automatic generators/formatters for code
 
+.PHONY: update/gofix
+update/gofix:
+	go fix ./...
+
 .PHONY: update/gofmt
 update/gofmt:
 	# Carry: do not format files in vendor/ directory
@@ -293,6 +354,7 @@ update/mockgen: bin/mockgen
 .PHONY: update/gomod
 update/gomod:
 	go mod tidy
+	go mod tidy -C tests/e2e/
 
 .PHONY: update/shfmt
 update/shfmt: bin/shfmt

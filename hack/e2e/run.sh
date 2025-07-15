@@ -41,6 +41,22 @@ else
   exit 1
 fi
 
+# Fail single-az tests early if we know cluster is multi-az.
+IGNORE_SINGLE_AZ_ERR=${IGNORE_SINGLE_AZ_ERR:="false"}
+if [[ $IGNORE_SINGLE_AZ_ERR != "true" && "$GINKGO_FOCUS" =~ "single-az" ]]; then
+  # Get unique AZs of non-control-plane nodes
+  azs=$(kubectl get nodes \
+    --kubeconfig "${KUBECONFIG}" \
+    --selector '!node-role.kubernetes.io/control-plane' \
+    -o jsonpath='{.items[*].metadata.labels.topology\.kubernetes\.io/zone}' | tr " " "\n" | sort -u)
+
+  # Check if there's exactly one AZ and it matches $AWS_AVAILABILITY_ZONES
+  if [[ $(echo "$azs" | wc -w) -gt 1 ]] || [[ "$azs" != "$AWS_AVAILABILITY_ZONES" ]]; then
+    loudecho "ERROR. single-az tests require all worker nodes to be in a single availability zone (AZ) that matches env var \$AWS_AVAILABILITY_ZONES (Currently set as \"$AWS_AVAILABILITY_ZONES\"). Please delete nodes in other AZs. If you want to bypass this error, set env var IGNORE_SINGLE_AZ_ERR='true'"
+    exit 1
+  fi
+fi
+
 if [[ "$WINDOWS" == true ]]; then
   NODE_OS_DISTRO="windows"
 else
@@ -52,10 +68,14 @@ fi
 if [[ "${EBS_INSTALL_SNAPSHOT}" == true ]]; then
   loudecho "Applying snapshot controller and CRDs"
   kubectl apply --kubeconfig "${KUBECONFIG}" -f https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/"${EBS_INSTALL_SNAPSHOT_VERSION}"/deploy/kubernetes/snapshot-controller/rbac-snapshot-controller.yaml
-  kubectl apply --kubeconfig "${KUBECONFIG}" -f https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/"${EBS_INSTALL_SNAPSHOT_VERSION}"/deploy/kubernetes/snapshot-controller/setup-snapshot-controller.yaml
   kubectl apply --kubeconfig "${KUBECONFIG}" -f https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/"${EBS_INSTALL_SNAPSHOT_VERSION}"/client/config/crd/snapshot.storage.k8s.io_volumesnapshotclasses.yaml
   kubectl apply --kubeconfig "${KUBECONFIG}" -f https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/"${EBS_INSTALL_SNAPSHOT_VERSION}"/client/config/crd/snapshot.storage.k8s.io_volumesnapshotcontents.yaml
   kubectl apply --kubeconfig "${KUBECONFIG}" -f https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/"${EBS_INSTALL_SNAPSHOT_VERSION}"/client/config/crd/snapshot.storage.k8s.io_volumesnapshots.yaml
+  SNAPSHOT_CONTROLLER_MANIFEST="$(curl -L https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/"${EBS_INSTALL_SNAPSHOT_VERSION}"/deploy/kubernetes/snapshot-controller/setup-snapshot-controller.yaml)"
+  if [ -n "${EBS_INSTALL_SNAPSHOT_CUSTOM_IMAGE:-}" ]; then
+    SNAPSHOT_CONTROLLER_MANIFEST="$(yq ".spec.template.spec.containers[0].image=\"${EBS_INSTALL_SNAPSHOT_CUSTOM_IMAGE}\"" <<<${SNAPSHOT_CONTROLLER_MANIFEST})"
+  fi
+  kubectl apply --kubeconfig "${KUBECONFIG}" -f - <<<${SNAPSHOT_CONTROLLER_MANIFEST}
 fi
 
 if [[ "${HELM_CT_TEST}" != true ]]; then
@@ -136,10 +156,10 @@ else
     "${BIN}/ginkgo" -p -nodes="${GINKGO_PARALLEL}" -v \
       --focus="${GINKGO_FOCUS}" \
       --skip="${GINKGO_SKIP}" \
+      --junit-report="${REPORT_DIR}/junit.xml" \
       "${TEST_PATH}" \
       -- \
       -kubeconfig="${KUBECONFIG}" \
-      -report-dir="${TEST_DIR}/artifacts" \
       -gce-zone="${FIRST_ZONE}"
     TEST_PASSED=$?
     set -e

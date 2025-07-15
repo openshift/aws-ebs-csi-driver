@@ -29,13 +29,32 @@ const (
 )
 
 var (
-	r    *metricRecorder // singleton instance of metricRecorder
-	once sync.Once
+	r          *metricRecorder // singleton instance of metricRecorder
+	once       sync.Once
+	operations = []string{
+		"CreateVolume",
+		"DeleteVolume",
+		"AttachVolume",
+		"DetachVolume",
+		"ModifyVolume",
+		"DescribeVolumes",
+		"DescribeVolumesModifications",
+		"CreateSnapshot",
+		"DeleteSnapshot",
+		"DescribeSnapshots",
+		"DescribeInstances",
+		"DescribeAvailabilityZones",
+		"DescribeTags",
+		"CreateTags",
+		"DeleteTags",
+		"EnableFastSnapshotRestores",
+	}
 )
 
 type metricRecorder struct {
-	registry *prometheus.Registry
-	metrics  map[string]interface{}
+	registry        *prometheus.Registry
+	metrics         map[string]interface{}
+	asyncEC2Metrics *AsyncEC2Collector
 }
 
 // Recorder returns the singleton instance of metricRecorder.
@@ -45,7 +64,7 @@ func Recorder() *metricRecorder {
 }
 
 // InitializeRecorder initializes a new metricRecorder instance if it hasn't been initialized.
-func InitializeRecorder() *metricRecorder {
+func InitializeRecorder(deprecatedMetrics bool) *metricRecorder {
 	once.Do(func() {
 		r = &metricRecorder{
 			registry: prometheus.NewRegistry(),
@@ -56,12 +75,52 @@ func InitializeRecorder() *metricRecorder {
 }
 
 // InitializeNVME registers the NVMe collector for gathering metrics from NVMe devices.
-func InitializeNVME(r *metricRecorder, csiMountPointPath, instanceID string) {
+func (m *metricRecorder) InitializeNVME(csiMountPointPath, instanceID string) {
 	registerNVMECollector(r, csiMountPointPath, instanceID)
 }
 
+// InitializeAsyncEC2Metrics initializes and registers AsyncEC2Collector for gathering metrics on async EC2 operations.
+func (m *metricRecorder) InitializeAsyncEC2Metrics(minimumEmissionThreshold time.Duration) {
+	variableLabels := []string{"volume_id", "instance_id", "attachment_state"}
+	cacheCleanupInterval := 15 * time.Minute
+
+	r.asyncEC2Metrics = &AsyncEC2Collector{
+		detachingDuration: prometheus.NewDesc(metricAsyncDetachSeconds, "Number of seconds csi driver has been waiting for volume to be detached from instance. Label attachment_state shows last seen state for attachment associated with volume_id and instance_id. Metric only valid if emitted from leader.", variableLabels, nil),
+		collectionDuration: prometheus.NewHistogram(prometheus.HistogramOpts{
+			Name:    asyncCollectorDuration,
+			Help:    "Histogram of async EC2 collector scrape duration in seconds.",
+			Buckets: []float64{0.01, 0.1, 0.5, 1, 2.5, 5, 10},
+		}),
+		scrapesTotal: prometheus.NewCounter(prometheus.CounterOpts{
+			Name: asyncCollectorScrapes,
+			Help: "Total number of async EC2 collector scrapes.",
+		}),
+		detachingVolumes:     make(map[attachment]detachingVolume),
+		minDurationThreshold: minimumEmissionThreshold,
+		lastCacheUpdate:      time.Now(),
+		ticker:               time.NewTicker(cacheCleanupInterval),
+	}
+	r.registry.MustRegister(r.asyncEC2Metrics)
+
+	// Prevent leaked memory in case of leader change by clearing cache if no detaches have been tracked in a while
+	go func() {
+		for {
+			<-r.asyncEC2Metrics.ticker.C
+			r.asyncEC2Metrics.cleanupCache(cacheCleanupInterval)
+		}
+	}()
+}
+
+// AsyncEC2Metrics returns AsyncEC2Collector if metrics are enabled.
+func AsyncEC2Metrics() *AsyncEC2Collector {
+	if r == nil {
+		return nil
+	}
+	return r.asyncEC2Metrics
+}
+
 // IncreaseCount increases the counter metric by 1.
-func (m *metricRecorder) IncreaseCount(name string, labels map[string]string) {
+func (m *metricRecorder) IncreaseCount(name string, helpText string, labels map[string]string) {
 	if m == nil {
 		return // recorder is not initialized
 	}
@@ -70,8 +129,8 @@ func (m *metricRecorder) IncreaseCount(name string, labels map[string]string) {
 
 	if !ok {
 		klog.V(4).InfoS("Metric not found, registering", "name", name, "labels", labels)
-		m.registerCounterVec(name, "ebs_csi_aws_com metric", getLabelNames(labels))
-		m.IncreaseCount(name, labels)
+		m.registerCounterVec(name, helpText, getLabelNames(labels))
+		m.IncreaseCount(name, helpText, labels)
 		return
 	}
 
@@ -84,7 +143,7 @@ func (m *metricRecorder) IncreaseCount(name string, labels map[string]string) {
 }
 
 // ObserveHistogram records the given value in the histogram metric.
-func (m *metricRecorder) ObserveHistogram(name string, value float64, labels map[string]string, buckets []float64) {
+func (m *metricRecorder) ObserveHistogram(name string, helpText string, value float64, labels map[string]string, buckets []float64) {
 	if m == nil {
 		return // recorder is not initialized
 	}
@@ -92,8 +151,8 @@ func (m *metricRecorder) ObserveHistogram(name string, value float64, labels map
 
 	if !ok {
 		klog.V(4).InfoS("Metric not found, registering", "name", name, "labels", labels, "buckets", buckets)
-		m.registerHistogramVec(name, "ebs_csi_aws_com metric", getLabelNames(labels), buckets)
-		m.ObserveHistogram(name, value, labels, buckets)
+		m.registerHistogramVec(name, helpText, getLabelNames(labels), buckets)
+		m.ObserveHistogram(name, helpText, value, labels, buckets)
 		return
 	}
 
@@ -138,9 +197,13 @@ func (m *metricRecorder) InitializeMetricsHandler(address, path, certFile, keyFi
 	}()
 }
 
-func (m *metricRecorder) registerHistogramVec(name, help string, labels []string, buckets []float64) {
-	if _, exists := m.metrics[name]; exists {
-		return
+func (m *metricRecorder) registerHistogramVec(name, help string, labels []string, buckets []float64) *prometheus.HistogramVec {
+	if metric, exists := m.metrics[name]; exists {
+		if histogramVec, ok := metric.(*prometheus.HistogramVec); ok {
+			return histogramVec
+		}
+		klog.ErrorS(nil, "Metric exists but is not a HistogramVec", "name", name)
+		return nil
 	}
 	histogram := prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
@@ -152,6 +215,7 @@ func (m *metricRecorder) registerHistogramVec(name, help string, labels []string
 	)
 	m.metrics[name] = histogram
 	m.registry.MustRegister(histogram)
+	return histogram
 }
 
 func (m *metricRecorder) registerCounterVec(name, help string, labels []string) {
@@ -175,4 +239,30 @@ func getLabelNames(labels map[string]string) []string {
 		names = append(names, n)
 	}
 	return names
+}
+
+func (m *metricRecorder) initializeMetricWithOperations(name, help string, labelNames []string) {
+	if _, exists := m.metrics[name]; !exists {
+		metric := m.registerHistogramVec(name, help, labelNames, nil)
+		for _, op := range operations {
+			metric.WithLabelValues(op)
+		}
+	}
+}
+
+// InitializeAPIMetrics registers and initializes any `aws_ebs_csi` metric that has known label values on driver startup. Setting deprecatedMetrics to true also initializes deprecated metrics.
+func (m *metricRecorder) InitializeAPIMetrics(deprecatedMetrics bool) {
+	labelNames := []string{"request"}
+	m.initializeMetricWithOperations(
+		APIRequestDuration,
+		APIRequestDurationHelpText,
+		labelNames,
+	)
+	if deprecatedMetrics {
+		m.initializeMetricWithOperations(
+			DeprecatedAPIRequestDuration,
+			DeprecatedAPIRequestDurationHelpText,
+			labelNames,
+		)
+	}
 }

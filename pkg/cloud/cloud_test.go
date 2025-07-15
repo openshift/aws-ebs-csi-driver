@@ -42,7 +42,6 @@ import (
 const (
 	defaultZone     = "test-az"
 	expZone         = "us-west-2b"
-	snowZone        = "snow"
 	defaultVolumeID = "vol-test-1234"
 	defaultNodeID   = "node-1234"
 	defaultPath     = "/dev/xvdaa"
@@ -689,7 +688,7 @@ func TestCheckDesiredState(t *testing.T) {
 				},
 			},
 		}, nil)
-		_, err := cloudInstance.checkDesiredState(context.Background(), tc.volumeID, tc.desiredSizeGiB, tc.options)
+		_, err := cloudInstance.checkDesiredState(t.Context(), tc.volumeID, tc.desiredSizeGiB, tc.options)
 		if err != nil {
 			if tc.expErr == nil {
 				t.Fatalf("Did not expect to get an error but got %q", err)
@@ -1264,41 +1263,6 @@ func TestCreateDisk(t *testing.T) {
 			expErr: nil,
 		},
 		{
-			name:       "success: create volume when zone is snow and add tags",
-			volumeName: "vol-test-name",
-			diskOptions: &DiskOptions{
-				CapacityBytes:    util.GiBToBytes(1),
-				Tags:             map[string]string{VolumeNameTagKey: "vol-test", AwsEbsDriverTagKey: "true"},
-				AvailabilityZone: snowZone,
-				VolumeType:       "sbp1",
-			},
-			expCreateVolumeInput: &ec2.CreateVolumeInput{},
-			expDisk: &Disk{
-				VolumeID:         "vol-test",
-				CapacityGiB:      1,
-				AvailabilityZone: snowZone,
-			},
-			expErr: nil,
-		},
-		{
-			name:       "fail: zone is snow and add tags throws error",
-			volumeName: "vol-test-name",
-			diskOptions: &DiskOptions{
-				CapacityBytes:    util.GiBToBytes(1),
-				Tags:             map[string]string{VolumeNameTagKey: "vol-test", AwsEbsDriverTagKey: "true"},
-				AvailabilityZone: snowZone,
-				VolumeType:       "sbg1",
-			},
-			expCreateVolumeInput: &ec2.CreateVolumeInput{},
-			expCreateTagsErr:     errors.New("CreateTags generic error"),
-			expDisk: &Disk{
-				VolumeID:         "vol-test",
-				CapacityGiB:      1,
-				AvailabilityZone: snowZone,
-			},
-			expErr: errors.New("could not attach tags to volume: vol-test. CreateTags generic error"),
-		},
-		{
 			name:       "success: create default volume with throughput",
 			volumeName: "vol-test-name",
 			diskOptions: &DiskOptions{
@@ -1335,6 +1299,40 @@ func TestCreateDisk(t *testing.T) {
 				Iops: aws.Int32(2000),
 			},
 			expErr: nil,
+		},
+		{
+			name:       "success: create volume from snapshot with initialization rate",
+			volumeName: "vol-test-name",
+			diskOptions: &DiskOptions{
+				CapacityBytes:            util.GiBToBytes(1),
+				Tags:                     map[string]string{VolumeNameTagKey: "vol-test", AwsEbsDriverTagKey: "true"},
+				SnapshotID:               "snapshot-test",
+				VolumeInitializationRate: 200,
+			},
+			expDisk: &Disk{
+				VolumeID:         "vol-test",
+				CapacityGiB:      1,
+				AvailabilityZone: defaultZone,
+			},
+			expCreateVolumeInput: &ec2.CreateVolumeInput{
+				VolumeInitializationRate: aws.Int32(200),
+			},
+			expErr: nil,
+		},
+		{
+			name:       "failure: create volume from snapshot with initialization rate when snapshotID is missing",
+			volumeName: "vol-test-name",
+			diskOptions: &DiskOptions{
+				CapacityBytes:            util.GiBToBytes(1),
+				Tags:                     map[string]string{VolumeNameTagKey: "vol-test", AwsEbsDriverTagKey: "true"},
+				VolumeInitializationRate: 200,
+			},
+			expDisk: nil,
+			expCreateVolumeInput: &ec2.CreateVolumeInput{
+				VolumeInitializationRate: aws.Int32(200),
+			},
+			expCreateVolumeErr: errors.New("InvalidParameterCombination"),
+			expErr:             fmt.Errorf("could not create volume in EC2: %w", errors.New("InvalidParameterCombination")),
 		},
 		{
 			name:       "failure: multi-attach with GP3",
@@ -1385,7 +1383,7 @@ func TestCreateDisk(t *testing.T) {
 				VolumeId:   aws.String("snap-test-volume"),
 				State:      types.SnapshotStateCompleted,
 			}
-			ctx, ctxCancel := context.WithDeadline(context.Background(), time.Now().Add(defaultCreateDiskDeadline))
+			ctx, ctxCancel := context.WithDeadline(t.Context(), time.Now().Add(defaultCreateDiskDeadline))
 			defer ctxCancel()
 
 			if tc.expCreateVolumeInput != nil {
@@ -1405,10 +1403,6 @@ func TestCreateDisk(t *testing.T) {
 						},
 					},
 				}, tc.expDescVolumeErr).AnyTimes()
-				if tc.diskOptions.AvailabilityZone == "snow" {
-					mockEC2.EXPECT().CreateTags(gomock.Any(), gomock.Any()).Return(&ec2.CreateTagsOutput{}, tc.expCreateTagsErr)
-					mockEC2.EXPECT().DeleteVolume(gomock.Any(), gomock.Any(), gomock.Any()).Return(&ec2.DeleteVolumeOutput{}, nil).AnyTimes()
-				}
 				if len(tc.diskOptions.SnapshotID) > 0 {
 					mockEC2.EXPECT().DescribeSnapshots(gomock.Any(), gomock.Any()).Return(&ec2.DescribeSnapshotsOutput{Snapshots: []types.Snapshot{snapshot}}, nil).AnyTimes()
 				}
@@ -1506,7 +1500,7 @@ func TestCreateDiskClientToken(t *testing.T) {
 		}, nil).AnyTimes(),
 	)
 
-	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(defaultCreateDiskDeadline))
+	ctx, cancel := context.WithDeadline(t.Context(), time.Now().Add(defaultCreateDiskDeadline))
 	defer cancel()
 	for i := range 3 {
 		_, err := c.CreateDisk(ctx, volumeName, diskOptions)
@@ -1551,7 +1545,7 @@ func TestDeleteDisk(t *testing.T) {
 			mockEC2 := NewMockEC2API(mockCtrl)
 			c := newCloud(mockEC2)
 
-			ctx := context.Background()
+			ctx := t.Context()
 			mockEC2.EXPECT().DeleteVolume(gomock.Any(), gomock.Any(), gomock.Any()).Return(&ec2.DeleteVolumeOutput{}, tc.expErr)
 
 			ok, err := c.DeleteDisk(ctx, tc.volumeID)
@@ -1692,6 +1686,30 @@ func TestAttachDisk(t *testing.T) {
 			},
 		},
 		{
+			name:     "fail: AttachVolume returned attachment limit exceeded error",
+			volumeID: defaultVolumeID,
+			nodeID:   defaultNodeID,
+			path:     defaultPath,
+			expErr: fmt.Errorf("%w: %w", ErrAttachmentLimitExceeded, &smithy.GenericAPIError{
+				Code:    "AttachmentLimitExceeded",
+				Message: "Volume attachment limit exceeded",
+			}),
+			mockFunc: func(mockEC2 *MockEC2API, ctx context.Context, volumeID, nodeID, nodeID2, path string, dm dm.DeviceManager) {
+				instanceRequest := createInstanceRequest(nodeID)
+				attachRequest := createAttachRequest(volumeID, nodeID, path)
+				attachLimitErr := &smithy.GenericAPIError{
+					Code:    "AttachmentLimitExceeded",
+					Message: "Volume attachment limit exceeded",
+				}
+
+				gomock.InOrder(
+					mockEC2.EXPECT().DescribeInstances(ctx, instanceRequest).Return(newDescribeInstancesOutput(nodeID), nil),
+					mockEC2.EXPECT().AttachVolume(ctx, attachRequest, gomock.Any()).Return(nil, attachLimitErr),
+				)
+			},
+		},
+
+		{
 			name:     "success: AttachVolume multi-attach",
 			volumeID: defaultVolumeID,
 			nodeID:   defaultNodeID,
@@ -1759,7 +1777,7 @@ func TestAttachDisk(t *testing.T) {
 				t.Fatalf("could not assert c as type cloud, %v", c)
 			}
 
-			ctx := context.Background()
+			ctx := t.Context()
 			deviceManager := cloudInstance.dm
 
 			tc.mockFunc(mockEC2, ctx, tc.volumeID, tc.nodeID, tc.nodeID2, tc.path, deviceManager)
@@ -1848,7 +1866,7 @@ func TestDetachDisk(t *testing.T) {
 			mockEC2 := NewMockEC2API(mockCtrl)
 			c := newCloud(mockEC2)
 
-			ctx := context.Background()
+			ctx := t.Context()
 			tc.mockFunc(mockEC2, ctx, tc.volumeID, tc.nodeID)
 
 			err := c.DetachDisk(ctx, tc.volumeID, tc.nodeID)
@@ -1916,7 +1934,7 @@ func TestGetDiskByName(t *testing.T) {
 				},
 			}
 
-			ctx := context.Background()
+			ctx := t.Context()
 			mockEC2.EXPECT().DescribeVolumes(gomock.Any(), gomock.Any()).Return(&ec2.DescribeVolumesOutput{Volumes: []types.Volume{vol}}, tc.expErr)
 
 			disk, err := c.GetDiskByName(ctx, tc.volumeName, tc.volumeCapacity)
@@ -2010,7 +2028,7 @@ func TestGetDiskByID(t *testing.T) {
 			mockEC2 := NewMockEC2API(mockCtrl)
 			c := newCloud(mockEC2)
 
-			ctx := context.Background()
+			ctx := t.Context()
 
 			mockEC2.EXPECT().DescribeVolumes(gomock.Any(), gomock.Any()).Return(
 				&ec2.DescribeVolumesOutput{
@@ -2110,7 +2128,7 @@ func TestCreateSnapshot(t *testing.T) {
 			mockEC2 := NewMockEC2API(mockCtrl)
 			c := newCloud(mockEC2)
 
-			ctx := context.Background()
+			ctx := t.Context()
 
 			mockEC2.EXPECT().CreateSnapshot(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
 				func(ctx context.Context, input *ec2.CreateSnapshotInput, optFns ...func(*ec2.Options)) (*ec2.CreateSnapshotOutput, error) {
@@ -2227,7 +2245,7 @@ func TestEnableFastSnapshotRestores(t *testing.T) {
 			mockEC2 := NewMockEC2API(mockCtrl)
 			c := newCloud(mockEC2)
 
-			ctx := context.Background()
+			ctx := t.Context()
 			mockEC2.EXPECT().EnableFastSnapshotRestores(gomock.Any(), gomock.Any(), gomock.Any()).Return(tc.expOutput, tc.expErr).AnyTimes()
 
 			response, err := c.EnableFastSnapshotRestores(ctx, tc.availabilityZones, tc.snapshotID)
@@ -2290,7 +2308,7 @@ func TestAvailabilityZones(t *testing.T) {
 			mockEC2 := NewMockEC2API(mockCtrl)
 			c := newCloud(mockEC2)
 
-			ctx := context.Background()
+			ctx := t.Context()
 			mockEC2.EXPECT().DescribeAvailabilityZones(gomock.Any(), gomock.Any()).Return(tc.expOutput, tc.expErr).AnyTimes()
 
 			az, err := c.AvailabilityZones(ctx)
@@ -2344,7 +2362,7 @@ func TestDeleteSnapshot(t *testing.T) {
 			mockEC2 := NewMockEC2API(mockCtrl)
 			c := newCloud(mockEC2)
 
-			ctx := context.Background()
+			ctx := t.Context()
 			mockEC2.EXPECT().DeleteSnapshot(gomock.Any(), gomock.Any(), gomock.Any()).Return(&ec2.DeleteSnapshotOutput{}, tc.expErr)
 
 			_, err := c.DeleteSnapshot(ctx, tc.snapshotName)
@@ -2633,7 +2651,7 @@ func TestResizeOrModifyDisk(t *testing.T) {
 			mockEC2 := NewMockEC2API(mockCtrl)
 			c := newCloud(mockEC2)
 
-			ctx := context.Background()
+			ctx := t.Context()
 			if tc.existingVolume != nil || tc.existingVolumeError != nil {
 				mockEC2.EXPECT().DescribeVolumes(gomock.Any(), gomock.Any()).Return(
 					&ec2.DescribeVolumesOutput{
@@ -2767,7 +2785,7 @@ func TestModifyTags(t *testing.T) {
 			mockEC2 := NewMockEC2API(mockCtrl)
 			c := newCloud(mockEC2)
 
-			ctx := context.Background()
+			ctx := t.Context()
 
 			if len(tc.modifyTagsOptions.TagsToAdd) > 0 {
 				if tc.negativeCase {
@@ -2857,7 +2875,7 @@ func TestGetSnapshotByName(t *testing.T) {
 				},
 			}
 
-			ctx := context.Background()
+			ctx := t.Context()
 
 			mockEC2.EXPECT().DescribeSnapshots(gomock.Any(), gomock.Any()).Return(&ec2.DescribeSnapshotsOutput{Snapshots: []types.Snapshot{ec2snapshot}}, nil)
 
@@ -2930,7 +2948,7 @@ func TestGetSnapshotByID(t *testing.T) {
 				State:      types.SnapshotStateCompleted,
 			}
 
-			ctx := context.Background()
+			ctx := t.Context()
 
 			mockEC2.EXPECT().DescribeSnapshots(gomock.Any(), gomock.Any()).Return(&ec2.DescribeSnapshotsOutput{Snapshots: []types.Snapshot{ec2snapshot}}, nil)
 
@@ -3014,7 +3032,7 @@ func TestListSnapshots(t *testing.T) {
 				mockEC2 := NewMockEC2API(mockCtl)
 				c := newCloud(mockEC2)
 
-				ctx := context.Background()
+				ctx := t.Context()
 
 				mockEC2.EXPECT().DescribeSnapshots(gomock.Any(), gomock.Any()).Return(&ec2.DescribeSnapshotsOutput{Snapshots: ec2Snapshots}, nil)
 
@@ -3089,7 +3107,7 @@ func TestListSnapshots(t *testing.T) {
 				mockEC2 := NewMockEC2API(mockCtl)
 				c := newCloud(mockEC2)
 
-				ctx := context.Background()
+				ctx := t.Context()
 
 				mockEC2.EXPECT().DescribeSnapshots(gomock.Any(), gomock.Any()).Return(&ec2.DescribeSnapshotsOutput{Snapshots: ec2Snapshots}, nil)
 
@@ -3153,7 +3171,7 @@ func TestListSnapshots(t *testing.T) {
 				mockEC2 := NewMockEC2API(mockCtl)
 				c := newCloud(mockEC2)
 
-				ctx := context.Background()
+				ctx := t.Context()
 
 				firstCall := mockEC2.EXPECT().DescribeSnapshots(gomock.Any(), gomock.Any()).Return(&ec2.DescribeSnapshotsOutput{
 					Snapshots: ec2Snapshots[:maxResults],
@@ -3203,7 +3221,7 @@ func TestListSnapshots(t *testing.T) {
 				mockEC2 := NewMockEC2API(mockCtl)
 				c := newCloud(mockEC2)
 
-				ctx := context.Background()
+				ctx := t.Context()
 
 				mockEC2.EXPECT().DescribeSnapshots(gomock.Any(), gomock.Any()).Return(nil, errors.New("test error"))
 
@@ -3221,7 +3239,7 @@ func TestListSnapshots(t *testing.T) {
 				mockEC2 := NewMockEC2API(mockCtl)
 				c := newCloud(mockEC2)
 
-				ctx := context.Background()
+				ctx := t.Context()
 
 				mockEC2.EXPECT().DescribeSnapshots(gomock.Any(), gomock.Any()).Return(&ec2.DescribeSnapshotsOutput{}, nil)
 
@@ -3246,7 +3264,7 @@ func TestWaitForAttachmentState(t *testing.T) {
 	testCases := []struct {
 		name             string
 		volumeID         string
-		expectedState    string
+		expectedState    types.VolumeAttachmentState
 		expectedInstance string
 		expectedDevice   string
 		alreadyAssigned  bool
@@ -3255,7 +3273,7 @@ func TestWaitForAttachmentState(t *testing.T) {
 		{
 			name:             "success: attached",
 			volumeID:         "vol-test-1234",
-			expectedState:    volumeAttachedState,
+			expectedState:    types.VolumeAttachmentStateAttached,
 			expectedInstance: "1234",
 			expectedDevice:   defaultPath,
 			alreadyAssigned:  false,
@@ -3264,7 +3282,7 @@ func TestWaitForAttachmentState(t *testing.T) {
 		{
 			name:             "success: detached",
 			volumeID:         "vol-test-1234",
-			expectedState:    volumeDetachedState,
+			expectedState:    types.VolumeAttachmentStateDetached,
 			expectedInstance: "1234",
 			expectedDevice:   defaultPath,
 			alreadyAssigned:  false,
@@ -3273,7 +3291,7 @@ func TestWaitForAttachmentState(t *testing.T) {
 		{
 			name:             "success: disk not found, assumed detached",
 			volumeID:         "vol-test-1234",
-			expectedState:    volumeDetachedState,
+			expectedState:    types.VolumeAttachmentStateDetached,
 			expectedInstance: "1234",
 			expectedDevice:   defaultPath,
 			alreadyAssigned:  false,
@@ -3282,7 +3300,7 @@ func TestWaitForAttachmentState(t *testing.T) {
 		{
 			name:             "success: multiple attachments with Multi-Attach enabled",
 			volumeID:         "vol-test-1234",
-			expectedState:    volumeAttachedState,
+			expectedState:    types.VolumeAttachmentStateAttached,
 			expectedInstance: "1234",
 			expectedDevice:   defaultPath,
 			alreadyAssigned:  false,
@@ -3291,7 +3309,7 @@ func TestWaitForAttachmentState(t *testing.T) {
 		{
 			name:             "failure: disk not found, expected attached",
 			volumeID:         "vol-test-1234",
-			expectedState:    volumeAttachedState,
+			expectedState:    types.VolumeAttachmentStateAttached,
 			expectedInstance: "1234",
 			expectedDevice:   defaultPath,
 			alreadyAssigned:  false,
@@ -3300,7 +3318,7 @@ func TestWaitForAttachmentState(t *testing.T) {
 		{
 			name:             "failure: unexpected device",
 			volumeID:         "vol-test-1234",
-			expectedState:    volumeAttachedState,
+			expectedState:    types.VolumeAttachmentStateAttached,
 			expectedInstance: "1234",
 			expectedDevice:   "/dev/xvdab",
 			alreadyAssigned:  false,
@@ -3309,7 +3327,7 @@ func TestWaitForAttachmentState(t *testing.T) {
 		{
 			name:             "failure: unexpected instance",
 			volumeID:         "vol-test-1234",
-			expectedState:    volumeAttachedState,
+			expectedState:    types.VolumeAttachmentStateAttached,
 			expectedInstance: "1235",
 			expectedDevice:   defaultPath,
 			alreadyAssigned:  false,
@@ -3318,7 +3336,7 @@ func TestWaitForAttachmentState(t *testing.T) {
 		{
 			name:             "failure: already assigned but detached state",
 			volumeID:         "vol-test-1234",
-			expectedState:    volumeAttachedState,
+			expectedState:    types.VolumeAttachmentStateAttached,
 			expectedInstance: "1234",
 			expectedDevice:   defaultPath,
 			alreadyAssigned:  true,
@@ -3327,7 +3345,7 @@ func TestWaitForAttachmentState(t *testing.T) {
 		{
 			name:             "failure: already assigned but attaching state",
 			volumeID:         "vol-test-1234",
-			expectedState:    volumeAttachedState,
+			expectedState:    types.VolumeAttachmentStateAttached,
 			expectedInstance: "1234",
 			expectedDevice:   defaultPath,
 			alreadyAssigned:  true,
@@ -3336,7 +3354,7 @@ func TestWaitForAttachmentState(t *testing.T) {
 		{
 			name:             "failure: multiple attachments with Multi-Attach disabled",
 			volumeID:         "vol-test-1234",
-			expectedState:    volumeAttachedState,
+			expectedState:    types.VolumeAttachmentStateAttached,
 			expectedInstance: "1234",
 			expectedDevice:   defaultPath,
 			alreadyAssigned:  false,
@@ -3371,7 +3389,7 @@ func TestWaitForAttachmentState(t *testing.T) {
 				MultiAttachEnabled: aws.Bool(false),
 			}
 
-			ctx, cancel := context.WithCancel(context.Background())
+			ctx, cancel := context.WithCancel(t.Context())
 			defer cancel()
 
 			switch tc.name {
@@ -3402,7 +3420,7 @@ func TestWaitForAttachmentState(t *testing.T) {
 				mockEC2.EXPECT().DescribeVolumes(gomock.Any(), gomock.Any()).Return(&ec2.DescribeVolumesOutput{Volumes: []types.Volume{attachedVol}}, nil).AnyTimes()
 			}
 
-			attachment, err := c.WaitForAttachmentState(ctx, tc.volumeID, tc.expectedState, tc.expectedInstance, tc.expectedDevice, tc.alreadyAssigned)
+			attachment, err := c.WaitForAttachmentState(ctx, tc.expectedState, tc.volumeID, tc.expectedInstance, tc.expectedDevice, tc.alreadyAssigned)
 
 			if tc.expectError {
 				if err == nil {
@@ -3413,7 +3431,7 @@ func TestWaitForAttachmentState(t *testing.T) {
 					t.Fatalf("WaitForAttachmentState() failed: expected no error, got %v", err)
 				}
 
-				if tc.expectedState == volumeAttachedState {
+				if tc.expectedState == types.VolumeAttachmentStateAttached {
 					if attachment == nil {
 						t.Fatal("WaiForAttachmentState() failed: expected attachment, got nothing")
 					}
