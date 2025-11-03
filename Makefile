@@ -38,28 +38,7 @@ undefine VERSION
 # Note that the final driver binary is still explicitly built with `-mod=vendor`.
 export GOFLAGS := -mod=readonly
 
-VERSION?=v1.45.0
-# Carry: clear all Kubernetes env. variables. generate-kustomize target below
-# would get the actual namespace where this Makefile runs and file it into
-# generated kustomize yaml files.
-undefine KUBECONFIG
-undefine KUBERNETES_PORT
-undefine KUBERNETES_PORT_443_TCP
-undefine KUBERNETES_PORT_443_TCP_ADDR
-undefine KUBERNETES_PORT_443_TCP_PORT
-undefine KUBERNETES_PORT_443_TCP_PROTO
-undefine KUBERNETES_SERVICE_HOST
-undefine KUBERNETES_SERVICE_PORT
-undefine KUBERNETES_SERVICE_PORT_HTTPS
-# Carry: VERSION is set by CI to go version, not CSI driver version
-undefine VERSION
-
-# Carry: set goflags to allow download from the internet.
-# Some scripts in `make verify` download their tools and it is tedious to add `mod=readonly` to each of them.
-# Note that the final driver binary is still explicitly built with `-mod=vendor`.
-export GOFLAGS := -mod=readonly
-
-VERSION?=v1.45.0
+VERSION?=v1.48.0
 
 PKG=github.com/kubernetes-sigs/aws-ebs-csi-driver
 GIT_COMMIT?=$(shell git rev-parse HEAD)
@@ -96,6 +75,7 @@ CLUSTER_NAME?=ebs-csi-e2e.k8s.local
 CLUSTER_TYPE?=kops
 
 GINKGO_WINDOWS_SKIP?="\[Disruptive\]|\[Serial\]|\[Flaky\]|\[LinuxOnly\]|\[Feature:VolumeSnapshotDataSource\]|\(xfs\)|\(ext4\)|\(block volmode\)"
+GINKGO_BOTTLEROCKET_SKIP?="\[Disruptive\]|\[Serial\]|\[Flaky\]|should not mount / map unused volumes in a pod \[LinuxOnly\]"
 
 # split words on hyphen, access by 1-index
 word-hyphen = $(word $2,$(subst -, ,$1))
@@ -192,6 +172,11 @@ e2e/external: bin/helm bin/kubetest2
 .PHONY: e2e/external-a1-eks
 e2e/external-a1-eks: bin/helm bin/kubetest2
 	HELM_EXTRA_FLAGS="--set=a1CompatibilityDaemonSet=true" \
+	./hack/e2e/run.sh
+
+.PHONY: e2e/external-eks-bottlerocket
+e2e/external-eks-bottlerocket: bin/helm bin/kubetest2
+	GINKGO_SKIP=$(GINKGO_BOTTLEROCKET_SKIP) \
 	./hack/e2e/run.sh
 
 .PHONY: e2e/external-fips
@@ -301,7 +286,7 @@ sub-image-%:
 
 .PHONY: image
 image:
-	docker buildx build \
+	BUILDX_NO_DEFAULT_ATTESTATIONS=1 docker buildx build \
 		--platform=$(OS)/$(ARCH) \
 		--progress=plain \
 		--target=$(OS)-$(OSVERSION) \
@@ -310,7 +295,6 @@ image:
 		--build-arg=GOPROXY=$(GOPROXY) \
 		--build-arg=VERSION=$(VERSION) \
 		$(FIPS_DOCKER_ARGS) \
-		`./hack/provenance.sh` \
 		$(DOCKER_EXTRA_ARGS) \
 		.
 
