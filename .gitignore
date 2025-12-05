@@ -17,6 +17,9 @@ coverage.html
 .vagrant
 Vagrantfile
 
+# To fix hermetic builds
+!vendor/github.com/mistifyio/go-zfs/Vagrantfile
+
 # vim
 *.swp
 
