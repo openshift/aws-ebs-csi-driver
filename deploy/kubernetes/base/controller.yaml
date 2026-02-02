@@ -153,10 +153,11 @@ spec:
             - --kube-api-burst=100
             - --worker-threads=100
             - --retry-interval-max=30m
-            - --feature-gates=VolumeAttributesClass=true
           env:
             - name: ADDRESS
               value: /var/lib/csi/sockets/pluginproxy/csi.sock
+            - name: ENABLE_VAC_FALLBACK
+              value: "true"
           volumeMounts:
             - name: socket-dir
               mountPath: /var/lib/csi/sockets/pluginproxy/
@@ -243,10 +244,11 @@ spec:
             - --kube-api-burst=100
             - --workers=100
             - --retry-interval-max=30m
-            - --feature-gates=VolumeAttributesClass=true
           env:
             - name: ADDRESS
               value: /var/lib/csi/sockets/pluginproxy/csi.sock
+            - name: ENABLE_VAC_FALLBACK
+              value: "true"
           volumeMounts:
             - name: socket-dir
               mountPath: /var/lib/csi/sockets/pluginproxy/
