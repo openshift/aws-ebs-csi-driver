@@ -18,6 +18,26 @@
 
 ## Variables/Functions
 
+# Carry: clear all Kubernetes env. variables. generate-kustomize target below
+# would get the actual namespace where this Makefile runs and file it into
+# generated kustomize yaml files.
+undefine KUBECONFIG
+undefine KUBERNETES_PORT
+undefine KUBERNETES_PORT_443_TCP
+undefine KUBERNETES_PORT_443_TCP_ADDR
+undefine KUBERNETES_PORT_443_TCP_PORT
+undefine KUBERNETES_PORT_443_TCP_PROTO
+undefine KUBERNETES_SERVICE_HOST
+undefine KUBERNETES_SERVICE_PORT
+undefine KUBERNETES_SERVICE_PORT_HTTPS
+# Carry: VERSION is set by CI to go version, not CSI driver version
+undefine VERSION
+
+# Carry: set goflags to allow download from the internet.
+# Some scripts in `make verify` download their tools and it is tedious to add `mod=readonly` to each of them.
+# Note that the final driver binary is still explicitly built with `-mod=vendor`.
+export GOFLAGS := -mod=readonly
+
 VERSION?=v1.64.0
 
 PKG=github.com/kubernetes-sigs/aws-ebs-csi-driver
@@ -89,7 +109,8 @@ update: update/gofix update/gofmt update/golangci-fix update/kustomize update/mo
 	@echo "All updates succeeded!"
 
 .PHONY: verify
-verify: verify/govet verify/golangci-lint verify/update verify/volume-limits
+# OpenShift carry: do not run golint, it frequently fails when ART bumps go
+verify: verify/govet verify/update verify/volume-limits
 	@echo "All verifications passed!"
 
 .PHONY: cluster/create
@@ -283,7 +304,8 @@ bin:
 	@mkdir -p $@
 
 bin/$(BINARY): $(GO_SOURCES) | bin
-	CGO_ENABLED=0 GOOS=$(OS) GOARCH=$(ARCH) GOFIPS140=$(GOFIPS140) go build -mod=readonly -ldflags ${LDFLAGS} -o $@ ./cmd/
+	# OpenShift carry: build with embedded vendor/ directory in this repo.
+	CGO_ENABLED=0 GOOS=$(OS) GOARCH=$(ARCH) GOFIPS140=$(GOFIPS140) go build -mod=vendor -ldflags ${LDFLAGS} -o $@ ./cmd/
 
 .PHONY: all-image-registry
 all-image-registry: $(addprefix sub-image-,$(ALL_OS_ARCH_OSVERSION))
@@ -339,7 +361,8 @@ update/gofix:
 
 .PHONY: update/gofmt
 update/gofmt:
-	gofmt -s -w .
+	# Carry: do not format files in vendor/ directory
+	gofmt -s -w $$( find . -type f -name "*.go" | grep -v "^./vendor" )
 
 .PHONY: update/golangci-fix
 update/golangci-fix: bin/golangci-lint
