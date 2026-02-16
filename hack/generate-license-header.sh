@@ -19,8 +19,14 @@ set -euo pipefail
 echo "Adding license header..."
 
 current_year=$(date +%Y)
-find . -type d \( -name "deploy" -o -name "charts" \) -prune -o -type f \( -name "*.go" -o -name "*.sh" -o -name "*.yaml" -o -name "*.yml" \) -print | while read -r file; do
+# Carry: do not add license to files in vendor/ directory
+find . -type d \( -name "deploy" -o -name "charts" -o -name "vendor" \) -prune -o -type f \( -name "*.go" -o -name "*.sh" -o -name "*.yaml" -o -name "*.yml" \) -print | while read -r file; do
   case "$file" in
+  ./.ci-operator.yaml)
+    # Do not add license to OpenShift files.
+    # This fixes `make verify`, which compares result of this script with the repo.
+    continue
+    ;;
   **/mock_*.go)
     # Do not add license to auto-generated mock files
     continue
