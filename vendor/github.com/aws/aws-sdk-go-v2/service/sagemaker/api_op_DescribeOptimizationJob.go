@@ -116,9 +116,6 @@ type DescribeOptimizationJobOutput struct {
 	// If the optimization job status is FAILED , the reason for the failure.
 	FailureReason *string
 
-	// The maximum number of instances to use for the optimization job.
-	MaxInstanceCount *int32
-
 	// The time when the optimization job finished processing.
 	OptimizationEndTime *time.Time
 
@@ -234,7 +231,40 @@ func (c *Client) addOperationDescribeOptimizationJobMiddlewares(stack *middlewar
 	if err = addInterceptAttempt(stack, options); err != nil {
 		return err
 	}
-	if err = addInterceptors(stack, options); err != nil {
+	if err = addInterceptExecution(stack, options); err != nil {
+		return err
+	}
+	if err = addInterceptBeforeSerialization(stack, options); err != nil {
+		return err
+	}
+	if err = addInterceptAfterSerialization(stack, options); err != nil {
+		return err
+	}
+	if err = addInterceptBeforeSigning(stack, options); err != nil {
+		return err
+	}
+	if err = addInterceptAfterSigning(stack, options); err != nil {
+		return err
+	}
+	if err = addInterceptTransmit(stack, options); err != nil {
+		return err
+	}
+	if err = addInterceptBeforeDeserialization(stack, options); err != nil {
+		return err
+	}
+	if err = addInterceptAfterDeserialization(stack, options); err != nil {
+		return err
+	}
+	if err = addSpanInitializeStart(stack); err != nil {
+		return err
+	}
+	if err = addSpanInitializeEnd(stack); err != nil {
+		return err
+	}
+	if err = addSpanBuildRequestStart(stack); err != nil {
+		return err
+	}
+	if err = addSpanBuildRequestEnd(stack); err != nil {
 		return err
 	}
 	return nil

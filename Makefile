@@ -1,4 +1,4 @@
-# Copyright 2025 The Kubernetes Authors.
+# Copyright 2023 The Kubernetes Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -38,7 +38,7 @@ undefine VERSION
 # Note that the final driver binary is still explicitly built with `-mod=vendor`.
 export GOFLAGS := -mod=readonly
 
-VERSION?=v1.54.0
+VERSION?=v1.48.0
 
 PKG=github.com/kubernetes-sigs/aws-ebs-csi-driver
 GIT_COMMIT?=$(shell git rev-parse HEAD)
@@ -74,7 +74,7 @@ ALL_OS_ARCH_OSVERSION=$(foreach os, $(ALL_OS), ${ALL_OS_ARCH_OSVERSION_${os}})
 CLUSTER_NAME?=ebs-csi-e2e.k8s.local
 CLUSTER_TYPE?=kops
 
-GINKGO_WINDOWS_SKIP?="\[Disruptive\]|\[Serial\]|\[Flaky\]|\[LinuxOnly\]|\[Feature:VolumeSnapshotDataSource\]|\(xfs\)|\(ext4\)|\(block volmode\)|should resize volume when PVC is edited and the pod is re-created on the same node after controller resize is finished"
+GINKGO_WINDOWS_SKIP?="\[Disruptive\]|\[Serial\]|\[Flaky\]|\[LinuxOnly\]|\[Feature:VolumeSnapshotDataSource\]|\(xfs\)|\(ext4\)|\(block volmode\)"
 GINKGO_BOTTLEROCKET_SKIP?="\[Disruptive\]|\[Serial\]|\[Flaky\]|should not mount / map unused volumes in a pod \[LinuxOnly\]"
 
 # split words on hyphen, access by 1-index
@@ -109,7 +109,7 @@ test/coverage:
 tools: bin/aws bin/ct bin/eksctl bin/ginkgo bin/golangci-lint bin/gomplate bin/helm bin/kops bin/kubetest2 bin/mockgen bin/shfmt
 
 .PHONY: update
-update: update/gofix update/gofmt update/golangci-fix update/kustomize update/mockgen update/gomod update/shfmt update/generate-license-header
+update: update/gofix update/gofmt update/kustomize update/mockgen update/gomod update/shfmt update/generate-license-header
 	@echo "All updates succeeded!"
 
 .PHONY: verify
@@ -164,19 +164,14 @@ e2e/multi-az: bin/helm bin/ginkgo
 	GINKGO_PARALLEL=5 \
 	./hack/e2e/run.sh
 
-.PHONY: e2e/disruptive
-e2e/disruptive: bin/helm bin/ginkgo
-	TEST_PATH=./tests/e2e/... \
-	GINKGO_FOCUS="\[ebs-csi-e2e\] \[Disruptive\]" \
-	GINKGO_SKIP="\[Flaky\]" \
-	GINKGO_PARALLEL=1 \
-	EBS_INSTALL_SNAPSHOT=false \
-	HELM_EXTRA_FLAGS="--set=sidecars.metadataLabeler.enabled=true,node.metadataSources='metadata-labeler'" \
-	./hack/e2e/run.sh
-
 .PHONY: e2e/external
 e2e/external: bin/helm bin/kubetest2
 	COLLECT_METRICS="true" \
+	./hack/e2e/run.sh
+
+.PHONY: e2e/external-a1-eks
+e2e/external-a1-eks: bin/helm bin/kubetest2
+	HELM_EXTRA_FLAGS="--set=a1CompatibilityDaemonSet=true" \
 	./hack/e2e/run.sh
 
 .PHONY: e2e/external-eks-bottlerocket
@@ -257,8 +252,12 @@ sub-push: all-image-registry push-manifest
 sub-push-fips:
 	$(MAKE) FIPS=true TAG=$(TAG)-fips sub-push
 
+.PHONY: sub-push-a1compat
+sub-push-a1compat:
+	$(MAKE) DOCKER_EXTRA_ARGS="-t=$(IMAGE):$(TAG)-a1compat" sub-image-linux-arm64-al2
+
 .PHONY: all-push
-all-push: sub-push sub-push-fips
+all-push: sub-push sub-push-fips sub-push-a1compat
 
 test-e2e-%:
 	./hack/prow-e2e.sh test-e2e-$*
@@ -328,12 +327,6 @@ update/gofmt:
 	# Carry: do not format files in vendor/ directory
 	gofmt -s -w $$( find . -type f -name "*.go" | grep -v "^./vendor" )
 
-.PHONY: update/golangci-fix
-update/golangci-fix: bin/golangci-lint
-ifndef SKIP_GOLANGCI_FIX
-	./bin/golangci-lint run --fix ./... || true
-endif
-
 .PHONY: update/kustomize
 update/kustomize: bin/helm
 	./hack/update-kustomize.sh
@@ -354,12 +347,6 @@ update/shfmt: bin/shfmt
 .PHONY: update/generate-license-header
 update/generate-license-header:
 	./hack/generate-license-header.sh
-
-.PHONY: generate-volume-limits-table
-generate-volume-limits-table:
-	go run ./hack/generate-volume-limits-table > pkg/cloud/limits/volume_limits_table.go
-	gofmt -s -w pkg/cloud/limits/volume_limits_table.go
-	go run ./hack/detect-potentially-invalid-limits
 
 ## Verifiers
 # Linters and similar

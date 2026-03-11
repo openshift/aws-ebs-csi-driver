@@ -25,16 +25,6 @@ import (
 	"k8s.io/klog/v2"
 )
 
-var (
-	reservedTagKeys = map[string]string{
-		cloud.VolumeNameTagKey:           "",
-		cloud.AwsEbsDriverTagKey:         "",
-		cloud.SnapshotNameTagKey:         "",
-		IopsPerGBKey:                     "",
-		AllowAutoIOPSIncreaseOnModifyKey: "",
-	}
-)
-
 func ValidateDriverOptions(options *Options) error {
 	if err := validateExtraTags(options.ExtraTags, false); err != nil {
 		return fmt.Errorf("invalid extra tags: %w", err)
@@ -53,8 +43,14 @@ func ValidateDriverOptions(options *Options) error {
 
 func validateExtraTags(tags map[string]string, warnOnly bool) error {
 	validate := func(k, _ string) error {
-		if _, ok := reservedTagKeys[k]; ok {
-			return fmt.Errorf("tag key '%s' is reserved", k)
+		if k == cloud.VolumeNameTagKey {
+			return fmt.Errorf("tag key '%s' is reserved", cloud.VolumeNameTagKey)
+		}
+		if k == cloud.AwsEbsDriverTagKey {
+			return fmt.Errorf("tag key '%s' is reserved", cloud.AwsEbsDriverTagKey)
+		}
+		if k == cloud.SnapshotNameTagKey {
+			return fmt.Errorf("tag key '%s' is reserved", cloud.SnapshotNameTagKey)
 		}
 		if strings.HasPrefix(k, cloud.KubernetesTagKeyPrefix) {
 			return fmt.Errorf("tag key prefix '%s' is reserved", cloud.KubernetesTagKeyPrefix)

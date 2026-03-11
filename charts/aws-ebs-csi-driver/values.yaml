@@ -22,7 +22,7 @@ sidecars:
     image:
       pullPolicy: IfNotPresent
       repository: public.ecr.aws/csi-components/csi-provisioner
-      tag: "v6.1.0-eksbuild.2"
+      tag: "v5.3.0-eksbuild.4"
     logLevel: 2
     # Additional parameters provided by csi-provisioner.
     additionalArgs: []
@@ -49,7 +49,7 @@ sidecars:
     image:
       pullPolicy: IfNotPresent
       repository: public.ecr.aws/csi-components/csi-attacher
-      tag: "v4.10.0-eksbuild.3"
+      tag: "v4.9.0-eksbuild.4"
     # Tune leader lease election for csi-attacher.
     # Leader election is on by default.
     leaderElection:
@@ -78,7 +78,7 @@ sidecars:
     image:
       pullPolicy: IfNotPresent
       repository: public.ecr.aws/csi-components/csi-snapshotter
-      tag: "v8.4.0-eksbuild.3"
+      tag: "v8.3.0-eksbuild.2"
     logLevel: 2
     # Additional parameters provided by csi-snapshotter.
     additionalArgs: []
@@ -90,23 +90,11 @@ sidecars:
         type: RuntimeDefault
       readOnlyRootFilesystem: true
       allowPrivilegeEscalation: false
-  metadataLabeler:
-    # ALPHA: Enable the metadata-labeler sidecar to label Kubernetes Nodes with
-    # information from the EC2 API (e.g. number of ENIs)
-    # Also requires using metadata-labeler as the node's metadata source
-    enabled: false
-    logLevel: 2
-    # Additional parameters provided by metadataLabeler.
-    additionalArgs: []
-    resources: {}
-    securityContext:
-      readOnlyRootFilesystem: true
-      allowPrivilegeEscalation: false
   livenessProbe:
     image:
       pullPolicy: IfNotPresent
       repository: public.ecr.aws/csi-components/livenessprobe
-      tag: "v2.17.0-eksbuild.3"
+      tag: "v2.16.0-eksbuild.5"
     # Additional parameters provided by livenessprobe.
     additionalArgs: []
     resources: {}
@@ -118,7 +106,7 @@ sidecars:
     image:
       pullPolicy: IfNotPresent
       repository: public.ecr.aws/csi-components/csi-resizer
-      tag: "v2.0.0-eksbuild.3"
+      tag: "v1.14.0-eksbuild.4"
     # Tune leader lease election for csi-resizer.
     # Leader election is on by default.
     leaderElection:
@@ -145,7 +133,7 @@ sidecars:
     image:
       pullPolicy: IfNotPresent
       repository: public.ecr.aws/csi-components/csi-node-driver-registrar
-      tag: "v2.15.0-eksbuild.3"
+      tag: "v2.14.0-eksbuild.5"
     logLevel: 2
     # Additional parameters provided by node-driver-registrar.
     additionalArgs: []
@@ -154,9 +142,11 @@ sidecars:
       readOnlyRootFilesystem: true
       allowPrivilegeEscalation: false
     livenessProbe:
-      httpGet:
-        path: /healthz
-        port: healthz
+      exec:
+        command:
+          - /csi-node-driver-registrar
+          - --kubelet-registration-path=$(DRIVER_REG_SOCK_PATH)
+          - --mode=kubelet-registration-probe
       initialDelaySeconds: 30
       periodSeconds: 90
       timeoutSeconds: 15
@@ -165,7 +155,7 @@ sidecars:
     image:
       pullPolicy: IfNotPresent
       repository: public.ecr.aws/ebs-csi-driver/volume-modifier-for-k8s
-      tag: "v0.9.1"
+      tag: "v0.7.0"
     leaderElection:
       enabled: true
       # Optional values to tune lease behavior.
@@ -197,8 +187,6 @@ controller:
   batching: true
   volumeModificationFeature:
     enabled: false
-  # Enable support for node-local volumes that use pre-attached EBS volumes
-  enableNodeLocalVolumes: false
   # Additional parameters provided by aws-ebs-csi-driver controller.
   additionalArgs: []
   sdkDebugLog: false
@@ -271,10 +259,6 @@ controller:
     # pod restarts or evictions.
     enabled: true
     # unhealthyPodEvictionPolicy:
-    # Configure the maxUnavailable or minAvailable for the PDB
-    # If either parameter is non-null, no default is used for both
-    # maxUnavailable:
-    # minAvailable:
   priorityClassName: system-cluster-critical
   # AWS region to use. If not specified then the region will be looked up via the AWS EC2 metadata
   # service.
@@ -362,7 +346,7 @@ controller:
   #  otelServiceName: ebs-csi-controller
   #  otelExporterEndpoint: "http://localhost:4317"
 
-  # dnsConfig for the controller pods
+  # Enable dnsConfig for the controller and node pods
   dnsConfig: {}
 node:
   # Enable SELinux-only optimizations on the EBS CSI Driver node pods
@@ -396,6 +380,14 @@ node:
                   - fargate
                   - auto
                   - hybrid
+              - key: node.kubernetes.io/instance-type
+                operator: NotIn
+                values:
+                  - a1.medium
+                  - a1.large
+                  - a1.xlarge
+                  - a1.2xlarge
+                  - a1.4xlarge
   nodeSelector: {}
   daemonSetAnnotations: {}
   podAnnotations: {}
@@ -422,14 +414,9 @@ node:
     ## Enable if EKS IAM for SA is used
     # eks.amazonaws.com/role-arn: arn:<partition>:iam::<account>:role/ebs-csi-role
     automountServiceAccountToken: true
-    # Disable mutating permissions for the node service account.
-    # When enabled, some features of the EBS CSI Driver node pods will not function, such as taint removal.
-    # Primarily useful in particularly security-sensitive environments, or on multi-tenant clusters that isolate tenants by node.
-    disableMutation: false
   # Enable the linux daemonset creation
   enableLinux: true
   enableWindows: true
-  # Comma separated list of metadata sources that override the default used by the EBS CSI Driver. Valid sources include 'imds', 'kubernetes', and (ALPHA) 'metadata-labeler'
   metadataSources:
   # Warning: This option will be removed in a future release. It is a temporary workaround for users unable to immediately migrate off of older kernel versions.
   # Formats XFS volumes with bigtime=0,inobtcount=0,reflink=0, for mounting onto nodes with linux kernel version <= 5.4.
@@ -485,9 +472,6 @@ node:
   otelTracing: {}
   #  otelServiceName: ebs-csi-node
   #  otelExporterEndpoint: "http://localhost:4317"
-
-  # dnsConfig for the node pods
-  dnsConfig: {}
 additionalDaemonSets:
 # Additional node DaemonSets, using the node config structure
 # See docs/additional-daemonsets.md for more information
@@ -496,6 +480,9 @@ additionalDaemonSets:
 #   nodeSelector:
 #     node.kubernetes.io/instance-type: c5.large
 #   volumeAttachLimit: 15
+
+# Enable compatibility for the A1 instance family via use of an AL2-based image in a separate DaemonSet
+# a1CompatibilityDaemonSet: true
 storageClasses: []
 # Add StorageClass resources like:
 # - name: ebs-sc
@@ -532,14 +519,12 @@ volumeSnapshotClasses: []
 # This parameter should always be false for new installations
 useOldCSIDriver: false
 # nodeAllocatableUpdatePeriodSeconds updates the node's max attachable volume count by directing Kubelet to periodically call NodeGetInfo at the configured interval.
-# Kubernetes enforces a minimum update interval of 10 seconds. A value of -1 uses a automatically determined value dependent on metadata sources.
+# Kubernetes enforces a minimum update interval of 10 seconds.
 # This parameter is supported in Kubernetes 1.33+ and requires the MutableCSINodeAllocatableCount feature gate to be enabled in kubelet and kube-apiserver.
-nodeAllocatableUpdatePeriodSeconds: -1
+nodeAllocatableUpdatePeriodSeconds: 10
 # Deploy EBS CSI Driver without controller and associated resources
 nodeComponentOnly: false
-# Set maximum verbosity for logs of each container and other recommended debugging parameters such as enabling AWS SDK debug logging
-debugLogs: false
 helmTester:
   enabled: true
   # Supply a custom image to the ebs-csi-driver-test pod in helm-tester.yaml
-  image: "us-central1-docker.pkg.dev/k8s-staging-test-infra/images/kubekins-e2e:v20260120-e2c483ffe9-master"
+  image: "us-central1-docker.pkg.dev/k8s-staging-test-infra/images/kubekins-e2e:v20250815-171060767f-master"

@@ -78,7 +78,7 @@ if [[ "${EBS_INSTALL_SNAPSHOT}" == true ]]; then
   kubectl apply --kubeconfig "${KUBECONFIG}" -f - <<<${SNAPSHOT_CONTROLLER_MANIFEST}
 fi
 
-if [[ "${HELM_CT_TEST}" != true ]] && [ -z "${SKIP_DRIVER_INSTALL+x}" ]; then
+if [[ "${HELM_CT_TEST}" != true ]]; then
   startSec=$(date +'%s')
   install_driver
   endSec=$(date +'%s')
@@ -105,8 +105,10 @@ if [[ "${HELM_CT_TEST}" == true ]]; then
   (
     while true; do
       if kubectl get pod ebs-csi-driver-test -n kube-system --kubeconfig "${KUBECONFIG}" &>/dev/null; then
+        echo "Pod found, waiting for it to become ready..."
         if kubectl wait --for=condition=ready pod ebs-csi-driver-test -n kube-system --timeout=300s --kubeconfig "${KUBECONFIG}"; then
-          kubectl logs -f ebs-csi-driver-test -n kube-system -c kubetest2 --kubeconfig "${KUBECONFIG}" >"${REPORT_DIR}/helm-test-pod.txt"
+          echo "Pod is ready, fetching logs..."
+          kubectl logs -f ebs-csi-driver-test -n kube-system -c kubetest2 --kubeconfig "${KUBECONFIG}"
         fi
       fi
       sleep 30
@@ -133,7 +135,7 @@ else
     packageVersion=$(echo $(cut -d '.' -f 1,2 <<<$K8S_VERSION))
 
     # TODO: Always skip broken upstream test - remove after fix released
-    GINKGO_SKIP="(should be protected by vac\\-protection finalizer)|should provision storage with pvc data source in parallel|${GINKGO_SKIP}"
+    GINKGO_SKIP="(should be protected by vac\\-protection finalizer)|${GINKGO_SKIP}"
     GINKGO_SKIP="${GINKGO_SKIP%|}" # Strip trailing | if needed - remove with above TODO
     set -x
     set +e
@@ -154,7 +156,7 @@ else
   else
     set -x
     set +e
-    "${BIN}/ginkgo" -p -nodes="${GINKGO_PARALLEL}" \
+    "${BIN}/ginkgo" -p -nodes="${GINKGO_PARALLEL}" -v \
       --focus="${GINKGO_FOCUS}" \
       --skip="${GINKGO_SKIP}" \
       --junit-report="${REPORT_DIR}/junit.xml" \
@@ -167,13 +169,14 @@ else
     set +x
   fi
 
-  PODS=$(kubectl get pod -n kube-system -l "app.kubernetes.io/name=aws-ebs-csi-driver" -o json --kubeconfig "${KUBECONFIG}" | jq -r .items[].metadata.name)
+  PODS=$(kubectl get pod -n kube-system -l "app.kubernetes.io/name=aws-ebs-csi-driver,app.kubernetes.io/instance=aws-ebs-csi-driver" -o json --kubeconfig "${KUBECONFIG}" | jq -r .items[].metadata.name)
 
-  if [[ -n "${PODS}" ]]; then
-    while IFS= read -r POD; do
-      kubectl logs "${POD}" -n kube-system --all-containers --ignore-errors --kubeconfig "${KUBECONFIG}" >"${REPORT_DIR}/${POD}.txt"
-    done <<<"${PODS}"
-  fi
+  while IFS= read -r POD; do
+    loudecho "Printing pod ${POD} container logs"
+    set +e
+    kubectl logs "${POD}" -n kube-system --all-containers --ignore-errors --kubeconfig "${KUBECONFIG}"
+    set -e
+  done <<<"${PODS}"
 fi
 
 # Collect periodic performance metrics - this should only run in Prow
@@ -190,17 +193,7 @@ fi
 ## Cleanup
 
 if [[ "${HELM_CT_TEST}" != true ]]; then
-  # If there are more than 3 restarts in any single container fail the test and print table with restarts.
-  if [[ $(kubectl get pods -n kube-system -l "app.kubernetes.io/name=aws-ebs-csi-driver" -o json |
-    jq -r '.items[].status.containerStatuses[]?.restartCount // 0' |
-    sort -nr | head -n 1) -gt 3 ]]; then
-    loudecho "ERROR: Container restart count exceeds threshold"
-    kubectl get pods -n kube-system -l "app.kubernetes.io/name=aws-ebs-csi-driver" -o custom-columns="POD:.metadata.name,CONTAINER:.spec.containers[*].name,RESTARTS:.status.containerStatuses[*].restartCount" --kubeconfig "${KUBECONFIG}"
-    TEST_PASSED=1
-  fi
-  if [ -z "${SKIP_DRIVER_INSTALL+x}" ]; then
-    uninstall_driver
-  fi
+  uninstall_driver
 fi
 
 if [[ "${EBS_INSTALL_SNAPSHOT}" == true ]]; then

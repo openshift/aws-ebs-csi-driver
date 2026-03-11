@@ -2,25 +2,6 @@
 
 package types
 
-type AccountDefaultStatus string
-
-// Enum values for AccountDefaultStatus
-const (
-	AccountDefaultStatusEnabled  AccountDefaultStatus = "ENABLED"
-	AccountDefaultStatusDisabled AccountDefaultStatus = "DISABLED"
-)
-
-// Values returns all known values for AccountDefaultStatus. Note that this can be
-// expanded in the future, and so it is only as up to date as the client.
-//
-// The ordering of this slice is not guaranteed to be stable across updates.
-func (AccountDefaultStatus) Values() []AccountDefaultStatus {
-	return []AccountDefaultStatus{
-		"ENABLED",
-		"DISABLED",
-	}
-}
-
 type ActionStatus string
 
 // Enum values for ActionStatus
@@ -64,23 +45,6 @@ func (ActivationState) Values() []ActivationState {
 	return []ActivationState{
 		"Enabled",
 		"Disabled",
-	}
-}
-
-type ActiveClusterOperationName string
-
-// Enum values for ActiveClusterOperationName
-const (
-	ActiveClusterOperationNameScaling ActiveClusterOperationName = "Scaling"
-)
-
-// Values returns all known values for ActiveClusterOperationName. Note that this
-// can be expanded in the future, and so it is only as up to date as the client.
-//
-// The ordering of this slice is not guaranteed to be stable across updates.
-func (ActiveClusterOperationName) Values() []ActiveClusterOperationName {
-	return []ActiveClusterOperationName{
-		"Scaling",
 	}
 }
 
@@ -280,7 +244,6 @@ const (
 	AppInstanceTypeMlTrn1n32xlarge         AppInstanceType = "ml.trn1n.32xlarge"
 	AppInstanceTypeMlP548xlarge            AppInstanceType = "ml.p5.48xlarge"
 	AppInstanceTypeMlP5en48xlarge          AppInstanceType = "ml.p5en.48xlarge"
-	AppInstanceTypeMlP6B20048xlarge        AppInstanceType = "ml.p6-b200.48xlarge"
 	AppInstanceTypeMlM6iLarge              AppInstanceType = "ml.m6i.large"
 	AppInstanceTypeMlM6iXlarge             AppInstanceType = "ml.m6i.xlarge"
 	AppInstanceTypeMlM6i2xlarge            AppInstanceType = "ml.m6i.2xlarge"
@@ -451,7 +414,6 @@ func (AppInstanceType) Values() []AppInstanceType {
 		"ml.trn1n.32xlarge",
 		"ml.p5.48xlarge",
 		"ml.p5en.48xlarge",
-		"ml.p6-b200.48xlarge",
 		"ml.m6i.large",
 		"ml.m6i.xlarge",
 		"ml.m6i.2xlarge",
@@ -1303,54 +1265,6 @@ func (BatchDeleteClusterNodesErrorCode) Values() []BatchDeleteClusterNodesErrorC
 	}
 }
 
-type BatchRebootClusterNodesErrorCode string
-
-// Enum values for BatchRebootClusterNodesErrorCode
-const (
-	BatchRebootClusterNodesErrorCodeInstanceIdNotFound    BatchRebootClusterNodesErrorCode = "InstanceIdNotFound"
-	BatchRebootClusterNodesErrorCodeInvalidInstanceStatus BatchRebootClusterNodesErrorCode = "InvalidInstanceStatus"
-	BatchRebootClusterNodesErrorCodeInstanceIdInUse       BatchRebootClusterNodesErrorCode = "InstanceIdInUse"
-	BatchRebootClusterNodesErrorCodeInternalServerError   BatchRebootClusterNodesErrorCode = "InternalServerError"
-)
-
-// Values returns all known values for BatchRebootClusterNodesErrorCode. Note that
-// this can be expanded in the future, and so it is only as up to date as the
-// client.
-//
-// The ordering of this slice is not guaranteed to be stable across updates.
-func (BatchRebootClusterNodesErrorCode) Values() []BatchRebootClusterNodesErrorCode {
-	return []BatchRebootClusterNodesErrorCode{
-		"InstanceIdNotFound",
-		"InvalidInstanceStatus",
-		"InstanceIdInUse",
-		"InternalServerError",
-	}
-}
-
-type BatchReplaceClusterNodesErrorCode string
-
-// Enum values for BatchReplaceClusterNodesErrorCode
-const (
-	BatchReplaceClusterNodesErrorCodeInstanceIdNotFound    BatchReplaceClusterNodesErrorCode = "InstanceIdNotFound"
-	BatchReplaceClusterNodesErrorCodeInvalidInstanceStatus BatchReplaceClusterNodesErrorCode = "InvalidInstanceStatus"
-	BatchReplaceClusterNodesErrorCodeInstanceIdInUse       BatchReplaceClusterNodesErrorCode = "InstanceIdInUse"
-	BatchReplaceClusterNodesErrorCodeInternalServerError   BatchReplaceClusterNodesErrorCode = "InternalServerError"
-)
-
-// Values returns all known values for BatchReplaceClusterNodesErrorCode. Note
-// that this can be expanded in the future, and so it is only as up to date as the
-// client.
-//
-// The ordering of this slice is not guaranteed to be stable across updates.
-func (BatchReplaceClusterNodesErrorCode) Values() []BatchReplaceClusterNodesErrorCode {
-	return []BatchReplaceClusterNodesErrorCode{
-		"InstanceIdNotFound",
-		"InvalidInstanceStatus",
-		"InstanceIdInUse",
-		"InternalServerError",
-	}
-}
-
 type BatchStrategy string
 
 // Enum values for BatchStrategy
@@ -1729,103 +1643,6 @@ func (ClarifyTextLanguage) Values() []ClarifyTextLanguage {
 	}
 }
 
-type ClusterAutoScalerType string
-
-// Enum values for ClusterAutoScalerType
-const (
-	ClusterAutoScalerTypeKarpenter ClusterAutoScalerType = "Karpenter"
-)
-
-// Values returns all known values for ClusterAutoScalerType. Note that this can
-// be expanded in the future, and so it is only as up to date as the client.
-//
-// The ordering of this slice is not guaranteed to be stable across updates.
-func (ClusterAutoScalerType) Values() []ClusterAutoScalerType {
-	return []ClusterAutoScalerType{
-		"Karpenter",
-	}
-}
-
-type ClusterAutoScalingMode string
-
-// Enum values for ClusterAutoScalingMode
-const (
-	ClusterAutoScalingModeEnable  ClusterAutoScalingMode = "Enable"
-	ClusterAutoScalingModeDisable ClusterAutoScalingMode = "Disable"
-)
-
-// Values returns all known values for ClusterAutoScalingMode. Note that this can
-// be expanded in the future, and so it is only as up to date as the client.
-//
-// The ordering of this slice is not guaranteed to be stable across updates.
-func (ClusterAutoScalingMode) Values() []ClusterAutoScalingMode {
-	return []ClusterAutoScalingMode{
-		"Enable",
-		"Disable",
-	}
-}
-
-type ClusterAutoScalingStatus string
-
-// Enum values for ClusterAutoScalingStatus
-const (
-	ClusterAutoScalingStatusInservice ClusterAutoScalingStatus = "InService"
-	ClusterAutoScalingStatusFailed    ClusterAutoScalingStatus = "Failed"
-	ClusterAutoScalingStatusCreating  ClusterAutoScalingStatus = "Creating"
-	ClusterAutoScalingStatusDeleting  ClusterAutoScalingStatus = "Deleting"
-)
-
-// Values returns all known values for ClusterAutoScalingStatus. Note that this
-// can be expanded in the future, and so it is only as up to date as the client.
-//
-// The ordering of this slice is not guaranteed to be stable across updates.
-func (ClusterAutoScalingStatus) Values() []ClusterAutoScalingStatus {
-	return []ClusterAutoScalingStatus{
-		"InService",
-		"Failed",
-		"Creating",
-		"Deleting",
-	}
-}
-
-type ClusterCapacityType string
-
-// Enum values for ClusterCapacityType
-const (
-	ClusterCapacityTypeSpot     ClusterCapacityType = "Spot"
-	ClusterCapacityTypeOnDemand ClusterCapacityType = "OnDemand"
-)
-
-// Values returns all known values for ClusterCapacityType. Note that this can be
-// expanded in the future, and so it is only as up to date as the client.
-//
-// The ordering of this slice is not guaranteed to be stable across updates.
-func (ClusterCapacityType) Values() []ClusterCapacityType {
-	return []ClusterCapacityType{
-		"Spot",
-		"OnDemand",
-	}
-}
-
-type ClusterConfigMode string
-
-// Enum values for ClusterConfigMode
-const (
-	ClusterConfigModeEnable  ClusterConfigMode = "Enable"
-	ClusterConfigModeDisable ClusterConfigMode = "Disable"
-)
-
-// Values returns all known values for ClusterConfigMode. Note that this can be
-// expanded in the future, and so it is only as up to date as the client.
-//
-// The ordering of this slice is not guaranteed to be stable across updates.
-func (ClusterConfigMode) Values() []ClusterConfigMode {
-	return []ClusterConfigMode{
-		"Enable",
-		"Disable",
-	}
-}
-
 type ClusterEventResourceType string
 
 // Enum values for ClusterEventResourceType
@@ -1880,122 +1697,118 @@ type ClusterInstanceType string
 
 // Enum values for ClusterInstanceType
 const (
-	ClusterInstanceTypeMlP4d24xlarge      ClusterInstanceType = "ml.p4d.24xlarge"
-	ClusterInstanceTypeMlP4de24xlarge     ClusterInstanceType = "ml.p4de.24xlarge"
-	ClusterInstanceTypeMlP548xlarge       ClusterInstanceType = "ml.p5.48xlarge"
-	ClusterInstanceTypeMlP54xlarge        ClusterInstanceType = "ml.p5.4xlarge"
-	ClusterInstanceTypeMlP6eGb20036xlarge ClusterInstanceType = "ml.p6e-gb200.36xlarge"
-	ClusterInstanceTypeMlTrn132xlarge     ClusterInstanceType = "ml.trn1.32xlarge"
-	ClusterInstanceTypeMlTrn1n32xlarge    ClusterInstanceType = "ml.trn1n.32xlarge"
-	ClusterInstanceTypeMlG5Xlarge         ClusterInstanceType = "ml.g5.xlarge"
-	ClusterInstanceTypeMlG52xlarge        ClusterInstanceType = "ml.g5.2xlarge"
-	ClusterInstanceTypeMlG54xlarge        ClusterInstanceType = "ml.g5.4xlarge"
-	ClusterInstanceTypeMlG58xlarge        ClusterInstanceType = "ml.g5.8xlarge"
-	ClusterInstanceTypeMlG512xlarge       ClusterInstanceType = "ml.g5.12xlarge"
-	ClusterInstanceTypeMlG516xlarge       ClusterInstanceType = "ml.g5.16xlarge"
-	ClusterInstanceTypeMlG524xlarge       ClusterInstanceType = "ml.g5.24xlarge"
-	ClusterInstanceTypeMlG548xlarge       ClusterInstanceType = "ml.g5.48xlarge"
-	ClusterInstanceTypeMlC5Large          ClusterInstanceType = "ml.c5.large"
-	ClusterInstanceTypeMlC5Xlarge         ClusterInstanceType = "ml.c5.xlarge"
-	ClusterInstanceTypeMlC52xlarge        ClusterInstanceType = "ml.c5.2xlarge"
-	ClusterInstanceTypeMlC54xlarge        ClusterInstanceType = "ml.c5.4xlarge"
-	ClusterInstanceTypeMlC59xlarge        ClusterInstanceType = "ml.c5.9xlarge"
-	ClusterInstanceTypeMlC512xlarge       ClusterInstanceType = "ml.c5.12xlarge"
-	ClusterInstanceTypeMlC518xlarge       ClusterInstanceType = "ml.c5.18xlarge"
-	ClusterInstanceTypeMlC524xlarge       ClusterInstanceType = "ml.c5.24xlarge"
-	ClusterInstanceTypeMlC5nLarge         ClusterInstanceType = "ml.c5n.large"
-	ClusterInstanceTypeMlC5n2xlarge       ClusterInstanceType = "ml.c5n.2xlarge"
-	ClusterInstanceTypeMlC5n4xlarge       ClusterInstanceType = "ml.c5n.4xlarge"
-	ClusterInstanceTypeMlC5n9xlarge       ClusterInstanceType = "ml.c5n.9xlarge"
-	ClusterInstanceTypeMlC5n18xlarge      ClusterInstanceType = "ml.c5n.18xlarge"
-	ClusterInstanceTypeMlM5Large          ClusterInstanceType = "ml.m5.large"
-	ClusterInstanceTypeMlM5Xlarge         ClusterInstanceType = "ml.m5.xlarge"
-	ClusterInstanceTypeMlM52xlarge        ClusterInstanceType = "ml.m5.2xlarge"
-	ClusterInstanceTypeMlM54xlarge        ClusterInstanceType = "ml.m5.4xlarge"
-	ClusterInstanceTypeMlM58xlarge        ClusterInstanceType = "ml.m5.8xlarge"
-	ClusterInstanceTypeMlM512xlarge       ClusterInstanceType = "ml.m5.12xlarge"
-	ClusterInstanceTypeMlM516xlarge       ClusterInstanceType = "ml.m5.16xlarge"
-	ClusterInstanceTypeMlM524xlarge       ClusterInstanceType = "ml.m5.24xlarge"
-	ClusterInstanceTypeMlT3Medium         ClusterInstanceType = "ml.t3.medium"
-	ClusterInstanceTypeMlT3Large          ClusterInstanceType = "ml.t3.large"
-	ClusterInstanceTypeMlT3Xlarge         ClusterInstanceType = "ml.t3.xlarge"
-	ClusterInstanceTypeMlT32xlarge        ClusterInstanceType = "ml.t3.2xlarge"
-	ClusterInstanceTypeMlG6Xlarge         ClusterInstanceType = "ml.g6.xlarge"
-	ClusterInstanceTypeMlG62xlarge        ClusterInstanceType = "ml.g6.2xlarge"
-	ClusterInstanceTypeMlG64xlarge        ClusterInstanceType = "ml.g6.4xlarge"
-	ClusterInstanceTypeMlG68xlarge        ClusterInstanceType = "ml.g6.8xlarge"
-	ClusterInstanceTypeMlG616xlarge       ClusterInstanceType = "ml.g6.16xlarge"
-	ClusterInstanceTypeMlG612xlarge       ClusterInstanceType = "ml.g6.12xlarge"
-	ClusterInstanceTypeMlG624xlarge       ClusterInstanceType = "ml.g6.24xlarge"
-	ClusterInstanceTypeMlG648xlarge       ClusterInstanceType = "ml.g6.48xlarge"
-	ClusterInstanceTypeMlGr64xlarge       ClusterInstanceType = "ml.gr6.4xlarge"
-	ClusterInstanceTypeMlGr68xlarge       ClusterInstanceType = "ml.gr6.8xlarge"
-	ClusterInstanceTypeMlG6eXlarge        ClusterInstanceType = "ml.g6e.xlarge"
-	ClusterInstanceTypeMlG6e2xlarge       ClusterInstanceType = "ml.g6e.2xlarge"
-	ClusterInstanceTypeMlG6e4xlarge       ClusterInstanceType = "ml.g6e.4xlarge"
-	ClusterInstanceTypeMlG6e8xlarge       ClusterInstanceType = "ml.g6e.8xlarge"
-	ClusterInstanceTypeMlG6e16xlarge      ClusterInstanceType = "ml.g6e.16xlarge"
-	ClusterInstanceTypeMlG6e12xlarge      ClusterInstanceType = "ml.g6e.12xlarge"
-	ClusterInstanceTypeMlG6e24xlarge      ClusterInstanceType = "ml.g6e.24xlarge"
-	ClusterInstanceTypeMlG6e48xlarge      ClusterInstanceType = "ml.g6e.48xlarge"
-	ClusterInstanceTypeMlP5e48xlarge      ClusterInstanceType = "ml.p5e.48xlarge"
-	ClusterInstanceTypeMlP5en48xlarge     ClusterInstanceType = "ml.p5en.48xlarge"
-	ClusterInstanceTypeMlP6B20048xlarge   ClusterInstanceType = "ml.p6-b200.48xlarge"
-	ClusterInstanceTypeMlTrn23xlarge      ClusterInstanceType = "ml.trn2.3xlarge"
-	ClusterInstanceTypeMlTrn248xlarge     ClusterInstanceType = "ml.trn2.48xlarge"
-	ClusterInstanceTypeMlC6iLarge         ClusterInstanceType = "ml.c6i.large"
-	ClusterInstanceTypeMlC6iXlarge        ClusterInstanceType = "ml.c6i.xlarge"
-	ClusterInstanceTypeMlC6i2xlarge       ClusterInstanceType = "ml.c6i.2xlarge"
-	ClusterInstanceTypeMlC6i4xlarge       ClusterInstanceType = "ml.c6i.4xlarge"
-	ClusterInstanceTypeMlC6i8xlarge       ClusterInstanceType = "ml.c6i.8xlarge"
-	ClusterInstanceTypeMlC6i12xlarge      ClusterInstanceType = "ml.c6i.12xlarge"
-	ClusterInstanceTypeMlC6i16xlarge      ClusterInstanceType = "ml.c6i.16xlarge"
-	ClusterInstanceTypeMlC6i24xlarge      ClusterInstanceType = "ml.c6i.24xlarge"
-	ClusterInstanceTypeMlC6i32xlarge      ClusterInstanceType = "ml.c6i.32xlarge"
-	ClusterInstanceTypeMlM6iLarge         ClusterInstanceType = "ml.m6i.large"
-	ClusterInstanceTypeMlM6iXlarge        ClusterInstanceType = "ml.m6i.xlarge"
-	ClusterInstanceTypeMlM6i2xlarge       ClusterInstanceType = "ml.m6i.2xlarge"
-	ClusterInstanceTypeMlM6i4xlarge       ClusterInstanceType = "ml.m6i.4xlarge"
-	ClusterInstanceTypeMlM6i8xlarge       ClusterInstanceType = "ml.m6i.8xlarge"
-	ClusterInstanceTypeMlM6i12xlarge      ClusterInstanceType = "ml.m6i.12xlarge"
-	ClusterInstanceTypeMlM6i16xlarge      ClusterInstanceType = "ml.m6i.16xlarge"
-	ClusterInstanceTypeMlM6i24xlarge      ClusterInstanceType = "ml.m6i.24xlarge"
-	ClusterInstanceTypeMlM6i32xlarge      ClusterInstanceType = "ml.m6i.32xlarge"
-	ClusterInstanceTypeMlR6iLarge         ClusterInstanceType = "ml.r6i.large"
-	ClusterInstanceTypeMlR6iXlarge        ClusterInstanceType = "ml.r6i.xlarge"
-	ClusterInstanceTypeMlR6i2xlarge       ClusterInstanceType = "ml.r6i.2xlarge"
-	ClusterInstanceTypeMlR6i4xlarge       ClusterInstanceType = "ml.r6i.4xlarge"
-	ClusterInstanceTypeMlR6i8xlarge       ClusterInstanceType = "ml.r6i.8xlarge"
-	ClusterInstanceTypeMlR6i12xlarge      ClusterInstanceType = "ml.r6i.12xlarge"
-	ClusterInstanceTypeMlR6i16xlarge      ClusterInstanceType = "ml.r6i.16xlarge"
-	ClusterInstanceTypeMlR6i24xlarge      ClusterInstanceType = "ml.r6i.24xlarge"
-	ClusterInstanceTypeMlR6i32xlarge      ClusterInstanceType = "ml.r6i.32xlarge"
-	ClusterInstanceTypeMlI3enLarge        ClusterInstanceType = "ml.i3en.large"
-	ClusterInstanceTypeMlI3enXlarge       ClusterInstanceType = "ml.i3en.xlarge"
-	ClusterInstanceTypeMlI3en2xlarge      ClusterInstanceType = "ml.i3en.2xlarge"
-	ClusterInstanceTypeMlI3en3xlarge      ClusterInstanceType = "ml.i3en.3xlarge"
-	ClusterInstanceTypeMlI3en6xlarge      ClusterInstanceType = "ml.i3en.6xlarge"
-	ClusterInstanceTypeMlI3en12xlarge     ClusterInstanceType = "ml.i3en.12xlarge"
-	ClusterInstanceTypeMlI3en24xlarge     ClusterInstanceType = "ml.i3en.24xlarge"
-	ClusterInstanceTypeMlM7iLarge         ClusterInstanceType = "ml.m7i.large"
-	ClusterInstanceTypeMlM7iXlarge        ClusterInstanceType = "ml.m7i.xlarge"
-	ClusterInstanceTypeMlM7i2xlarge       ClusterInstanceType = "ml.m7i.2xlarge"
-	ClusterInstanceTypeMlM7i4xlarge       ClusterInstanceType = "ml.m7i.4xlarge"
-	ClusterInstanceTypeMlM7i8xlarge       ClusterInstanceType = "ml.m7i.8xlarge"
-	ClusterInstanceTypeMlM7i12xlarge      ClusterInstanceType = "ml.m7i.12xlarge"
-	ClusterInstanceTypeMlM7i16xlarge      ClusterInstanceType = "ml.m7i.16xlarge"
-	ClusterInstanceTypeMlM7i24xlarge      ClusterInstanceType = "ml.m7i.24xlarge"
-	ClusterInstanceTypeMlM7i48xlarge      ClusterInstanceType = "ml.m7i.48xlarge"
-	ClusterInstanceTypeMlR7iLarge         ClusterInstanceType = "ml.r7i.large"
-	ClusterInstanceTypeMlR7iXlarge        ClusterInstanceType = "ml.r7i.xlarge"
-	ClusterInstanceTypeMlR7i2xlarge       ClusterInstanceType = "ml.r7i.2xlarge"
-	ClusterInstanceTypeMlR7i4xlarge       ClusterInstanceType = "ml.r7i.4xlarge"
-	ClusterInstanceTypeMlR7i8xlarge       ClusterInstanceType = "ml.r7i.8xlarge"
-	ClusterInstanceTypeMlR7i12xlarge      ClusterInstanceType = "ml.r7i.12xlarge"
-	ClusterInstanceTypeMlR7i16xlarge      ClusterInstanceType = "ml.r7i.16xlarge"
-	ClusterInstanceTypeMlR7i24xlarge      ClusterInstanceType = "ml.r7i.24xlarge"
-	ClusterInstanceTypeMlR7i48xlarge      ClusterInstanceType = "ml.r7i.48xlarge"
-	ClusterInstanceTypeMlP6B30048xlarge   ClusterInstanceType = "ml.p6-b300.48xlarge"
+	ClusterInstanceTypeMlP4d24xlarge    ClusterInstanceType = "ml.p4d.24xlarge"
+	ClusterInstanceTypeMlP4de24xlarge   ClusterInstanceType = "ml.p4de.24xlarge"
+	ClusterInstanceTypeMlP548xlarge     ClusterInstanceType = "ml.p5.48xlarge"
+	ClusterInstanceTypeMlTrn132xlarge   ClusterInstanceType = "ml.trn1.32xlarge"
+	ClusterInstanceTypeMlTrn1n32xlarge  ClusterInstanceType = "ml.trn1n.32xlarge"
+	ClusterInstanceTypeMlG5Xlarge       ClusterInstanceType = "ml.g5.xlarge"
+	ClusterInstanceTypeMlG52xlarge      ClusterInstanceType = "ml.g5.2xlarge"
+	ClusterInstanceTypeMlG54xlarge      ClusterInstanceType = "ml.g5.4xlarge"
+	ClusterInstanceTypeMlG58xlarge      ClusterInstanceType = "ml.g5.8xlarge"
+	ClusterInstanceTypeMlG512xlarge     ClusterInstanceType = "ml.g5.12xlarge"
+	ClusterInstanceTypeMlG516xlarge     ClusterInstanceType = "ml.g5.16xlarge"
+	ClusterInstanceTypeMlG524xlarge     ClusterInstanceType = "ml.g5.24xlarge"
+	ClusterInstanceTypeMlG548xlarge     ClusterInstanceType = "ml.g5.48xlarge"
+	ClusterInstanceTypeMlC5Large        ClusterInstanceType = "ml.c5.large"
+	ClusterInstanceTypeMlC5Xlarge       ClusterInstanceType = "ml.c5.xlarge"
+	ClusterInstanceTypeMlC52xlarge      ClusterInstanceType = "ml.c5.2xlarge"
+	ClusterInstanceTypeMlC54xlarge      ClusterInstanceType = "ml.c5.4xlarge"
+	ClusterInstanceTypeMlC59xlarge      ClusterInstanceType = "ml.c5.9xlarge"
+	ClusterInstanceTypeMlC512xlarge     ClusterInstanceType = "ml.c5.12xlarge"
+	ClusterInstanceTypeMlC518xlarge     ClusterInstanceType = "ml.c5.18xlarge"
+	ClusterInstanceTypeMlC524xlarge     ClusterInstanceType = "ml.c5.24xlarge"
+	ClusterInstanceTypeMlC5nLarge       ClusterInstanceType = "ml.c5n.large"
+	ClusterInstanceTypeMlC5n2xlarge     ClusterInstanceType = "ml.c5n.2xlarge"
+	ClusterInstanceTypeMlC5n4xlarge     ClusterInstanceType = "ml.c5n.4xlarge"
+	ClusterInstanceTypeMlC5n9xlarge     ClusterInstanceType = "ml.c5n.9xlarge"
+	ClusterInstanceTypeMlC5n18xlarge    ClusterInstanceType = "ml.c5n.18xlarge"
+	ClusterInstanceTypeMlM5Large        ClusterInstanceType = "ml.m5.large"
+	ClusterInstanceTypeMlM5Xlarge       ClusterInstanceType = "ml.m5.xlarge"
+	ClusterInstanceTypeMlM52xlarge      ClusterInstanceType = "ml.m5.2xlarge"
+	ClusterInstanceTypeMlM54xlarge      ClusterInstanceType = "ml.m5.4xlarge"
+	ClusterInstanceTypeMlM58xlarge      ClusterInstanceType = "ml.m5.8xlarge"
+	ClusterInstanceTypeMlM512xlarge     ClusterInstanceType = "ml.m5.12xlarge"
+	ClusterInstanceTypeMlM516xlarge     ClusterInstanceType = "ml.m5.16xlarge"
+	ClusterInstanceTypeMlM524xlarge     ClusterInstanceType = "ml.m5.24xlarge"
+	ClusterInstanceTypeMlT3Medium       ClusterInstanceType = "ml.t3.medium"
+	ClusterInstanceTypeMlT3Large        ClusterInstanceType = "ml.t3.large"
+	ClusterInstanceTypeMlT3Xlarge       ClusterInstanceType = "ml.t3.xlarge"
+	ClusterInstanceTypeMlT32xlarge      ClusterInstanceType = "ml.t3.2xlarge"
+	ClusterInstanceTypeMlG6Xlarge       ClusterInstanceType = "ml.g6.xlarge"
+	ClusterInstanceTypeMlG62xlarge      ClusterInstanceType = "ml.g6.2xlarge"
+	ClusterInstanceTypeMlG64xlarge      ClusterInstanceType = "ml.g6.4xlarge"
+	ClusterInstanceTypeMlG68xlarge      ClusterInstanceType = "ml.g6.8xlarge"
+	ClusterInstanceTypeMlG616xlarge     ClusterInstanceType = "ml.g6.16xlarge"
+	ClusterInstanceTypeMlG612xlarge     ClusterInstanceType = "ml.g6.12xlarge"
+	ClusterInstanceTypeMlG624xlarge     ClusterInstanceType = "ml.g6.24xlarge"
+	ClusterInstanceTypeMlG648xlarge     ClusterInstanceType = "ml.g6.48xlarge"
+	ClusterInstanceTypeMlGr64xlarge     ClusterInstanceType = "ml.gr6.4xlarge"
+	ClusterInstanceTypeMlGr68xlarge     ClusterInstanceType = "ml.gr6.8xlarge"
+	ClusterInstanceTypeMlG6eXlarge      ClusterInstanceType = "ml.g6e.xlarge"
+	ClusterInstanceTypeMlG6e2xlarge     ClusterInstanceType = "ml.g6e.2xlarge"
+	ClusterInstanceTypeMlG6e4xlarge     ClusterInstanceType = "ml.g6e.4xlarge"
+	ClusterInstanceTypeMlG6e8xlarge     ClusterInstanceType = "ml.g6e.8xlarge"
+	ClusterInstanceTypeMlG6e16xlarge    ClusterInstanceType = "ml.g6e.16xlarge"
+	ClusterInstanceTypeMlG6e12xlarge    ClusterInstanceType = "ml.g6e.12xlarge"
+	ClusterInstanceTypeMlG6e24xlarge    ClusterInstanceType = "ml.g6e.24xlarge"
+	ClusterInstanceTypeMlG6e48xlarge    ClusterInstanceType = "ml.g6e.48xlarge"
+	ClusterInstanceTypeMlP5e48xlarge    ClusterInstanceType = "ml.p5e.48xlarge"
+	ClusterInstanceTypeMlP5en48xlarge   ClusterInstanceType = "ml.p5en.48xlarge"
+	ClusterInstanceTypeMlP6B20048xlarge ClusterInstanceType = "ml.p6-b200.48xlarge"
+	ClusterInstanceTypeMlTrn248xlarge   ClusterInstanceType = "ml.trn2.48xlarge"
+	ClusterInstanceTypeMlC6iLarge       ClusterInstanceType = "ml.c6i.large"
+	ClusterInstanceTypeMlC6iXlarge      ClusterInstanceType = "ml.c6i.xlarge"
+	ClusterInstanceTypeMlC6i2xlarge     ClusterInstanceType = "ml.c6i.2xlarge"
+	ClusterInstanceTypeMlC6i4xlarge     ClusterInstanceType = "ml.c6i.4xlarge"
+	ClusterInstanceTypeMlC6i8xlarge     ClusterInstanceType = "ml.c6i.8xlarge"
+	ClusterInstanceTypeMlC6i12xlarge    ClusterInstanceType = "ml.c6i.12xlarge"
+	ClusterInstanceTypeMlC6i16xlarge    ClusterInstanceType = "ml.c6i.16xlarge"
+	ClusterInstanceTypeMlC6i24xlarge    ClusterInstanceType = "ml.c6i.24xlarge"
+	ClusterInstanceTypeMlC6i32xlarge    ClusterInstanceType = "ml.c6i.32xlarge"
+	ClusterInstanceTypeMlM6iLarge       ClusterInstanceType = "ml.m6i.large"
+	ClusterInstanceTypeMlM6iXlarge      ClusterInstanceType = "ml.m6i.xlarge"
+	ClusterInstanceTypeMlM6i2xlarge     ClusterInstanceType = "ml.m6i.2xlarge"
+	ClusterInstanceTypeMlM6i4xlarge     ClusterInstanceType = "ml.m6i.4xlarge"
+	ClusterInstanceTypeMlM6i8xlarge     ClusterInstanceType = "ml.m6i.8xlarge"
+	ClusterInstanceTypeMlM6i12xlarge    ClusterInstanceType = "ml.m6i.12xlarge"
+	ClusterInstanceTypeMlM6i16xlarge    ClusterInstanceType = "ml.m6i.16xlarge"
+	ClusterInstanceTypeMlM6i24xlarge    ClusterInstanceType = "ml.m6i.24xlarge"
+	ClusterInstanceTypeMlM6i32xlarge    ClusterInstanceType = "ml.m6i.32xlarge"
+	ClusterInstanceTypeMlR6iLarge       ClusterInstanceType = "ml.r6i.large"
+	ClusterInstanceTypeMlR6iXlarge      ClusterInstanceType = "ml.r6i.xlarge"
+	ClusterInstanceTypeMlR6i2xlarge     ClusterInstanceType = "ml.r6i.2xlarge"
+	ClusterInstanceTypeMlR6i4xlarge     ClusterInstanceType = "ml.r6i.4xlarge"
+	ClusterInstanceTypeMlR6i8xlarge     ClusterInstanceType = "ml.r6i.8xlarge"
+	ClusterInstanceTypeMlR6i12xlarge    ClusterInstanceType = "ml.r6i.12xlarge"
+	ClusterInstanceTypeMlR6i16xlarge    ClusterInstanceType = "ml.r6i.16xlarge"
+	ClusterInstanceTypeMlR6i24xlarge    ClusterInstanceType = "ml.r6i.24xlarge"
+	ClusterInstanceTypeMlR6i32xlarge    ClusterInstanceType = "ml.r6i.32xlarge"
+	ClusterInstanceTypeMlI3enLarge      ClusterInstanceType = "ml.i3en.large"
+	ClusterInstanceTypeMlI3enXlarge     ClusterInstanceType = "ml.i3en.xlarge"
+	ClusterInstanceTypeMlI3en2xlarge    ClusterInstanceType = "ml.i3en.2xlarge"
+	ClusterInstanceTypeMlI3en3xlarge    ClusterInstanceType = "ml.i3en.3xlarge"
+	ClusterInstanceTypeMlI3en6xlarge    ClusterInstanceType = "ml.i3en.6xlarge"
+	ClusterInstanceTypeMlI3en12xlarge   ClusterInstanceType = "ml.i3en.12xlarge"
+	ClusterInstanceTypeMlI3en24xlarge   ClusterInstanceType = "ml.i3en.24xlarge"
+	ClusterInstanceTypeMlM7iLarge       ClusterInstanceType = "ml.m7i.large"
+	ClusterInstanceTypeMlM7iXlarge      ClusterInstanceType = "ml.m7i.xlarge"
+	ClusterInstanceTypeMlM7i2xlarge     ClusterInstanceType = "ml.m7i.2xlarge"
+	ClusterInstanceTypeMlM7i4xlarge     ClusterInstanceType = "ml.m7i.4xlarge"
+	ClusterInstanceTypeMlM7i8xlarge     ClusterInstanceType = "ml.m7i.8xlarge"
+	ClusterInstanceTypeMlM7i12xlarge    ClusterInstanceType = "ml.m7i.12xlarge"
+	ClusterInstanceTypeMlM7i16xlarge    ClusterInstanceType = "ml.m7i.16xlarge"
+	ClusterInstanceTypeMlM7i24xlarge    ClusterInstanceType = "ml.m7i.24xlarge"
+	ClusterInstanceTypeMlM7i48xlarge    ClusterInstanceType = "ml.m7i.48xlarge"
+	ClusterInstanceTypeMlR7iLarge       ClusterInstanceType = "ml.r7i.large"
+	ClusterInstanceTypeMlR7iXlarge      ClusterInstanceType = "ml.r7i.xlarge"
+	ClusterInstanceTypeMlR7i2xlarge     ClusterInstanceType = "ml.r7i.2xlarge"
+	ClusterInstanceTypeMlR7i4xlarge     ClusterInstanceType = "ml.r7i.4xlarge"
+	ClusterInstanceTypeMlR7i8xlarge     ClusterInstanceType = "ml.r7i.8xlarge"
+	ClusterInstanceTypeMlR7i12xlarge    ClusterInstanceType = "ml.r7i.12xlarge"
+	ClusterInstanceTypeMlR7i16xlarge    ClusterInstanceType = "ml.r7i.16xlarge"
+	ClusterInstanceTypeMlR7i24xlarge    ClusterInstanceType = "ml.r7i.24xlarge"
+	ClusterInstanceTypeMlR7i48xlarge    ClusterInstanceType = "ml.r7i.48xlarge"
 )
 
 // Values returns all known values for ClusterInstanceType. Note that this can be
@@ -2007,8 +1820,6 @@ func (ClusterInstanceType) Values() []ClusterInstanceType {
 		"ml.p4d.24xlarge",
 		"ml.p4de.24xlarge",
 		"ml.p5.48xlarge",
-		"ml.p5.4xlarge",
-		"ml.p6e-gb200.36xlarge",
 		"ml.trn1.32xlarge",
 		"ml.trn1n.32xlarge",
 		"ml.g5.xlarge",
@@ -2065,7 +1876,6 @@ func (ClusterInstanceType) Values() []ClusterInstanceType {
 		"ml.p5e.48xlarge",
 		"ml.p5en.48xlarge",
 		"ml.p6-b200.48xlarge",
-		"ml.trn2.3xlarge",
 		"ml.trn2.48xlarge",
 		"ml.c6i.large",
 		"ml.c6i.xlarge",
@@ -2119,29 +1929,6 @@ func (ClusterInstanceType) Values() []ClusterInstanceType {
 		"ml.r7i.16xlarge",
 		"ml.r7i.24xlarge",
 		"ml.r7i.48xlarge",
-		"ml.p6-b300.48xlarge",
-	}
-}
-
-type ClusterKubernetesTaintEffect string
-
-// Enum values for ClusterKubernetesTaintEffect
-const (
-	ClusterKubernetesTaintEffectNoSchedule       ClusterKubernetesTaintEffect = "NoSchedule"
-	ClusterKubernetesTaintEffectPreferNoSchedule ClusterKubernetesTaintEffect = "PreferNoSchedule"
-	ClusterKubernetesTaintEffectNoExecute        ClusterKubernetesTaintEffect = "NoExecute"
-)
-
-// Values returns all known values for ClusterKubernetesTaintEffect. Note that
-// this can be expanded in the future, and so it is only as up to date as the
-// client.
-//
-// The ordering of this slice is not guaranteed to be stable across updates.
-func (ClusterKubernetesTaintEffect) Values() []ClusterKubernetesTaintEffect {
-	return []ClusterKubernetesTaintEffect{
-		"NoSchedule",
-		"PreferNoSchedule",
-		"NoExecute",
 	}
 }
 
@@ -2428,29 +2215,6 @@ func (CrossAccountFilterOption) Values() []CrossAccountFilterOption {
 	return []CrossAccountFilterOption{
 		"SameAccount",
 		"CrossAccount",
-	}
-}
-
-type CustomizationTechnique string
-
-// Enum values for CustomizationTechnique
-const (
-	CustomizationTechniqueSft   CustomizationTechnique = "SFT"
-	CustomizationTechniqueDpo   CustomizationTechnique = "DPO"
-	CustomizationTechniqueRlvr  CustomizationTechnique = "RLVR"
-	CustomizationTechniqueRlaif CustomizationTechnique = "RLAIF"
-)
-
-// Values returns all known values for CustomizationTechnique. Note that this can
-// be expanded in the future, and so it is only as up to date as the client.
-//
-// The ordering of this slice is not guaranteed to be stable across updates.
-func (CustomizationTechnique) Values() []CustomizationTechnique {
-	return []CustomizationTechnique{
-		"SFT",
-		"DPO",
-		"RLVR",
-		"RLAIF",
 	}
 }
 
@@ -2826,27 +2590,6 @@ func (EndpointStatus) Values() []EndpointStatus {
 		"Deleting",
 		"Failed",
 		"UpdateRollbackFailed",
-	}
-}
-
-type EvaluationType string
-
-// Enum values for EvaluationType
-const (
-	EvaluationTypeLlmajEvaluation        EvaluationType = "LLMAJEvaluation"
-	EvaluationTypeCustomScorerEvaluation EvaluationType = "CustomScorerEvaluation"
-	EvaluationTypeBenchmarkEvaluation    EvaluationType = "BenchmarkEvaluation"
-)
-
-// Values returns all known values for EvaluationType. Note that this can be
-// expanded in the future, and so it is only as up to date as the client.
-//
-// The ordering of this slice is not guaranteed to be stable across updates.
-func (EvaluationType) Values() []EvaluationType {
-	return []EvaluationType{
-		"LLMAJEvaluation",
-		"CustomScorerEvaluation",
-		"BenchmarkEvaluation",
 	}
 }
 
@@ -3229,13 +2972,11 @@ type HubContentStatus string
 
 // Enum values for HubContentStatus
 const (
-	HubContentStatusAvailable     HubContentStatus = "Available"
-	HubContentStatusImporting     HubContentStatus = "Importing"
-	HubContentStatusDeleting      HubContentStatus = "Deleting"
-	HubContentStatusImportFailed  HubContentStatus = "ImportFailed"
-	HubContentStatusDeleteFailed  HubContentStatus = "DeleteFailed"
-	HubContentStatusPendingImport HubContentStatus = "PendingImport"
-	HubContentStatusPendingDelete HubContentStatus = "PendingDelete"
+	HubContentStatusAvailable    HubContentStatus = "Available"
+	HubContentStatusImporting    HubContentStatus = "Importing"
+	HubContentStatusDeleting     HubContentStatus = "Deleting"
+	HubContentStatusImportFailed HubContentStatus = "ImportFailed"
+	HubContentStatusDeleteFailed HubContentStatus = "DeleteFailed"
 )
 
 // Values returns all known values for HubContentStatus. Note that this can be
@@ -3249,8 +2990,6 @@ func (HubContentStatus) Values() []HubContentStatus {
 		"Deleting",
 		"ImportFailed",
 		"DeleteFailed",
-		"PendingImport",
-		"PendingDelete",
 	}
 }
 
@@ -3282,8 +3021,6 @@ const (
 	HubContentTypeModel          HubContentType = "Model"
 	HubContentTypeNotebook       HubContentType = "Notebook"
 	HubContentTypeModelReference HubContentType = "ModelReference"
-	HubContentTypeDataSet        HubContentType = "DataSet"
-	HubContentTypeJsonDoc        HubContentType = "JsonDoc"
 )
 
 // Values returns all known values for HubContentType. Note that this can be
@@ -3295,8 +3032,6 @@ func (HubContentType) Values() []HubContentType {
 		"Model",
 		"Notebook",
 		"ModelReference",
-		"DataSet",
-		"JsonDoc",
 	}
 }
 
@@ -3867,179 +3602,178 @@ type InstanceType string
 
 // Enum values for InstanceType
 const (
-	InstanceTypeMlT2Medium       InstanceType = "ml.t2.medium"
-	InstanceTypeMlT2Large        InstanceType = "ml.t2.large"
-	InstanceTypeMlT2Xlarge       InstanceType = "ml.t2.xlarge"
-	InstanceTypeMlT22xlarge      InstanceType = "ml.t2.2xlarge"
-	InstanceTypeMlT3Medium       InstanceType = "ml.t3.medium"
-	InstanceTypeMlT3Large        InstanceType = "ml.t3.large"
-	InstanceTypeMlT3Xlarge       InstanceType = "ml.t3.xlarge"
-	InstanceTypeMlT32xlarge      InstanceType = "ml.t3.2xlarge"
-	InstanceTypeMlM4Xlarge       InstanceType = "ml.m4.xlarge"
-	InstanceTypeMlM42xlarge      InstanceType = "ml.m4.2xlarge"
-	InstanceTypeMlM44xlarge      InstanceType = "ml.m4.4xlarge"
-	InstanceTypeMlM410xlarge     InstanceType = "ml.m4.10xlarge"
-	InstanceTypeMlM416xlarge     InstanceType = "ml.m4.16xlarge"
-	InstanceTypeMlM5Xlarge       InstanceType = "ml.m5.xlarge"
-	InstanceTypeMlM52xlarge      InstanceType = "ml.m5.2xlarge"
-	InstanceTypeMlM54xlarge      InstanceType = "ml.m5.4xlarge"
-	InstanceTypeMlM512xlarge     InstanceType = "ml.m5.12xlarge"
-	InstanceTypeMlM524xlarge     InstanceType = "ml.m5.24xlarge"
-	InstanceTypeMlM5dLarge       InstanceType = "ml.m5d.large"
-	InstanceTypeMlM5dXlarge      InstanceType = "ml.m5d.xlarge"
-	InstanceTypeMlM5d2xlarge     InstanceType = "ml.m5d.2xlarge"
-	InstanceTypeMlM5d4xlarge     InstanceType = "ml.m5d.4xlarge"
-	InstanceTypeMlM5d8xlarge     InstanceType = "ml.m5d.8xlarge"
-	InstanceTypeMlM5d12xlarge    InstanceType = "ml.m5d.12xlarge"
-	InstanceTypeMlM5d16xlarge    InstanceType = "ml.m5d.16xlarge"
-	InstanceTypeMlM5d24xlarge    InstanceType = "ml.m5d.24xlarge"
-	InstanceTypeMlC4Xlarge       InstanceType = "ml.c4.xlarge"
-	InstanceTypeMlC42xlarge      InstanceType = "ml.c4.2xlarge"
-	InstanceTypeMlC44xlarge      InstanceType = "ml.c4.4xlarge"
-	InstanceTypeMlC48xlarge      InstanceType = "ml.c4.8xlarge"
-	InstanceTypeMlC5Xlarge       InstanceType = "ml.c5.xlarge"
-	InstanceTypeMlC52xlarge      InstanceType = "ml.c5.2xlarge"
-	InstanceTypeMlC54xlarge      InstanceType = "ml.c5.4xlarge"
-	InstanceTypeMlC59xlarge      InstanceType = "ml.c5.9xlarge"
-	InstanceTypeMlC518xlarge     InstanceType = "ml.c5.18xlarge"
-	InstanceTypeMlC5dXlarge      InstanceType = "ml.c5d.xlarge"
-	InstanceTypeMlC5d2xlarge     InstanceType = "ml.c5d.2xlarge"
-	InstanceTypeMlC5d4xlarge     InstanceType = "ml.c5d.4xlarge"
-	InstanceTypeMlC5d9xlarge     InstanceType = "ml.c5d.9xlarge"
-	InstanceTypeMlC5d18xlarge    InstanceType = "ml.c5d.18xlarge"
-	InstanceTypeMlP2Xlarge       InstanceType = "ml.p2.xlarge"
-	InstanceTypeMlP28xlarge      InstanceType = "ml.p2.8xlarge"
-	InstanceTypeMlP216xlarge     InstanceType = "ml.p2.16xlarge"
-	InstanceTypeMlP32xlarge      InstanceType = "ml.p3.2xlarge"
-	InstanceTypeMlP38xlarge      InstanceType = "ml.p3.8xlarge"
-	InstanceTypeMlP316xlarge     InstanceType = "ml.p3.16xlarge"
-	InstanceTypeMlP3dn24xlarge   InstanceType = "ml.p3dn.24xlarge"
-	InstanceTypeMlG4dnXlarge     InstanceType = "ml.g4dn.xlarge"
-	InstanceTypeMlG4dn2xlarge    InstanceType = "ml.g4dn.2xlarge"
-	InstanceTypeMlG4dn4xlarge    InstanceType = "ml.g4dn.4xlarge"
-	InstanceTypeMlG4dn8xlarge    InstanceType = "ml.g4dn.8xlarge"
-	InstanceTypeMlG4dn12xlarge   InstanceType = "ml.g4dn.12xlarge"
-	InstanceTypeMlG4dn16xlarge   InstanceType = "ml.g4dn.16xlarge"
-	InstanceTypeMlR5Large        InstanceType = "ml.r5.large"
-	InstanceTypeMlR5Xlarge       InstanceType = "ml.r5.xlarge"
-	InstanceTypeMlR52xlarge      InstanceType = "ml.r5.2xlarge"
-	InstanceTypeMlR54xlarge      InstanceType = "ml.r5.4xlarge"
-	InstanceTypeMlR58xlarge      InstanceType = "ml.r5.8xlarge"
-	InstanceTypeMlR512xlarge     InstanceType = "ml.r5.12xlarge"
-	InstanceTypeMlR516xlarge     InstanceType = "ml.r5.16xlarge"
-	InstanceTypeMlR524xlarge     InstanceType = "ml.r5.24xlarge"
-	InstanceTypeMlG5Xlarge       InstanceType = "ml.g5.xlarge"
-	InstanceTypeMlG52xlarge      InstanceType = "ml.g5.2xlarge"
-	InstanceTypeMlG54xlarge      InstanceType = "ml.g5.4xlarge"
-	InstanceTypeMlG58xlarge      InstanceType = "ml.g5.8xlarge"
-	InstanceTypeMlG516xlarge     InstanceType = "ml.g5.16xlarge"
-	InstanceTypeMlG512xlarge     InstanceType = "ml.g5.12xlarge"
-	InstanceTypeMlG524xlarge     InstanceType = "ml.g5.24xlarge"
-	InstanceTypeMlG548xlarge     InstanceType = "ml.g5.48xlarge"
-	InstanceTypeMlInf1Xlarge     InstanceType = "ml.inf1.xlarge"
-	InstanceTypeMlInf12xlarge    InstanceType = "ml.inf1.2xlarge"
-	InstanceTypeMlInf16xlarge    InstanceType = "ml.inf1.6xlarge"
-	InstanceTypeMlInf124xlarge   InstanceType = "ml.inf1.24xlarge"
-	InstanceTypeMlTrn12xlarge    InstanceType = "ml.trn1.2xlarge"
-	InstanceTypeMlTrn132xlarge   InstanceType = "ml.trn1.32xlarge"
-	InstanceTypeMlTrn1n32xlarge  InstanceType = "ml.trn1n.32xlarge"
-	InstanceTypeMlInf2Xlarge     InstanceType = "ml.inf2.xlarge"
-	InstanceTypeMlInf28xlarge    InstanceType = "ml.inf2.8xlarge"
-	InstanceTypeMlInf224xlarge   InstanceType = "ml.inf2.24xlarge"
-	InstanceTypeMlInf248xlarge   InstanceType = "ml.inf2.48xlarge"
-	InstanceTypeMlP4d24xlarge    InstanceType = "ml.p4d.24xlarge"
-	InstanceTypeMlP4de24xlarge   InstanceType = "ml.p4de.24xlarge"
-	InstanceTypeMlP548xlarge     InstanceType = "ml.p5.48xlarge"
-	InstanceTypeMlP6B20048xlarge InstanceType = "ml.p6-b200.48xlarge"
-	InstanceTypeMlM6iLarge       InstanceType = "ml.m6i.large"
-	InstanceTypeMlM6iXlarge      InstanceType = "ml.m6i.xlarge"
-	InstanceTypeMlM6i2xlarge     InstanceType = "ml.m6i.2xlarge"
-	InstanceTypeMlM6i4xlarge     InstanceType = "ml.m6i.4xlarge"
-	InstanceTypeMlM6i8xlarge     InstanceType = "ml.m6i.8xlarge"
-	InstanceTypeMlM6i12xlarge    InstanceType = "ml.m6i.12xlarge"
-	InstanceTypeMlM6i16xlarge    InstanceType = "ml.m6i.16xlarge"
-	InstanceTypeMlM6i24xlarge    InstanceType = "ml.m6i.24xlarge"
-	InstanceTypeMlM6i32xlarge    InstanceType = "ml.m6i.32xlarge"
-	InstanceTypeMlM7iLarge       InstanceType = "ml.m7i.large"
-	InstanceTypeMlM7iXlarge      InstanceType = "ml.m7i.xlarge"
-	InstanceTypeMlM7i2xlarge     InstanceType = "ml.m7i.2xlarge"
-	InstanceTypeMlM7i4xlarge     InstanceType = "ml.m7i.4xlarge"
-	InstanceTypeMlM7i8xlarge     InstanceType = "ml.m7i.8xlarge"
-	InstanceTypeMlM7i12xlarge    InstanceType = "ml.m7i.12xlarge"
-	InstanceTypeMlM7i16xlarge    InstanceType = "ml.m7i.16xlarge"
-	InstanceTypeMlM7i24xlarge    InstanceType = "ml.m7i.24xlarge"
-	InstanceTypeMlM7i48xlarge    InstanceType = "ml.m7i.48xlarge"
-	InstanceTypeMlC6iLarge       InstanceType = "ml.c6i.large"
-	InstanceTypeMlC6iXlarge      InstanceType = "ml.c6i.xlarge"
-	InstanceTypeMlC6i2xlarge     InstanceType = "ml.c6i.2xlarge"
-	InstanceTypeMlC6i4xlarge     InstanceType = "ml.c6i.4xlarge"
-	InstanceTypeMlC6i8xlarge     InstanceType = "ml.c6i.8xlarge"
-	InstanceTypeMlC6i12xlarge    InstanceType = "ml.c6i.12xlarge"
-	InstanceTypeMlC6i16xlarge    InstanceType = "ml.c6i.16xlarge"
-	InstanceTypeMlC6i24xlarge    InstanceType = "ml.c6i.24xlarge"
-	InstanceTypeMlC6i32xlarge    InstanceType = "ml.c6i.32xlarge"
-	InstanceTypeMlC7iLarge       InstanceType = "ml.c7i.large"
-	InstanceTypeMlC7iXlarge      InstanceType = "ml.c7i.xlarge"
-	InstanceTypeMlC7i2xlarge     InstanceType = "ml.c7i.2xlarge"
-	InstanceTypeMlC7i4xlarge     InstanceType = "ml.c7i.4xlarge"
-	InstanceTypeMlC7i8xlarge     InstanceType = "ml.c7i.8xlarge"
-	InstanceTypeMlC7i12xlarge    InstanceType = "ml.c7i.12xlarge"
-	InstanceTypeMlC7i16xlarge    InstanceType = "ml.c7i.16xlarge"
-	InstanceTypeMlC7i24xlarge    InstanceType = "ml.c7i.24xlarge"
-	InstanceTypeMlC7i48xlarge    InstanceType = "ml.c7i.48xlarge"
-	InstanceTypeMlR6iLarge       InstanceType = "ml.r6i.large"
-	InstanceTypeMlR6iXlarge      InstanceType = "ml.r6i.xlarge"
-	InstanceTypeMlR6i2xlarge     InstanceType = "ml.r6i.2xlarge"
-	InstanceTypeMlR6i4xlarge     InstanceType = "ml.r6i.4xlarge"
-	InstanceTypeMlR6i8xlarge     InstanceType = "ml.r6i.8xlarge"
-	InstanceTypeMlR6i12xlarge    InstanceType = "ml.r6i.12xlarge"
-	InstanceTypeMlR6i16xlarge    InstanceType = "ml.r6i.16xlarge"
-	InstanceTypeMlR6i24xlarge    InstanceType = "ml.r6i.24xlarge"
-	InstanceTypeMlR6i32xlarge    InstanceType = "ml.r6i.32xlarge"
-	InstanceTypeMlR7iLarge       InstanceType = "ml.r7i.large"
-	InstanceTypeMlR7iXlarge      InstanceType = "ml.r7i.xlarge"
-	InstanceTypeMlR7i2xlarge     InstanceType = "ml.r7i.2xlarge"
-	InstanceTypeMlR7i4xlarge     InstanceType = "ml.r7i.4xlarge"
-	InstanceTypeMlR7i8xlarge     InstanceType = "ml.r7i.8xlarge"
-	InstanceTypeMlR7i12xlarge    InstanceType = "ml.r7i.12xlarge"
-	InstanceTypeMlR7i16xlarge    InstanceType = "ml.r7i.16xlarge"
-	InstanceTypeMlR7i24xlarge    InstanceType = "ml.r7i.24xlarge"
-	InstanceTypeMlR7i48xlarge    InstanceType = "ml.r7i.48xlarge"
-	InstanceTypeMlM6idLarge      InstanceType = "ml.m6id.large"
-	InstanceTypeMlM6idXlarge     InstanceType = "ml.m6id.xlarge"
-	InstanceTypeMlM6id2xlarge    InstanceType = "ml.m6id.2xlarge"
-	InstanceTypeMlM6id4xlarge    InstanceType = "ml.m6id.4xlarge"
-	InstanceTypeMlM6id8xlarge    InstanceType = "ml.m6id.8xlarge"
-	InstanceTypeMlM6id12xlarge   InstanceType = "ml.m6id.12xlarge"
-	InstanceTypeMlM6id16xlarge   InstanceType = "ml.m6id.16xlarge"
-	InstanceTypeMlM6id24xlarge   InstanceType = "ml.m6id.24xlarge"
-	InstanceTypeMlM6id32xlarge   InstanceType = "ml.m6id.32xlarge"
-	InstanceTypeMlC6idLarge      InstanceType = "ml.c6id.large"
-	InstanceTypeMlC6idXlarge     InstanceType = "ml.c6id.xlarge"
-	InstanceTypeMlC6id2xlarge    InstanceType = "ml.c6id.2xlarge"
-	InstanceTypeMlC6id4xlarge    InstanceType = "ml.c6id.4xlarge"
-	InstanceTypeMlC6id8xlarge    InstanceType = "ml.c6id.8xlarge"
-	InstanceTypeMlC6id12xlarge   InstanceType = "ml.c6id.12xlarge"
-	InstanceTypeMlC6id16xlarge   InstanceType = "ml.c6id.16xlarge"
-	InstanceTypeMlC6id24xlarge   InstanceType = "ml.c6id.24xlarge"
-	InstanceTypeMlC6id32xlarge   InstanceType = "ml.c6id.32xlarge"
-	InstanceTypeMlR6idLarge      InstanceType = "ml.r6id.large"
-	InstanceTypeMlR6idXlarge     InstanceType = "ml.r6id.xlarge"
-	InstanceTypeMlR6id2xlarge    InstanceType = "ml.r6id.2xlarge"
-	InstanceTypeMlR6id4xlarge    InstanceType = "ml.r6id.4xlarge"
-	InstanceTypeMlR6id8xlarge    InstanceType = "ml.r6id.8xlarge"
-	InstanceTypeMlR6id12xlarge   InstanceType = "ml.r6id.12xlarge"
-	InstanceTypeMlR6id16xlarge   InstanceType = "ml.r6id.16xlarge"
-	InstanceTypeMlR6id24xlarge   InstanceType = "ml.r6id.24xlarge"
-	InstanceTypeMlR6id32xlarge   InstanceType = "ml.r6id.32xlarge"
-	InstanceTypeMlG6Xlarge       InstanceType = "ml.g6.xlarge"
-	InstanceTypeMlG62xlarge      InstanceType = "ml.g6.2xlarge"
-	InstanceTypeMlG64xlarge      InstanceType = "ml.g6.4xlarge"
-	InstanceTypeMlG68xlarge      InstanceType = "ml.g6.8xlarge"
-	InstanceTypeMlG612xlarge     InstanceType = "ml.g6.12xlarge"
-	InstanceTypeMlG616xlarge     InstanceType = "ml.g6.16xlarge"
-	InstanceTypeMlG624xlarge     InstanceType = "ml.g6.24xlarge"
-	InstanceTypeMlG648xlarge     InstanceType = "ml.g6.48xlarge"
+	InstanceTypeMlT2Medium      InstanceType = "ml.t2.medium"
+	InstanceTypeMlT2Large       InstanceType = "ml.t2.large"
+	InstanceTypeMlT2Xlarge      InstanceType = "ml.t2.xlarge"
+	InstanceTypeMlT22xlarge     InstanceType = "ml.t2.2xlarge"
+	InstanceTypeMlT3Medium      InstanceType = "ml.t3.medium"
+	InstanceTypeMlT3Large       InstanceType = "ml.t3.large"
+	InstanceTypeMlT3Xlarge      InstanceType = "ml.t3.xlarge"
+	InstanceTypeMlT32xlarge     InstanceType = "ml.t3.2xlarge"
+	InstanceTypeMlM4Xlarge      InstanceType = "ml.m4.xlarge"
+	InstanceTypeMlM42xlarge     InstanceType = "ml.m4.2xlarge"
+	InstanceTypeMlM44xlarge     InstanceType = "ml.m4.4xlarge"
+	InstanceTypeMlM410xlarge    InstanceType = "ml.m4.10xlarge"
+	InstanceTypeMlM416xlarge    InstanceType = "ml.m4.16xlarge"
+	InstanceTypeMlM5Xlarge      InstanceType = "ml.m5.xlarge"
+	InstanceTypeMlM52xlarge     InstanceType = "ml.m5.2xlarge"
+	InstanceTypeMlM54xlarge     InstanceType = "ml.m5.4xlarge"
+	InstanceTypeMlM512xlarge    InstanceType = "ml.m5.12xlarge"
+	InstanceTypeMlM524xlarge    InstanceType = "ml.m5.24xlarge"
+	InstanceTypeMlM5dLarge      InstanceType = "ml.m5d.large"
+	InstanceTypeMlM5dXlarge     InstanceType = "ml.m5d.xlarge"
+	InstanceTypeMlM5d2xlarge    InstanceType = "ml.m5d.2xlarge"
+	InstanceTypeMlM5d4xlarge    InstanceType = "ml.m5d.4xlarge"
+	InstanceTypeMlM5d8xlarge    InstanceType = "ml.m5d.8xlarge"
+	InstanceTypeMlM5d12xlarge   InstanceType = "ml.m5d.12xlarge"
+	InstanceTypeMlM5d16xlarge   InstanceType = "ml.m5d.16xlarge"
+	InstanceTypeMlM5d24xlarge   InstanceType = "ml.m5d.24xlarge"
+	InstanceTypeMlC4Xlarge      InstanceType = "ml.c4.xlarge"
+	InstanceTypeMlC42xlarge     InstanceType = "ml.c4.2xlarge"
+	InstanceTypeMlC44xlarge     InstanceType = "ml.c4.4xlarge"
+	InstanceTypeMlC48xlarge     InstanceType = "ml.c4.8xlarge"
+	InstanceTypeMlC5Xlarge      InstanceType = "ml.c5.xlarge"
+	InstanceTypeMlC52xlarge     InstanceType = "ml.c5.2xlarge"
+	InstanceTypeMlC54xlarge     InstanceType = "ml.c5.4xlarge"
+	InstanceTypeMlC59xlarge     InstanceType = "ml.c5.9xlarge"
+	InstanceTypeMlC518xlarge    InstanceType = "ml.c5.18xlarge"
+	InstanceTypeMlC5dXlarge     InstanceType = "ml.c5d.xlarge"
+	InstanceTypeMlC5d2xlarge    InstanceType = "ml.c5d.2xlarge"
+	InstanceTypeMlC5d4xlarge    InstanceType = "ml.c5d.4xlarge"
+	InstanceTypeMlC5d9xlarge    InstanceType = "ml.c5d.9xlarge"
+	InstanceTypeMlC5d18xlarge   InstanceType = "ml.c5d.18xlarge"
+	InstanceTypeMlP2Xlarge      InstanceType = "ml.p2.xlarge"
+	InstanceTypeMlP28xlarge     InstanceType = "ml.p2.8xlarge"
+	InstanceTypeMlP216xlarge    InstanceType = "ml.p2.16xlarge"
+	InstanceTypeMlP32xlarge     InstanceType = "ml.p3.2xlarge"
+	InstanceTypeMlP38xlarge     InstanceType = "ml.p3.8xlarge"
+	InstanceTypeMlP316xlarge    InstanceType = "ml.p3.16xlarge"
+	InstanceTypeMlP3dn24xlarge  InstanceType = "ml.p3dn.24xlarge"
+	InstanceTypeMlG4dnXlarge    InstanceType = "ml.g4dn.xlarge"
+	InstanceTypeMlG4dn2xlarge   InstanceType = "ml.g4dn.2xlarge"
+	InstanceTypeMlG4dn4xlarge   InstanceType = "ml.g4dn.4xlarge"
+	InstanceTypeMlG4dn8xlarge   InstanceType = "ml.g4dn.8xlarge"
+	InstanceTypeMlG4dn12xlarge  InstanceType = "ml.g4dn.12xlarge"
+	InstanceTypeMlG4dn16xlarge  InstanceType = "ml.g4dn.16xlarge"
+	InstanceTypeMlR5Large       InstanceType = "ml.r5.large"
+	InstanceTypeMlR5Xlarge      InstanceType = "ml.r5.xlarge"
+	InstanceTypeMlR52xlarge     InstanceType = "ml.r5.2xlarge"
+	InstanceTypeMlR54xlarge     InstanceType = "ml.r5.4xlarge"
+	InstanceTypeMlR58xlarge     InstanceType = "ml.r5.8xlarge"
+	InstanceTypeMlR512xlarge    InstanceType = "ml.r5.12xlarge"
+	InstanceTypeMlR516xlarge    InstanceType = "ml.r5.16xlarge"
+	InstanceTypeMlR524xlarge    InstanceType = "ml.r5.24xlarge"
+	InstanceTypeMlG5Xlarge      InstanceType = "ml.g5.xlarge"
+	InstanceTypeMlG52xlarge     InstanceType = "ml.g5.2xlarge"
+	InstanceTypeMlG54xlarge     InstanceType = "ml.g5.4xlarge"
+	InstanceTypeMlG58xlarge     InstanceType = "ml.g5.8xlarge"
+	InstanceTypeMlG516xlarge    InstanceType = "ml.g5.16xlarge"
+	InstanceTypeMlG512xlarge    InstanceType = "ml.g5.12xlarge"
+	InstanceTypeMlG524xlarge    InstanceType = "ml.g5.24xlarge"
+	InstanceTypeMlG548xlarge    InstanceType = "ml.g5.48xlarge"
+	InstanceTypeMlInf1Xlarge    InstanceType = "ml.inf1.xlarge"
+	InstanceTypeMlInf12xlarge   InstanceType = "ml.inf1.2xlarge"
+	InstanceTypeMlInf16xlarge   InstanceType = "ml.inf1.6xlarge"
+	InstanceTypeMlInf124xlarge  InstanceType = "ml.inf1.24xlarge"
+	InstanceTypeMlTrn12xlarge   InstanceType = "ml.trn1.2xlarge"
+	InstanceTypeMlTrn132xlarge  InstanceType = "ml.trn1.32xlarge"
+	InstanceTypeMlTrn1n32xlarge InstanceType = "ml.trn1n.32xlarge"
+	InstanceTypeMlInf2Xlarge    InstanceType = "ml.inf2.xlarge"
+	InstanceTypeMlInf28xlarge   InstanceType = "ml.inf2.8xlarge"
+	InstanceTypeMlInf224xlarge  InstanceType = "ml.inf2.24xlarge"
+	InstanceTypeMlInf248xlarge  InstanceType = "ml.inf2.48xlarge"
+	InstanceTypeMlP4d24xlarge   InstanceType = "ml.p4d.24xlarge"
+	InstanceTypeMlP4de24xlarge  InstanceType = "ml.p4de.24xlarge"
+	InstanceTypeMlP548xlarge    InstanceType = "ml.p5.48xlarge"
+	InstanceTypeMlM6iLarge      InstanceType = "ml.m6i.large"
+	InstanceTypeMlM6iXlarge     InstanceType = "ml.m6i.xlarge"
+	InstanceTypeMlM6i2xlarge    InstanceType = "ml.m6i.2xlarge"
+	InstanceTypeMlM6i4xlarge    InstanceType = "ml.m6i.4xlarge"
+	InstanceTypeMlM6i8xlarge    InstanceType = "ml.m6i.8xlarge"
+	InstanceTypeMlM6i12xlarge   InstanceType = "ml.m6i.12xlarge"
+	InstanceTypeMlM6i16xlarge   InstanceType = "ml.m6i.16xlarge"
+	InstanceTypeMlM6i24xlarge   InstanceType = "ml.m6i.24xlarge"
+	InstanceTypeMlM6i32xlarge   InstanceType = "ml.m6i.32xlarge"
+	InstanceTypeMlM7iLarge      InstanceType = "ml.m7i.large"
+	InstanceTypeMlM7iXlarge     InstanceType = "ml.m7i.xlarge"
+	InstanceTypeMlM7i2xlarge    InstanceType = "ml.m7i.2xlarge"
+	InstanceTypeMlM7i4xlarge    InstanceType = "ml.m7i.4xlarge"
+	InstanceTypeMlM7i8xlarge    InstanceType = "ml.m7i.8xlarge"
+	InstanceTypeMlM7i12xlarge   InstanceType = "ml.m7i.12xlarge"
+	InstanceTypeMlM7i16xlarge   InstanceType = "ml.m7i.16xlarge"
+	InstanceTypeMlM7i24xlarge   InstanceType = "ml.m7i.24xlarge"
+	InstanceTypeMlM7i48xlarge   InstanceType = "ml.m7i.48xlarge"
+	InstanceTypeMlC6iLarge      InstanceType = "ml.c6i.large"
+	InstanceTypeMlC6iXlarge     InstanceType = "ml.c6i.xlarge"
+	InstanceTypeMlC6i2xlarge    InstanceType = "ml.c6i.2xlarge"
+	InstanceTypeMlC6i4xlarge    InstanceType = "ml.c6i.4xlarge"
+	InstanceTypeMlC6i8xlarge    InstanceType = "ml.c6i.8xlarge"
+	InstanceTypeMlC6i12xlarge   InstanceType = "ml.c6i.12xlarge"
+	InstanceTypeMlC6i16xlarge   InstanceType = "ml.c6i.16xlarge"
+	InstanceTypeMlC6i24xlarge   InstanceType = "ml.c6i.24xlarge"
+	InstanceTypeMlC6i32xlarge   InstanceType = "ml.c6i.32xlarge"
+	InstanceTypeMlC7iLarge      InstanceType = "ml.c7i.large"
+	InstanceTypeMlC7iXlarge     InstanceType = "ml.c7i.xlarge"
+	InstanceTypeMlC7i2xlarge    InstanceType = "ml.c7i.2xlarge"
+	InstanceTypeMlC7i4xlarge    InstanceType = "ml.c7i.4xlarge"
+	InstanceTypeMlC7i8xlarge    InstanceType = "ml.c7i.8xlarge"
+	InstanceTypeMlC7i12xlarge   InstanceType = "ml.c7i.12xlarge"
+	InstanceTypeMlC7i16xlarge   InstanceType = "ml.c7i.16xlarge"
+	InstanceTypeMlC7i24xlarge   InstanceType = "ml.c7i.24xlarge"
+	InstanceTypeMlC7i48xlarge   InstanceType = "ml.c7i.48xlarge"
+	InstanceTypeMlR6iLarge      InstanceType = "ml.r6i.large"
+	InstanceTypeMlR6iXlarge     InstanceType = "ml.r6i.xlarge"
+	InstanceTypeMlR6i2xlarge    InstanceType = "ml.r6i.2xlarge"
+	InstanceTypeMlR6i4xlarge    InstanceType = "ml.r6i.4xlarge"
+	InstanceTypeMlR6i8xlarge    InstanceType = "ml.r6i.8xlarge"
+	InstanceTypeMlR6i12xlarge   InstanceType = "ml.r6i.12xlarge"
+	InstanceTypeMlR6i16xlarge   InstanceType = "ml.r6i.16xlarge"
+	InstanceTypeMlR6i24xlarge   InstanceType = "ml.r6i.24xlarge"
+	InstanceTypeMlR6i32xlarge   InstanceType = "ml.r6i.32xlarge"
+	InstanceTypeMlR7iLarge      InstanceType = "ml.r7i.large"
+	InstanceTypeMlR7iXlarge     InstanceType = "ml.r7i.xlarge"
+	InstanceTypeMlR7i2xlarge    InstanceType = "ml.r7i.2xlarge"
+	InstanceTypeMlR7i4xlarge    InstanceType = "ml.r7i.4xlarge"
+	InstanceTypeMlR7i8xlarge    InstanceType = "ml.r7i.8xlarge"
+	InstanceTypeMlR7i12xlarge   InstanceType = "ml.r7i.12xlarge"
+	InstanceTypeMlR7i16xlarge   InstanceType = "ml.r7i.16xlarge"
+	InstanceTypeMlR7i24xlarge   InstanceType = "ml.r7i.24xlarge"
+	InstanceTypeMlR7i48xlarge   InstanceType = "ml.r7i.48xlarge"
+	InstanceTypeMlM6idLarge     InstanceType = "ml.m6id.large"
+	InstanceTypeMlM6idXlarge    InstanceType = "ml.m6id.xlarge"
+	InstanceTypeMlM6id2xlarge   InstanceType = "ml.m6id.2xlarge"
+	InstanceTypeMlM6id4xlarge   InstanceType = "ml.m6id.4xlarge"
+	InstanceTypeMlM6id8xlarge   InstanceType = "ml.m6id.8xlarge"
+	InstanceTypeMlM6id12xlarge  InstanceType = "ml.m6id.12xlarge"
+	InstanceTypeMlM6id16xlarge  InstanceType = "ml.m6id.16xlarge"
+	InstanceTypeMlM6id24xlarge  InstanceType = "ml.m6id.24xlarge"
+	InstanceTypeMlM6id32xlarge  InstanceType = "ml.m6id.32xlarge"
+	InstanceTypeMlC6idLarge     InstanceType = "ml.c6id.large"
+	InstanceTypeMlC6idXlarge    InstanceType = "ml.c6id.xlarge"
+	InstanceTypeMlC6id2xlarge   InstanceType = "ml.c6id.2xlarge"
+	InstanceTypeMlC6id4xlarge   InstanceType = "ml.c6id.4xlarge"
+	InstanceTypeMlC6id8xlarge   InstanceType = "ml.c6id.8xlarge"
+	InstanceTypeMlC6id12xlarge  InstanceType = "ml.c6id.12xlarge"
+	InstanceTypeMlC6id16xlarge  InstanceType = "ml.c6id.16xlarge"
+	InstanceTypeMlC6id24xlarge  InstanceType = "ml.c6id.24xlarge"
+	InstanceTypeMlC6id32xlarge  InstanceType = "ml.c6id.32xlarge"
+	InstanceTypeMlR6idLarge     InstanceType = "ml.r6id.large"
+	InstanceTypeMlR6idXlarge    InstanceType = "ml.r6id.xlarge"
+	InstanceTypeMlR6id2xlarge   InstanceType = "ml.r6id.2xlarge"
+	InstanceTypeMlR6id4xlarge   InstanceType = "ml.r6id.4xlarge"
+	InstanceTypeMlR6id8xlarge   InstanceType = "ml.r6id.8xlarge"
+	InstanceTypeMlR6id12xlarge  InstanceType = "ml.r6id.12xlarge"
+	InstanceTypeMlR6id16xlarge  InstanceType = "ml.r6id.16xlarge"
+	InstanceTypeMlR6id24xlarge  InstanceType = "ml.r6id.24xlarge"
+	InstanceTypeMlR6id32xlarge  InstanceType = "ml.r6id.32xlarge"
+	InstanceTypeMlG6Xlarge      InstanceType = "ml.g6.xlarge"
+	InstanceTypeMlG62xlarge     InstanceType = "ml.g6.2xlarge"
+	InstanceTypeMlG64xlarge     InstanceType = "ml.g6.4xlarge"
+	InstanceTypeMlG68xlarge     InstanceType = "ml.g6.8xlarge"
+	InstanceTypeMlG612xlarge    InstanceType = "ml.g6.12xlarge"
+	InstanceTypeMlG616xlarge    InstanceType = "ml.g6.16xlarge"
+	InstanceTypeMlG624xlarge    InstanceType = "ml.g6.24xlarge"
+	InstanceTypeMlG648xlarge    InstanceType = "ml.g6.48xlarge"
 )
 
 // Values returns all known values for InstanceType. Note that this can be
@@ -4131,7 +3865,6 @@ func (InstanceType) Values() []InstanceType {
 		"ml.p4d.24xlarge",
 		"ml.p4de.24xlarge",
 		"ml.p5.48xlarge",
-		"ml.p6-b200.48xlarge",
 		"ml.m6i.large",
 		"ml.m6i.xlarge",
 		"ml.m6i.2xlarge",
@@ -4221,25 +3954,6 @@ func (InstanceType) Values() []InstanceType {
 		"ml.g6.16xlarge",
 		"ml.g6.24xlarge",
 		"ml.g6.48xlarge",
-	}
-}
-
-type IPAddressType string
-
-// Enum values for IPAddressType
-const (
-	IPAddressTypeIpv4      IPAddressType = "ipv4"
-	IPAddressTypeDualstack IPAddressType = "dualstack"
-)
-
-// Values returns all known values for IPAddressType. Note that this can be
-// expanded in the future, and so it is only as up to date as the client.
-//
-// The ordering of this slice is not guaranteed to be stable across updates.
-func (IPAddressType) Values() []IPAddressType {
-	return []IPAddressType{
-		"ipv4",
-		"dualstack",
 	}
 }
 
@@ -4582,27 +4296,6 @@ func (ListWorkteamsSortByOptions) Values() []ListWorkteamsSortByOptions {
 	}
 }
 
-type MaintenanceStatus string
-
-// Enum values for MaintenanceStatus
-const (
-	MaintenanceStatusMaintenanceInProgress MaintenanceStatus = "MaintenanceInProgress"
-	MaintenanceStatusMaintenanceComplete   MaintenanceStatus = "MaintenanceComplete"
-	MaintenanceStatusMaintenanceFailed     MaintenanceStatus = "MaintenanceFailed"
-)
-
-// Values returns all known values for MaintenanceStatus. Note that this can be
-// expanded in the future, and so it is only as up to date as the client.
-//
-// The ordering of this slice is not guaranteed to be stable across updates.
-func (MaintenanceStatus) Values() []MaintenanceStatus {
-	return []MaintenanceStatus{
-		"MaintenanceInProgress",
-		"MaintenanceComplete",
-		"MaintenanceFailed",
-	}
-}
-
 type ManagedInstanceScalingStatus string
 
 // Enum values for ManagedInstanceScalingStatus
@@ -4623,26 +4316,6 @@ func (ManagedInstanceScalingStatus) Values() []ManagedInstanceScalingStatus {
 	}
 }
 
-type MetricPublishFrequencyInSeconds = int32
-
-// Enum values for MetricPublishFrequencyInSeconds
-const (
-	// Metrics publishing at 10 seconds frequency
-	MetricPublishFrequencyInSecondsFreq10S MetricPublishFrequencyInSeconds = 10
-	// Metrics publishing at 30 seconds frequency
-	MetricPublishFrequencyInSecondsFreq30S MetricPublishFrequencyInSeconds = 30
-	// Metrics publishing at 60 seconds frequency
-	MetricPublishFrequencyInSecondsFreq60S MetricPublishFrequencyInSeconds = 60
-	// Metrics publishing at 120 seconds frequency
-	MetricPublishFrequencyInSecondsFreq120S MetricPublishFrequencyInSeconds = 120
-	// Metrics publishing at 180 seconds frequency
-	MetricPublishFrequencyInSecondsFreq180S MetricPublishFrequencyInSeconds = 180
-	// Metrics publishing at 240 seconds frequency
-	MetricPublishFrequencyInSecondsFreq240S MetricPublishFrequencyInSeconds = 240
-	// Metrics publishing at 300 seconds frequency
-	MetricPublishFrequencyInSecondsFreq300S MetricPublishFrequencyInSeconds = 300
-)
-
 type MetricSetSource string
 
 // Enum values for MetricSetSource
@@ -4661,110 +4334,6 @@ func (MetricSetSource) Values() []MetricSetSource {
 		"Train",
 		"Validation",
 		"Test",
-	}
-}
-
-type MIGProfileType string
-
-// Enum values for MIGProfileType
-const (
-	MIGProfileTypeMig1g5gb   MIGProfileType = "mig-1g.5gb"
-	MIGProfileTypeMig1g10gb  MIGProfileType = "mig-1g.10gb"
-	MIGProfileTypeMig1g18gb  MIGProfileType = "mig-1g.18gb"
-	MIGProfileTypeMig1g20gb  MIGProfileType = "mig-1g.20gb"
-	MIGProfileTypeMig1g23gb  MIGProfileType = "mig-1g.23gb"
-	MIGProfileTypeMig1g35gb  MIGProfileType = "mig-1g.35gb"
-	MIGProfileTypeMig1g45gb  MIGProfileType = "mig-1g.45gb"
-	MIGProfileTypeMig1g47gb  MIGProfileType = "mig-1g.47gb"
-	MIGProfileTypeMig2g10gb  MIGProfileType = "mig-2g.10gb"
-	MIGProfileTypeMig2g20gb  MIGProfileType = "mig-2g.20gb"
-	MIGProfileTypeMig2g35gb  MIGProfileType = "mig-2g.35gb"
-	MIGProfileTypeMig2g45gb  MIGProfileType = "mig-2g.45gb"
-	MIGProfileTypeMig2g47gb  MIGProfileType = "mig-2g.47gb"
-	MIGProfileTypeMig3g20gb  MIGProfileType = "mig-3g.20gb"
-	MIGProfileTypeMig3g40gb  MIGProfileType = "mig-3g.40gb"
-	MIGProfileTypeMig3g71gb  MIGProfileType = "mig-3g.71gb"
-	MIGProfileTypeMig3g90gb  MIGProfileType = "mig-3g.90gb"
-	MIGProfileTypeMig3g93gb  MIGProfileType = "mig-3g.93gb"
-	MIGProfileTypeMig4g20gb  MIGProfileType = "mig-4g.20gb"
-	MIGProfileTypeMig4g40gb  MIGProfileType = "mig-4g.40gb"
-	MIGProfileTypeMig4g71gb  MIGProfileType = "mig-4g.71gb"
-	MIGProfileTypeMig4g90gb  MIGProfileType = "mig-4g.90gb"
-	MIGProfileTypeMig4g93gb  MIGProfileType = "mig-4g.93gb"
-	MIGProfileTypeMig7g40gb  MIGProfileType = "mig-7g.40gb"
-	MIGProfileTypeMig7g80gb  MIGProfileType = "mig-7g.80gb"
-	MIGProfileTypeMig7g141gb MIGProfileType = "mig-7g.141gb"
-	MIGProfileTypeMig7g180gb MIGProfileType = "mig-7g.180gb"
-	MIGProfileTypeMig7g186gb MIGProfileType = "mig-7g.186gb"
-)
-
-// Values returns all known values for MIGProfileType. Note that this can be
-// expanded in the future, and so it is only as up to date as the client.
-//
-// The ordering of this slice is not guaranteed to be stable across updates.
-func (MIGProfileType) Values() []MIGProfileType {
-	return []MIGProfileType{
-		"mig-1g.5gb",
-		"mig-1g.10gb",
-		"mig-1g.18gb",
-		"mig-1g.20gb",
-		"mig-1g.23gb",
-		"mig-1g.35gb",
-		"mig-1g.45gb",
-		"mig-1g.47gb",
-		"mig-2g.10gb",
-		"mig-2g.20gb",
-		"mig-2g.35gb",
-		"mig-2g.45gb",
-		"mig-2g.47gb",
-		"mig-3g.20gb",
-		"mig-3g.40gb",
-		"mig-3g.71gb",
-		"mig-3g.90gb",
-		"mig-3g.93gb",
-		"mig-4g.20gb",
-		"mig-4g.40gb",
-		"mig-4g.71gb",
-		"mig-4g.90gb",
-		"mig-4g.93gb",
-		"mig-7g.40gb",
-		"mig-7g.80gb",
-		"mig-7g.141gb",
-		"mig-7g.180gb",
-		"mig-7g.186gb",
-	}
-}
-
-type MlflowAppStatus string
-
-// Enum values for MlflowAppStatus
-const (
-	MlflowAppStatusCreating     MlflowAppStatus = "Creating"
-	MlflowAppStatusCreated      MlflowAppStatus = "Created"
-	MlflowAppStatusCreateFailed MlflowAppStatus = "CreateFailed"
-	MlflowAppStatusUpdating     MlflowAppStatus = "Updating"
-	MlflowAppStatusUpdated      MlflowAppStatus = "Updated"
-	MlflowAppStatusUpdateFailed MlflowAppStatus = "UpdateFailed"
-	MlflowAppStatusDeleting     MlflowAppStatus = "Deleting"
-	MlflowAppStatusDeleteFailed MlflowAppStatus = "DeleteFailed"
-	MlflowAppStatusDeleted      MlflowAppStatus = "Deleted"
-)
-
-// Values returns all known values for MlflowAppStatus. Note that this can be
-// expanded in the future, and so it is only as up to date as the client.
-//
-// The ordering of this slice is not guaranteed to be stable across updates.
-func (MlflowAppStatus) Values() []MlflowAppStatus {
-	return []MlflowAppStatus{
-		"Creating",
-		"Created",
-		"CreateFailed",
-		"Updating",
-		"Updated",
-		"UpdateFailed",
-		"Deleting",
-		"DeleteFailed",
-		"Deleted",
 	}
 }
 
@@ -4792,9 +4361,6 @@ const (
 	MlToolsDeepchecksLlmEvaluation MlTools = "DeepchecksLLMEvaluation"
 	MlToolsFiddler                 MlTools = "Fiddler"
 	MlToolsHyperPodClusters        MlTools = "HyperPodClusters"
-	MlToolsRunningInstances        MlTools = "RunningInstances"
-	MlToolsDatasets                MlTools = "Datasets"
-	MlToolsEvaluators              MlTools = "Evaluators"
 )
 
 // Values returns all known values for MlTools. Note that this can be expanded in
@@ -4823,9 +4389,6 @@ func (MlTools) Values() []MlTools {
 		"DeepchecksLLMEvaluation",
 		"Fiddler",
 		"HyperPodClusters",
-		"RunningInstances",
-		"Datasets",
-		"Evaluators",
 	}
 }
 
@@ -5140,26 +4703,6 @@ func (ModelPackageGroupStatus) Values() []ModelPackageGroupStatus {
 	}
 }
 
-type ModelPackageRegistrationType string
-
-// Enum values for ModelPackageRegistrationType
-const (
-	ModelPackageRegistrationTypeLogged     ModelPackageRegistrationType = "Logged"
-	ModelPackageRegistrationTypeRegistered ModelPackageRegistrationType = "Registered"
-)
-
-// Values returns all known values for ModelPackageRegistrationType. Note that
-// this can be expanded in the future, and so it is only as up to date as the
-// client.
-//
-// The ordering of this slice is not guaranteed to be stable across updates.
-func (ModelPackageRegistrationType) Values() []ModelPackageRegistrationType {
-	return []ModelPackageRegistrationType{
-		"Logged",
-		"Registered",
-	}
-}
-
 type ModelPackageSortBy string
 
 // Enum values for ModelPackageSortBy
@@ -5225,25 +4768,6 @@ func (ModelPackageType) Values() []ModelPackageType {
 	}
 }
 
-type ModelRegistrationMode string
-
-// Enum values for ModelRegistrationMode
-const (
-	ModelRegistrationModeAutoModelRegistrationEnabled  ModelRegistrationMode = "AutoModelRegistrationEnabled"
-	ModelRegistrationModeAutoModelRegistrationDisabled ModelRegistrationMode = "AutoModelRegistrationDisabled"
-)
-
-// Values returns all known values for ModelRegistrationMode. Note that this can
-// be expanded in the future, and so it is only as up to date as the client.
-//
-// The ordering of this slice is not guaranteed to be stable across updates.
-func (ModelRegistrationMode) Values() []ModelRegistrationMode {
-	return []ModelRegistrationMode{
-		"AutoModelRegistrationEnabled",
-		"AutoModelRegistrationDisabled",
-	}
-}
-
 type ModelSortKey string
 
 // Enum values for ModelSortKey
@@ -5260,44 +4784,6 @@ func (ModelSortKey) Values() []ModelSortKey {
 	return []ModelSortKey{
 		"Name",
 		"CreationTime",
-	}
-}
-
-type ModelSpeculativeDecodingS3DataType string
-
-// Enum values for ModelSpeculativeDecodingS3DataType
-const (
-	ModelSpeculativeDecodingS3DataTypeS3Prefix     ModelSpeculativeDecodingS3DataType = "S3Prefix"
-	ModelSpeculativeDecodingS3DataTypeManifestFile ModelSpeculativeDecodingS3DataType = "ManifestFile"
-)
-
-// Values returns all known values for ModelSpeculativeDecodingS3DataType. Note
-// that this can be expanded in the future, and so it is only as up to date as the
-// client.
-//
-// The ordering of this slice is not guaranteed to be stable across updates.
-func (ModelSpeculativeDecodingS3DataType) Values() []ModelSpeculativeDecodingS3DataType {
-	return []ModelSpeculativeDecodingS3DataType{
-		"S3Prefix",
-		"ManifestFile",
-	}
-}
-
-type ModelSpeculativeDecodingTechnique string
-
-// Enum values for ModelSpeculativeDecodingTechnique
-const (
-	ModelSpeculativeDecodingTechniqueEagle ModelSpeculativeDecodingTechnique = "EAGLE"
-)
-
-// Values returns all known values for ModelSpeculativeDecodingTechnique. Note
-// that this can be expanded in the future, and so it is only as up to date as the
-// client.
-//
-// The ordering of this slice is not guaranteed to be stable across updates.
-func (ModelSpeculativeDecodingTechnique) Values() []ModelSpeculativeDecodingTechnique {
-	return []ModelSpeculativeDecodingTechnique{
-		"EAGLE",
 	}
 }
 
@@ -5753,8 +5239,6 @@ const (
 	OptimizationJobDeploymentInstanceTypeMlP4d24xlarge   OptimizationJobDeploymentInstanceType = "ml.p4d.24xlarge"
 	OptimizationJobDeploymentInstanceTypeMlP4de24xlarge  OptimizationJobDeploymentInstanceType = "ml.p4de.24xlarge"
 	OptimizationJobDeploymentInstanceTypeMlP548xlarge    OptimizationJobDeploymentInstanceType = "ml.p5.48xlarge"
-	OptimizationJobDeploymentInstanceTypeMlP5e48xlarge   OptimizationJobDeploymentInstanceType = "ml.p5e.48xlarge"
-	OptimizationJobDeploymentInstanceTypeMlP5en48xlarge  OptimizationJobDeploymentInstanceType = "ml.p5en.48xlarge"
 	OptimizationJobDeploymentInstanceTypeMlG5Xlarge      OptimizationJobDeploymentInstanceType = "ml.g5.xlarge"
 	OptimizationJobDeploymentInstanceTypeMlG52xlarge     OptimizationJobDeploymentInstanceType = "ml.g5.2xlarge"
 	OptimizationJobDeploymentInstanceTypeMlG54xlarge     OptimizationJobDeploymentInstanceType = "ml.g5.4xlarge"
@@ -5798,8 +5282,6 @@ func (OptimizationJobDeploymentInstanceType) Values() []OptimizationJobDeploymen
 		"ml.p4d.24xlarge",
 		"ml.p4de.24xlarge",
 		"ml.p5.48xlarge",
-		"ml.p5e.48xlarge",
-		"ml.p5en.48xlarge",
 		"ml.g5.xlarge",
 		"ml.g5.2xlarge",
 		"ml.g5.4xlarge",
@@ -5988,23 +5470,6 @@ func (PartnerAppType) Values() []PartnerAppType {
 		"comet",
 		"deepchecks-llm-evaluation",
 		"fiddler",
-	}
-}
-
-type Peft string
-
-// Enum values for Peft
-const (
-	PeftLora Peft = "LORA"
-)
-
-// Values returns all known values for Peft. Note that this can be expanded in the
-// future, and so it is only as up to date as the client.
-//
-// The ordering of this slice is not guaranteed to be stable across updates.
-func (Peft) Values() []Peft {
-	return []Peft{
-		"LORA",
 	}
 }
 
@@ -6216,7 +5681,6 @@ const (
 	ProcessingInstanceTypeMlR7i16xlarge  ProcessingInstanceType = "ml.r7i.16xlarge"
 	ProcessingInstanceTypeMlR7i24xlarge  ProcessingInstanceType = "ml.r7i.24xlarge"
 	ProcessingInstanceTypeMlR7i48xlarge  ProcessingInstanceType = "ml.r7i.48xlarge"
-	ProcessingInstanceTypeMlP54xlarge    ProcessingInstanceType = "ml.p5.4xlarge"
 )
 
 // Values returns all known values for ProcessingInstanceType. Note that this can
@@ -6345,7 +5809,6 @@ func (ProcessingInstanceType) Values() []ProcessingInstanceType {
 		"ml.r7i.16xlarge",
 		"ml.r7i.24xlarge",
 		"ml.r7i.48xlarge",
-		"ml.p5.4xlarge",
 	}
 }
 
@@ -6808,7 +6271,6 @@ const (
 	ProductionVariantInstanceTypeMlC6in32xlarge     ProductionVariantInstanceType = "ml.c6in.32xlarge"
 	ProductionVariantInstanceTypeMlP6B20048xlarge   ProductionVariantInstanceType = "ml.p6-b200.48xlarge"
 	ProductionVariantInstanceTypeMlP6eGb20036xlarge ProductionVariantInstanceType = "ml.p6e-gb200.36xlarge"
-	ProductionVariantInstanceTypeMlP54xlarge        ProductionVariantInstanceType = "ml.p5.4xlarge"
 )
 
 // Values returns all known values for ProductionVariantInstanceType. Note that
@@ -7081,7 +6543,6 @@ func (ProductionVariantInstanceType) Values() []ProductionVariantInstanceType {
 		"ml.c6in.32xlarge",
 		"ml.p6-b200.48xlarge",
 		"ml.p6e-gb200.36xlarge",
-		"ml.p5.4xlarge",
 	}
 }
 
@@ -7402,8 +6863,6 @@ const (
 	ReservedCapacityInstanceTypeMlP6B20048xlarge   ReservedCapacityInstanceType = "ml.p6-b200.48xlarge"
 	ReservedCapacityInstanceTypeMlP4de24xlarge     ReservedCapacityInstanceType = "ml.p4de.24xlarge"
 	ReservedCapacityInstanceTypeMlP6eGb20036xlarge ReservedCapacityInstanceType = "ml.p6e-gb200.36xlarge"
-	ReservedCapacityInstanceTypeMlP54xlarge        ReservedCapacityInstanceType = "ml.p5.4xlarge"
-	ReservedCapacityInstanceTypeMlP6B30048xlarge   ReservedCapacityInstanceType = "ml.p6-b300.48xlarge"
 )
 
 // Values returns all known values for ReservedCapacityInstanceType. Note that
@@ -7422,8 +6881,6 @@ func (ReservedCapacityInstanceType) Values() []ReservedCapacityInstanceType {
 		"ml.p6-b200.48xlarge",
 		"ml.p4de.24xlarge",
 		"ml.p6e-gb200.36xlarge",
-		"ml.p5.4xlarge",
-		"ml.p6-b300.48xlarge",
 	}
 }
 
@@ -7786,7 +7243,6 @@ type SageMakerResourceName string
 const (
 	SageMakerResourceNameTrainingJob     SageMakerResourceName = "training-job"
 	SageMakerResourceNameHyperpodCluster SageMakerResourceName = "hyperpod-cluster"
-	SageMakerResourceNameEndpoint        SageMakerResourceName = "endpoint"
 )
 
 // Values returns all known values for SageMakerResourceName. Note that this can
@@ -7797,7 +7253,6 @@ func (SageMakerResourceName) Values() []SageMakerResourceName {
 	return []SageMakerResourceName{
 		"training-job",
 		"hyperpod-cluster",
-		"endpoint",
 	}
 }
 
@@ -7951,25 +7406,6 @@ func (SecondaryStatus) Values() []SecondaryStatus {
 	}
 }
 
-type ServerlessJobType string
-
-// Enum values for ServerlessJobType
-const (
-	ServerlessJobTypeFineTuning ServerlessJobType = "FineTuning"
-	ServerlessJobTypeEvaluation ServerlessJobType = "Evaluation"
-)
-
-// Values returns all known values for ServerlessJobType. Note that this can be
-// expanded in the future, and so it is only as up to date as the client.
-//
-// The ordering of this slice is not guaranteed to be stable across updates.
-func (ServerlessJobType) Values() []ServerlessJobType {
-	return []ServerlessJobType{
-		"FineTuning",
-		"Evaluation",
-	}
-}
-
 type SharingType string
 
 // Enum values for SharingType
@@ -8005,33 +7441,6 @@ func (SkipModelValidation) Values() []SkipModelValidation {
 	return []SkipModelValidation{
 		"All",
 		"None",
-	}
-}
-
-type SoftwareUpdateStatus string
-
-// Enum values for SoftwareUpdateStatus
-const (
-	SoftwareUpdateStatusPending            SoftwareUpdateStatus = "Pending"
-	SoftwareUpdateStatusInProgress         SoftwareUpdateStatus = "InProgress"
-	SoftwareUpdateStatusSucceeded          SoftwareUpdateStatus = "Succeeded"
-	SoftwareUpdateStatusFailed             SoftwareUpdateStatus = "Failed"
-	SoftwareUpdateStatusRollbackInProgress SoftwareUpdateStatus = "RollbackInProgress"
-	SoftwareUpdateStatusRollbackComplete   SoftwareUpdateStatus = "RollbackComplete"
-)
-
-// Values returns all known values for SoftwareUpdateStatus. Note that this can be
-// expanded in the future, and so it is only as up to date as the client.
-//
-// The ordering of this slice is not guaranteed to be stable across updates.
-func (SoftwareUpdateStatus) Values() []SoftwareUpdateStatus {
-	return []SoftwareUpdateStatus{
-		"Pending",
-		"InProgress",
-		"Succeeded",
-		"Failed",
-		"RollbackInProgress",
-		"RollbackComplete",
 	}
 }
 
@@ -8214,27 +7623,6 @@ func (SortLineageGroupsBy) Values() []SortLineageGroupsBy {
 	return []SortLineageGroupsBy{
 		"Name",
 		"CreationTime",
-	}
-}
-
-type SortMlflowAppBy string
-
-// Enum values for SortMlflowAppBy
-const (
-	SortMlflowAppByName         SortMlflowAppBy = "Name"
-	SortMlflowAppByCreationTime SortMlflowAppBy = "CreationTime"
-	SortMlflowAppByStatus       SortMlflowAppBy = "Status"
-)
-
-// Values returns all known values for SortMlflowAppBy. Note that this can be
-// expanded in the future, and so it is only as up to date as the client.
-//
-// The ordering of this slice is not guaranteed to be stable across updates.
-func (SortMlflowAppBy) Values() []SortMlflowAppBy {
-	return []SortMlflowAppBy{
-		"Name",
-		"CreationTime",
-		"Status",
 	}
 }
 
@@ -9124,8 +8512,6 @@ const (
 	TrainingInstanceTypeMlR7i24xlarge      TrainingInstanceType = "ml.r7i.24xlarge"
 	TrainingInstanceTypeMlR7i48xlarge      TrainingInstanceType = "ml.r7i.48xlarge"
 	TrainingInstanceTypeMlP6eGb20036xlarge TrainingInstanceType = "ml.p6e-gb200.36xlarge"
-	TrainingInstanceTypeMlP54xlarge        TrainingInstanceType = "ml.p5.4xlarge"
-	TrainingInstanceTypeMlP6B30048xlarge   TrainingInstanceType = "ml.p6-b300.48xlarge"
 )
 
 // Values returns all known values for TrainingInstanceType. Note that this can be
@@ -9271,8 +8657,6 @@ func (TrainingInstanceType) Values() []TrainingInstanceType {
 		"ml.r7i.24xlarge",
 		"ml.r7i.48xlarge",
 		"ml.p6e-gb200.36xlarge",
-		"ml.p5.4xlarge",
-		"ml.p6-b300.48xlarge",
 	}
 }
 
@@ -9328,7 +8712,6 @@ const (
 	TrainingJobStatusFailed     TrainingJobStatus = "Failed"
 	TrainingJobStatusStopping   TrainingJobStatus = "Stopping"
 	TrainingJobStatusStopped    TrainingJobStatus = "Stopped"
-	TrainingJobStatusDeleting   TrainingJobStatus = "Deleting"
 )
 
 // Values returns all known values for TrainingJobStatus. Note that this can be
@@ -9342,7 +8725,6 @@ func (TrainingJobStatus) Values() []TrainingJobStatus {
 		"Failed",
 		"Stopping",
 		"Stopped",
-		"Deleting",
 	}
 }
 
@@ -9552,14 +8934,6 @@ const (
 	TransformInstanceTypeMlInf28xlarge  TransformInstanceType = "ml.inf2.8xlarge"
 	TransformInstanceTypeMlInf224xlarge TransformInstanceType = "ml.inf2.24xlarge"
 	TransformInstanceTypeMlInf248xlarge TransformInstanceType = "ml.inf2.48xlarge"
-	TransformInstanceTypeMlG6Xlarge     TransformInstanceType = "ml.g6.xlarge"
-	TransformInstanceTypeMlG62xlarge    TransformInstanceType = "ml.g6.2xlarge"
-	TransformInstanceTypeMlG64xlarge    TransformInstanceType = "ml.g6.4xlarge"
-	TransformInstanceTypeMlG68xlarge    TransformInstanceType = "ml.g6.8xlarge"
-	TransformInstanceTypeMlG612xlarge   TransformInstanceType = "ml.g6.12xlarge"
-	TransformInstanceTypeMlG616xlarge   TransformInstanceType = "ml.g6.16xlarge"
-	TransformInstanceTypeMlG624xlarge   TransformInstanceType = "ml.g6.24xlarge"
-	TransformInstanceTypeMlG648xlarge   TransformInstanceType = "ml.g6.48xlarge"
 )
 
 // Values returns all known values for TransformInstanceType. Note that this can
@@ -9668,14 +9042,6 @@ func (TransformInstanceType) Values() []TransformInstanceType {
 		"ml.inf2.8xlarge",
 		"ml.inf2.24xlarge",
 		"ml.inf2.48xlarge",
-		"ml.g6.xlarge",
-		"ml.g6.2xlarge",
-		"ml.g6.4xlarge",
-		"ml.g6.8xlarge",
-		"ml.g6.12xlarge",
-		"ml.g6.16xlarge",
-		"ml.g6.24xlarge",
-		"ml.g6.48xlarge",
 	}
 }
 

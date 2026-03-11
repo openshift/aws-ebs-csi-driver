@@ -17,73 +17,67 @@ package hooks
 import (
 	"errors"
 	"testing"
-	"time"
 
+	"github.com/golang/mock/gomock"
+	"github.com/kubernetes-sigs/aws-ebs-csi-driver/pkg/driver"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	v1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/kubernetes/fake"
+	"k8s.io/apimachinery/pkg/watch"
 )
 
 func TestPreStopHook(t *testing.T) {
 	testCases := []struct {
-		name           string
-		nodeName       string
-		expErr         error
-		expErrContains string
-		setup          func(t *testing.T, nodeName string) kubernetes.Interface
-		asyncAction    func(t *testing.T, client kubernetes.Interface, nodeName string)
+		name     string
+		nodeName string
+		expErr   error
+		mockFunc func(string, *driver.MockKubernetesClient, *driver.MockCoreV1Interface, *driver.MockNodeInterface, *driver.MockVolumeAttachmentInterface, *driver.MockStorageV1Interface) error
 	}{
 		{
 			name:     "TestPreStopHook: CSI_NODE_NAME not set",
 			nodeName: "",
 			expErr:   errors.New("PreStop: CSI_NODE_NAME missing"),
-			setup: func(t *testing.T, nodeName string) kubernetes.Interface {
-				t.Helper()
-				return fake.NewClientset()
+			mockFunc: func(nodeName string, mockClient *driver.MockKubernetesClient, mockCoreV1 *driver.MockCoreV1Interface, mockNode *driver.MockNodeInterface, mockStorageV1 *driver.MockVolumeAttachmentInterface, mockStorageV1Interface *driver.MockStorageV1Interface) error {
+				return nil
 			},
 		},
 		{
-			name:     "TestPreStopHook: node does not exist, checks for remaining VolumeAttachments",
+			name:     "TestPreStopHook: failed to retrieve node information",
 			nodeName: "test-node",
-			expErr:   nil,
-			setup: func(t *testing.T, nodeName string) kubernetes.Interface {
-				t.Helper()
-				// Create client without the node - this will cause Get to return NotFound
-				// The prestop hook treats this as a termination event and checks for VolumeAttachments
-				return fake.NewClientset()
+			expErr:   errors.New("fetchNode: failed to retrieve node information: non-existent node"),
+			mockFunc: func(nodeName string, mockClient *driver.MockKubernetesClient, mockCoreV1 *driver.MockCoreV1Interface, mockNode *driver.MockNodeInterface, mockStorageV1 *driver.MockVolumeAttachmentInterface, mockStorageV1Interface *driver.MockStorageV1Interface) error {
+				mockClient.EXPECT().CoreV1().Return(mockCoreV1).Times(1)
+				mockCoreV1.EXPECT().Nodes().Return(mockNode).Times(1)
+				mockNode.EXPECT().Get(gomock.Any(), gomock.Eq(nodeName), gomock.Any()).Return(nil, errors.New("non-existent node")).Times(1)
+
+				return nil
 			},
 		},
 		{
 			name:     "TestPreStopHook: node is not being drained, skipping VolumeAttachments check - missing TaintNodeUnschedulable",
 			nodeName: "test-node",
 			expErr:   nil,
-			setup: func(t *testing.T, nodeName string) kubernetes.Interface {
-				t.Helper()
-				node := &v1.Node{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: nodeName,
-					},
+			mockFunc: func(nodeName string, mockClient *driver.MockKubernetesClient, mockCoreV1 *driver.MockCoreV1Interface, mockNode *driver.MockNodeInterface, mockStorageV1 *driver.MockVolumeAttachmentInterface, mockStorageV1Interface *driver.MockStorageV1Interface) error {
+				mockNodeObj := &v1.Node{
 					Spec: v1.NodeSpec{
 						Taints: []v1.Taint{},
 					},
 				}
-				return fake.NewClientset(node)
+
+				mockClient.EXPECT().CoreV1().Return(mockCoreV1).Times(1)
+				mockCoreV1.EXPECT().Nodes().Return(mockNode).Times(1)
+				mockNode.EXPECT().Get(gomock.Any(), gomock.Eq(nodeName), gomock.Any()).Return(mockNodeObj, nil).Times(1)
+
+				return nil
 			},
 		},
 		{
 			name:     "TestPreStopHook: node is being drained, no volume attachments remain",
 			nodeName: "test-node",
 			expErr:   nil,
-			setup: func(t *testing.T, nodeName string) kubernetes.Interface {
-				t.Helper()
-				node := &v1.Node{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: nodeName,
-					},
+			mockFunc: func(nodeName string, mockClient *driver.MockKubernetesClient, mockCoreV1 *driver.MockCoreV1Interface, mockNode *driver.MockNodeInterface, mockVolumeAttachments *driver.MockVolumeAttachmentInterface, mockStorageV1Interface *driver.MockStorageV1Interface) error {
+				fakeNode := &v1.Node{
 					Spec: v1.NodeSpec{
 						Taints: []v1.Taint{
 							{
@@ -93,19 +87,28 @@ func TestPreStopHook(t *testing.T) {
 						},
 					},
 				}
-				return fake.NewClientset(node)
+
+				emptyVolumeAttachments := &storagev1.VolumeAttachmentList{Items: []storagev1.VolumeAttachment{}}
+
+				mockClient.EXPECT().CoreV1().Return(mockCoreV1).AnyTimes()
+				mockClient.EXPECT().StorageV1().Return(mockStorageV1Interface).AnyTimes()
+
+				mockCoreV1.EXPECT().Nodes().Return(mockNode).AnyTimes()
+				mockNode.EXPECT().Get(gomock.Any(), gomock.Eq(nodeName), gomock.Any()).Return(fakeNode, nil).AnyTimes()
+
+				mockStorageV1Interface.EXPECT().VolumeAttachments().Return(mockVolumeAttachments).AnyTimes()
+				mockVolumeAttachments.EXPECT().List(gomock.Any(), gomock.Any()).Return(emptyVolumeAttachments, nil).AnyTimes()
+				mockVolumeAttachments.EXPECT().Watch(gomock.Any(), gomock.Any()).Return(watch.NewFake(), nil).AnyTimes()
+
+				return nil
 			},
 		},
 		{
 			name:     "TestPreStopHook: node is being drained, no volume attachments associated with node",
 			nodeName: "test-node",
 			expErr:   nil,
-			setup: func(t *testing.T, nodeName string) kubernetes.Interface {
-				t.Helper()
-				node := &v1.Node{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: nodeName,
-					},
+			mockFunc: func(nodeName string, mockClient *driver.MockKubernetesClient, mockCoreV1 *driver.MockCoreV1Interface, mockNode *driver.MockNodeInterface, mockVolumeAttachments *driver.MockVolumeAttachmentInterface, mockStorageV1Interface *driver.MockStorageV1Interface) error {
+				fakeNode := &v1.Node{
 					Spec: v1.NodeSpec{
 						Taints: []v1.Taint{
 							{
@@ -115,28 +118,36 @@ func TestPreStopHook(t *testing.T) {
 						},
 					},
 				}
-				va := &storagev1.VolumeAttachment{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "va-other-node",
-					},
-					Spec: storagev1.VolumeAttachmentSpec{
-						NodeName: "test-node-2",
-						Attacher: "ebs.csi.aws.com",
+
+				fakeVolumeAttachments := &storagev1.VolumeAttachmentList{
+					Items: []storagev1.VolumeAttachment{
+						{
+							Spec: storagev1.VolumeAttachmentSpec{
+								NodeName: "test-node-2",
+							},
+						},
 					},
 				}
-				return fake.NewClientset(node, va)
+
+				mockClient.EXPECT().CoreV1().Return(mockCoreV1).AnyTimes()
+				mockClient.EXPECT().StorageV1().Return(mockStorageV1Interface).AnyTimes()
+
+				mockCoreV1.EXPECT().Nodes().Return(mockNode).AnyTimes()
+				mockNode.EXPECT().Get(gomock.Any(), gomock.Eq(nodeName), gomock.Any()).Return(fakeNode, nil).AnyTimes()
+
+				mockStorageV1Interface.EXPECT().VolumeAttachments().Return(mockVolumeAttachments).AnyTimes()
+				mockVolumeAttachments.EXPECT().List(gomock.Any(), gomock.Any()).Return(fakeVolumeAttachments, nil).AnyTimes()
+				mockVolumeAttachments.EXPECT().Watch(gomock.Any(), gomock.Any()).Return(watch.NewFake(), nil).AnyTimes()
+
+				return nil
 			},
 		},
 		{
 			name:     "TestPreStopHook: Node is drained before timeout",
 			nodeName: "test-node",
 			expErr:   nil,
-			setup: func(t *testing.T, nodeName string) kubernetes.Interface {
-				t.Helper()
-				node := &v1.Node{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: nodeName,
-					},
+			mockFunc: func(nodeName string, mockClient *driver.MockKubernetesClient, mockCoreV1 *driver.MockCoreV1Interface, mockNode *driver.MockNodeInterface, mockVolumeAttachments *driver.MockVolumeAttachmentInterface, mockStorageV1Interface *driver.MockStorageV1Interface) error {
+				fakeNode := &v1.Node{
 					Spec: v1.NodeSpec{
 						Taints: []v1.Taint{
 							{
@@ -146,37 +157,53 @@ func TestPreStopHook(t *testing.T) {
 						},
 					},
 				}
-				va := &storagev1.VolumeAttachment{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "va-test-node",
-					},
-					Spec: storagev1.VolumeAttachmentSpec{
-						NodeName: nodeName,
-						Attacher: "ebs.csi.aws.com",
+
+				fakeVolumeAttachments := &storagev1.VolumeAttachmentList{
+					Items: []storagev1.VolumeAttachment{
+						{
+							Spec: storagev1.VolumeAttachmentSpec{
+								NodeName: "test-node",
+							},
+						},
 					},
 				}
-				return fake.NewClientset(node, va)
-			},
-			asyncAction: func(t *testing.T, client kubernetes.Interface, nodeName string) {
-				t.Helper()
-				// Delete the volume attachment after a short delay
-				time.Sleep(50 * time.Millisecond)
-				err := client.StorageV1().VolumeAttachments().Delete(t.Context(), "va-test-node", metav1.DeleteOptions{})
-				if err != nil {
-					t.Logf("Failed to delete volume attachment: %v", err)
-				}
+
+				fakeWatcher := watch.NewFake()
+				deleteSignal := make(chan bool, 1)
+
+				mockClient.EXPECT().CoreV1().Return(mockCoreV1).AnyTimes()
+				mockClient.EXPECT().StorageV1().Return(mockStorageV1Interface).AnyTimes()
+
+				mockCoreV1.EXPECT().Nodes().Return(mockNode).AnyTimes()
+				mockNode.EXPECT().Get(gomock.Any(), gomock.Eq(nodeName), gomock.Any()).Return(fakeNode, nil).AnyTimes()
+
+				mockStorageV1Interface.EXPECT().VolumeAttachments().Return(mockVolumeAttachments).AnyTimes()
+				gomock.InOrder(
+					mockVolumeAttachments.EXPECT().List(gomock.Any(), gomock.Any()).Return(fakeVolumeAttachments, nil).AnyTimes(),
+					mockVolumeAttachments.EXPECT().Watch(gomock.Any(), gomock.Any()).DoAndReturn(func(signal, watchSignal interface{}) (watch.Interface, error) {
+						deleteSignal <- true
+						return fakeWatcher, nil
+					}).AnyTimes(),
+					mockVolumeAttachments.EXPECT().List(gomock.Any(), gomock.Any()).Return(&storagev1.VolumeAttachmentList{Items: []storagev1.VolumeAttachment{}}, nil).AnyTimes(),
+				)
+
+				go func() {
+					<-deleteSignal
+					fakeWatcher.Delete(&storagev1.VolumeAttachment{
+						Spec: storagev1.VolumeAttachmentSpec{
+							NodeName: "test-node",
+						},
+					})
+				}()
+				return nil
 			},
 		},
 		{
 			name:     "TestPreStopHook: Karpenter node is being drained, no volume attachments remain",
 			nodeName: "test-karpenter-node",
 			expErr:   nil,
-			setup: func(t *testing.T, nodeName string) kubernetes.Interface {
-				t.Helper()
-				node := &v1.Node{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: nodeName,
-					},
+			mockFunc: func(nodeName string, mockClient *driver.MockKubernetesClient, mockCoreV1 *driver.MockCoreV1Interface, mockNode *driver.MockNodeInterface, mockVolumeAttachments *driver.MockVolumeAttachmentInterface, mockStorageV1Interface *driver.MockStorageV1Interface) error {
+				fakeNode := &v1.Node{
 					Spec: v1.NodeSpec{
 						Taints: []v1.Taint{
 							{
@@ -186,19 +213,28 @@ func TestPreStopHook(t *testing.T) {
 						},
 					},
 				}
-				return fake.NewClientset(node)
+
+				emptyVolumeAttachments := &storagev1.VolumeAttachmentList{Items: []storagev1.VolumeAttachment{}}
+
+				mockClient.EXPECT().CoreV1().Return(mockCoreV1).AnyTimes()
+				mockClient.EXPECT().StorageV1().Return(mockStorageV1Interface).AnyTimes()
+
+				mockCoreV1.EXPECT().Nodes().Return(mockNode).AnyTimes()
+				mockNode.EXPECT().Get(gomock.Any(), gomock.Eq(nodeName), gomock.Any()).Return(fakeNode, nil).AnyTimes()
+
+				mockStorageV1Interface.EXPECT().VolumeAttachments().Return(mockVolumeAttachments).AnyTimes()
+				mockVolumeAttachments.EXPECT().List(gomock.Any(), gomock.Any()).Return(emptyVolumeAttachments, nil).AnyTimes()
+				mockVolumeAttachments.EXPECT().Watch(gomock.Any(), gomock.Any()).Return(watch.NewFake(), nil).AnyTimes()
+
+				return nil
 			},
 		},
 		{
 			name:     "TestPreStopHook: Karpenter node is being drained, no volume attachments associated with node",
 			nodeName: "test-karpenter-node",
 			expErr:   nil,
-			setup: func(t *testing.T, nodeName string) kubernetes.Interface {
-				t.Helper()
-				node := &v1.Node{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: nodeName,
-					},
+			mockFunc: func(nodeName string, mockClient *driver.MockKubernetesClient, mockCoreV1 *driver.MockCoreV1Interface, mockNode *driver.MockNodeInterface, mockVolumeAttachments *driver.MockVolumeAttachmentInterface, mockStorageV1Interface *driver.MockStorageV1Interface) error {
+				fakeNode := &v1.Node{
 					Spec: v1.NodeSpec{
 						Taints: []v1.Taint{
 							{
@@ -208,28 +244,36 @@ func TestPreStopHook(t *testing.T) {
 						},
 					},
 				}
-				va := &storagev1.VolumeAttachment{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "va-other-node",
-					},
-					Spec: storagev1.VolumeAttachmentSpec{
-						NodeName: "test-node-2",
-						Attacher: "ebs.csi.aws.com",
+
+				fakeVolumeAttachments := &storagev1.VolumeAttachmentList{
+					Items: []storagev1.VolumeAttachment{
+						{
+							Spec: storagev1.VolumeAttachmentSpec{
+								NodeName: "test-node-2",
+							},
+						},
 					},
 				}
-				return fake.NewClientset(node, va)
+
+				mockClient.EXPECT().CoreV1().Return(mockCoreV1).AnyTimes()
+				mockClient.EXPECT().StorageV1().Return(mockStorageV1Interface).AnyTimes()
+
+				mockCoreV1.EXPECT().Nodes().Return(mockNode).AnyTimes()
+				mockNode.EXPECT().Get(gomock.Any(), gomock.Eq(nodeName), gomock.Any()).Return(fakeNode, nil).AnyTimes()
+
+				mockStorageV1Interface.EXPECT().VolumeAttachments().Return(mockVolumeAttachments).AnyTimes()
+				mockVolumeAttachments.EXPECT().List(gomock.Any(), gomock.Any()).Return(fakeVolumeAttachments, nil).AnyTimes()
+				mockVolumeAttachments.EXPECT().Watch(gomock.Any(), gomock.Any()).Return(watch.NewFake(), nil).AnyTimes()
+
+				return nil
 			},
 		},
 		{
 			name:     "TestPreStopHook: Karpenter Node is drained before timeout",
 			nodeName: "test-karpenter-node",
 			expErr:   nil,
-			setup: func(t *testing.T, nodeName string) kubernetes.Interface {
-				t.Helper()
-				node := &v1.Node{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: nodeName,
-					},
+			mockFunc: func(nodeName string, mockClient *driver.MockKubernetesClient, mockCoreV1 *driver.MockCoreV1Interface, mockNode *driver.MockNodeInterface, mockVolumeAttachments *driver.MockVolumeAttachmentInterface, mockStorageV1Interface *driver.MockStorageV1Interface) error {
+				fakeNode := &v1.Node{
 					Spec: v1.NodeSpec{
 						Taints: []v1.Taint{
 							{
@@ -239,52 +283,77 @@ func TestPreStopHook(t *testing.T) {
 						},
 					},
 				}
-				va := &storagev1.VolumeAttachment{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "va-karpenter-node",
-					},
-					Spec: storagev1.VolumeAttachmentSpec{
-						NodeName: nodeName,
-						Attacher: "ebs.csi.aws.com",
+
+				fakeVolumeAttachments := &storagev1.VolumeAttachmentList{
+					Items: []storagev1.VolumeAttachment{
+						{
+							Spec: storagev1.VolumeAttachmentSpec{
+								NodeName: "test-karpenter-node",
+							},
+						},
 					},
 				}
-				return fake.NewClientset(node, va)
-			},
-			asyncAction: func(t *testing.T, client kubernetes.Interface, nodeName string) {
-				t.Helper()
-				// Delete the volume attachment after a short delay
-				time.Sleep(50 * time.Millisecond)
-				err := client.StorageV1().VolumeAttachments().Delete(t.Context(), "va-karpenter-node", metav1.DeleteOptions{})
-				if err != nil {
-					t.Logf("Failed to delete volume attachment: %v", err)
-				}
+
+				fakeWatcher := watch.NewFake()
+				deleteSignal := make(chan bool, 1)
+
+				mockClient.EXPECT().CoreV1().Return(mockCoreV1).AnyTimes()
+				mockClient.EXPECT().StorageV1().Return(mockStorageV1Interface).AnyTimes()
+
+				mockCoreV1.EXPECT().Nodes().Return(mockNode).AnyTimes()
+				mockNode.EXPECT().Get(gomock.Any(), gomock.Eq(nodeName), gomock.Any()).Return(fakeNode, nil).AnyTimes()
+
+				mockStorageV1Interface.EXPECT().VolumeAttachments().Return(mockVolumeAttachments).AnyTimes()
+				gomock.InOrder(
+					mockVolumeAttachments.EXPECT().List(gomock.Any(), gomock.Any()).Return(fakeVolumeAttachments, nil).AnyTimes(),
+					mockVolumeAttachments.EXPECT().Watch(gomock.Any(), gomock.Any()).DoAndReturn(func(signal, watchSignal interface{}) (watch.Interface, error) {
+						deleteSignal <- true
+						return fakeWatcher, nil
+					}).AnyTimes(),
+					mockVolumeAttachments.EXPECT().List(gomock.Any(), gomock.Any()).Return(&storagev1.VolumeAttachmentList{Items: []storagev1.VolumeAttachment{}}, nil).AnyTimes(),
+				)
+
+				go func() {
+					<-deleteSignal
+					fakeWatcher.Delete(&storagev1.VolumeAttachment{
+						Spec: storagev1.VolumeAttachmentSpec{
+							NodeName: "test-karpenter-node",
+						},
+					})
+				}()
+				return nil
 			},
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			client := tc.setup(t, tc.nodeName)
+			mockCtl := gomock.NewController(t)
+			defer mockCtl.Finish()
+
+			mockClient := driver.NewMockKubernetesClient(mockCtl)
+			mockCoreV1 := driver.NewMockCoreV1Interface(mockCtl)
+			mockStorageV1 := driver.NewMockStorageV1Interface(mockCtl)
+			mockNode := driver.NewMockNodeInterface(mockCtl)
+			mockVolumeAttachments := driver.NewMockVolumeAttachmentInterface(mockCtl)
+
+			if tc.mockFunc != nil {
+				err := tc.mockFunc(tc.nodeName, mockClient, mockCoreV1, mockNode, mockVolumeAttachments, mockStorageV1)
+				if err != nil {
+					t.Fatalf("TestPreStopHook: mockFunc returned error: %v", err)
+				}
+			}
 
 			if tc.nodeName != "" {
 				t.Setenv("CSI_NODE_NAME", tc.nodeName)
 			}
 
-			if tc.asyncAction != nil {
-				go tc.asyncAction(t, client, tc.nodeName)
-			}
+			err := PreStop(mockClient)
 
-			err := PreStop(client)
-
-			switch {
-			case tc.expErrContains != "":
-				require.Error(t, err)
-				assert.Contains(t, err.Error(), tc.expErrContains,
-					"expected error containing %q, got %q", tc.expErrContains, err.Error())
-			case tc.expErr != nil:
+			if tc.expErr != nil {
 				require.Error(t, err)
 				assert.Equal(t, tc.expErr.Error(), err.Error())
-			default:
+			} else {
 				require.NoError(t, err)
 			}
 		})

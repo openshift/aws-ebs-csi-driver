@@ -16,18 +16,13 @@ limitations under the License.
 
 package driver
 
-import (
-	"time"
-)
+import "time"
 
 // constants of keys in PublishContext.
 const (
-	// DevicePathKey represents key for device path in PublishContext
+	// devicePathKey represents key for device path in PublishContext
 	// devicePath is the device path where the volume is attached to.
 	DevicePathKey = "devicePath"
-	// VolumeIDKey represents key for volume ID in PublishContext
-	// Used for node-local volumes to pass the real volume ID.
-	VolumeIDKey = "volumeID"
 )
 
 // constants of keys in VolumeContext.
@@ -48,13 +43,10 @@ const (
 	// AllowAutoIOPSPerGBIncreaseKey represents key for allowing automatic increase of IOPS.
 	AllowAutoIOPSPerGBIncreaseKey = "allowautoiopspergbincrease"
 
-	// AllowAutoIOPSIncreaseOnModifyKey represents key for allowing IOPS increase on resizing if IopsPerGB is set to ensure desired ratio is maintained.
-	AllowAutoIOPSIncreaseOnModifyKey = "allowautoiopsincreaseonmodify"
-
 	// VolumeInitializationRateKey represents key for volume initialization rate when creating volumes from snapshots.
 	VolumeInitializationRateKey = "volumeinitializationrate"
 
-	// IopsKey represents key for IOPS for volume.
+	// Iops represents key for IOPS for volume.
 	IopsKey = "iops"
 
 	// ThroughputKey represents key for throughput.
@@ -63,7 +55,7 @@ const (
 	// EncryptedKey represents key for whether filesystem is encrypted.
 	EncryptedKey = "encrypted"
 
-	// KmsKeyIDKey represents key for KMS encryption key.
+	// KmsKeyId represents key for KMS encryption key.
 	KmsKeyIDKey = "kmskeyid"
 
 	// PVCNameKey contains name of the PVC for which is a volume provisioned.
@@ -82,11 +74,11 @@ const (
 	// VolumeSnapshotNamespaceKey contains namespace of the snapshot.
 	VolumeSnapshotNamespaceKey = "csi.storage.k8s.io/volumesnapshot/namespace"
 
-	// VolumeSnapshotContentNameKey contains name of the VolumeSnapshotContent that is the source
+	// VolumeSnapshotCotentNameKey contains name of the VolumeSnapshotContent that is the source
 	// for the snapshot.
 	VolumeSnapshotContentNameKey = "csi.storage.k8s.io/volumesnapshotcontent/name"
 
-	// DeprecatedBlockExpressKey was previously `BlockExpressKey` now deprecated as all io2 volumes now support up to 256,000 IOPS.
+	// Previously `BlockExpressKey` now deprecated as all io2 volumes now support up to 256,000 IOPS.
 	// See https://docs.aws.amazon.com/ebs/latest/userguide/ebs-volume-types.html.
 	DeprecatedBlockExpressKey = "blockexpress"
 
@@ -105,20 +97,17 @@ const (
 	// NumberOfInodesKey configures the `number-of-inodes` when formatting a volume.
 	NumberOfInodesKey = "numberofinodes"
 
-	// Ext4BigAllocKey enables the bigalloc option when formatting an ext4 volume.
+	// Ext4ClusterSizeKey enables the bigalloc option when formatting an ext4 volume.
 	Ext4BigAllocKey = "ext4bigalloc"
 
 	// Ext4ClusterSizeKey configures the cluster size when formatting an ext4 volume with the bigalloc option enabled.
 	Ext4ClusterSizeKey = "ext4clustersize"
 
-	// Ext4EncryptionSupportKey enables the encrypt option when formatting an ext4 volume.
-	Ext4EncryptionSupportKey = "ext4encryptionsupport"
-
 	// TagKeyPrefix contains the prefix of a volume parameter that designates it as
 	// a tag to be attached to the resource.
 	TagKeyPrefix = "tagSpecification"
 
-	// OutpostArnKey represents key for outpost's arn.
+	// OutpostArn represents key for outpost's arn.
 	OutpostArnKey = "outpostarn"
 
 	// BlockAttachUntilInitializedKey will prevent restored volume from being attached until it is fully initialized.
@@ -127,20 +116,8 @@ const (
 
 // constants of keys in snapshot parameters.
 const (
-	// FastSnapshotRestoreAvailabilityZones represents key for fast snapshot restore availability zones.
+	// FastSnapShotRestoreAvailabilityZones represents key for fast snapshot restore availability zones.
 	FastSnapshotRestoreAvailabilityZones = "fastsnapshotrestoreavailabilityzones"
-
-	// LockMode represents a key for indicating whether snapshots are locked in Governance or Compliance mode.
-	LockMode = "lockmode"
-
-	// LockDuration is a key for the duration for which to lock the snapshots, specified in days.
-	LockDuration = "lockduration"
-
-	// LockExpirationDate is a key for specifying the expiration date for the snapshot lock, specified in the format "YYYY-MM-DDThh:mm:ss.sssZ".
-	LockExpirationDate = "lockexpirationdate"
-
-	// LockCoolOffPeriod is a key specifying the cooling-off period for compliance mode, specified in hours.
-	LockCoolOffPeriod = "lockcooloffperiod"
 )
 
 // constants for volume tags and their values.
@@ -189,12 +166,6 @@ const (
 	DefaultModifyVolumeRequestHandlerTimeout = 2 * time.Second
 )
 
-// constants for node-local volumes.
-const (
-	// NodeLocalVolumeHandlePrefix is the prefix for node-local volume handles.
-	NodeLocalVolumeHandlePrefix = "local-ebs://"
-)
-
 // constants for fstypes.
 const (
 	// FSTypeExt3 represents the ext3 filesystem type.
@@ -205,6 +176,12 @@ const (
 	FSTypeXfs = "xfs"
 	// FSTypeNtfs represents the ntfs filesystem type.
 	FSTypeNtfs = "ntfs"
+)
+
+// constants for node k8s API use.
+const (
+	// AgentNotReadyNodeTaintKey contains the key of taints to be removed on driver startup.
+	AgentNotReadyNodeTaintKey = "ebs.csi.aws.com/agent-not-ready"
 )
 
 type fileSystemConfig struct {
@@ -220,9 +197,8 @@ var (
 	FileSystemConfigs = map[string]fileSystemConfig{
 		FSTypeExt3: {
 			NotSupportedParams: map[string]struct{}{
-				Ext4BigAllocKey:          {},
-				Ext4ClusterSizeKey:       {},
-				Ext4EncryptionSupportKey: {},
+				Ext4BigAllocKey:    {},
+				Ext4ClusterSizeKey: {},
 			},
 		},
 		FSTypeExt4: {
@@ -230,22 +206,20 @@ var (
 		},
 		FSTypeXfs: {
 			NotSupportedParams: map[string]struct{}{
-				BytesPerInodeKey:         {},
-				NumberOfInodesKey:        {},
-				Ext4BigAllocKey:          {},
-				Ext4ClusterSizeKey:       {},
-				Ext4EncryptionSupportKey: {},
+				BytesPerInodeKey:   {},
+				NumberOfInodesKey:  {},
+				Ext4BigAllocKey:    {},
+				Ext4ClusterSizeKey: {},
 			},
 		},
 		FSTypeNtfs: {
 			NotSupportedParams: map[string]struct{}{
-				BlockSizeKey:             {},
-				InodeSizeKey:             {},
-				BytesPerInodeKey:         {},
-				NumberOfInodesKey:        {},
-				Ext4BigAllocKey:          {},
-				Ext4ClusterSizeKey:       {},
-				Ext4EncryptionSupportKey: {},
+				BlockSizeKey:       {},
+				InodeSizeKey:       {},
+				BytesPerInodeKey:   {},
+				NumberOfInodesKey:  {},
+				Ext4BigAllocKey:    {},
+				Ext4ClusterSizeKey: {},
 			},
 		},
 	}

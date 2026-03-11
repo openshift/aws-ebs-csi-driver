@@ -30,11 +30,6 @@ import (
 //
 // For information about notebook instance lifestyle configurations, see [Step 2.1: (Optional) Customize a Notebook Instance].
 //
-// Lifecycle configuration scripts execute with root access and the notebook
-// instance's IAM execution role privileges. Grant this permission only to trusted
-// principals. See [Customize a Notebook Instance Using a Lifecycle Configuration Script]for security best practices.
-//
-// [Customize a Notebook Instance Using a Lifecycle Configuration Script]: https://docs.aws.amazon.com/sagemaker/latest/dg/notebook-lifecycle-config.html
 // [Step 2.1: (Optional) Customize a Notebook Instance]: https://docs.aws.amazon.com/sagemaker/latest/dg/notebook-lifecycle-config.html
 func (c *Client) CreateNotebookInstanceLifecycleConfig(ctx context.Context, params *CreateNotebookInstanceLifecycleConfigInput, optFns ...func(*Options)) (*CreateNotebookInstanceLifecycleConfigOutput, error) {
 	if params == nil {
@@ -182,7 +177,40 @@ func (c *Client) addOperationCreateNotebookInstanceLifecycleConfigMiddlewares(st
 	if err = addInterceptAttempt(stack, options); err != nil {
 		return err
 	}
-	if err = addInterceptors(stack, options); err != nil {
+	if err = addInterceptExecution(stack, options); err != nil {
+		return err
+	}
+	if err = addInterceptBeforeSerialization(stack, options); err != nil {
+		return err
+	}
+	if err = addInterceptAfterSerialization(stack, options); err != nil {
+		return err
+	}
+	if err = addInterceptBeforeSigning(stack, options); err != nil {
+		return err
+	}
+	if err = addInterceptAfterSigning(stack, options); err != nil {
+		return err
+	}
+	if err = addInterceptTransmit(stack, options); err != nil {
+		return err
+	}
+	if err = addInterceptBeforeDeserialization(stack, options); err != nil {
+		return err
+	}
+	if err = addInterceptAfterDeserialization(stack, options); err != nil {
+		return err
+	}
+	if err = addSpanInitializeStart(stack); err != nil {
+		return err
+	}
+	if err = addSpanInitializeEnd(stack); err != nil {
+		return err
+	}
+	if err = addSpanBuildRequestStart(stack); err != nil {
+		return err
+	}
+	if err = addSpanBuildRequestEnd(stack); err != nil {
 		return err
 	}
 	return nil

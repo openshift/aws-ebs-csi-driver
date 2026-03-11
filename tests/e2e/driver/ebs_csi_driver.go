@@ -19,7 +19,6 @@ import (
 
 	volumesnapshotv1 "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1"
 	ebscsidriver "github.com/kubernetes-sigs/aws-ebs-csi-driver/pkg/driver"
-	"github.com/kubernetes-sigs/aws-ebs-csi-driver/pkg/util"
 	v1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -38,7 +37,7 @@ type ebsCSIDriver struct {
 // InitEbsCSIDriver returns ebsCSIDriver that implements DynamicPVTestDriver interface.
 func InitEbsCSIDriver() PVTestDriver {
 	return &ebsCSIDriver{
-		driverName: util.GetDriverName(),
+		driverName: ebscsidriver.DriverName,
 	}
 }
 

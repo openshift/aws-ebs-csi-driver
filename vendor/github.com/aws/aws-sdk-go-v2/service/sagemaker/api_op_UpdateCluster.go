@@ -34,14 +34,6 @@ type UpdateClusterInput struct {
 	// This member is required.
 	ClusterName *string
 
-	// Updates the autoscaling configuration for the cluster. Use to enable or disable
-	// automatic node scaling.
-	AutoScaling *types.ClusterAutoScalingConfig
-
-	// The Amazon Resource Name (ARN) of the IAM role that HyperPod assumes for
-	// cluster autoscaling operations. Cannot be updated while autoscaling is enabled.
-	ClusterRole *string
-
 	// Specify the instance groups to update.
 	InstanceGroups []types.ClusterInstanceGroupSpecification
 
@@ -49,24 +41,12 @@ type UpdateClusterInput struct {
 	// separator between multiple names.
 	InstanceGroupsToDelete []string
 
-	// Determines how instance provisioning is handled during cluster operations. In
-	// Continuous mode, the cluster provisions available instances incrementally and
-	// retries until the target count is reached. The cluster becomes operational once
-	// cluster-level resources are ready. Use CurrentCount and TargetCount in
-	// DescribeCluster to track provisioning progress.
-	NodeProvisioningMode types.ClusterNodeProvisioningMode
-
 	// The node recovery mode to be applied to the SageMaker HyperPod cluster.
 	NodeRecovery types.ClusterNodeRecovery
 
 	// The specialized instance groups for training models like Amazon Nova to be
 	// created in the SageMaker HyperPod cluster.
 	RestrictedInstanceGroups []types.ClusterRestrictedInstanceGroupSpecification
-
-	// Updates the configuration for managed tier checkpointing on the HyperPod
-	// cluster. For example, you can enable or disable the feature and modify the
-	// percentage of cluster memory allocated for checkpoint storage.
-	TieredStorageConfig *types.ClusterTieredStorageConfig
 
 	noSmithyDocumentSerde
 }
@@ -178,7 +158,40 @@ func (c *Client) addOperationUpdateClusterMiddlewares(stack *middleware.Stack, o
 	if err = addInterceptAttempt(stack, options); err != nil {
 		return err
 	}
-	if err = addInterceptors(stack, options); err != nil {
+	if err = addInterceptExecution(stack, options); err != nil {
+		return err
+	}
+	if err = addInterceptBeforeSerialization(stack, options); err != nil {
+		return err
+	}
+	if err = addInterceptAfterSerialization(stack, options); err != nil {
+		return err
+	}
+	if err = addInterceptBeforeSigning(stack, options); err != nil {
+		return err
+	}
+	if err = addInterceptAfterSigning(stack, options); err != nil {
+		return err
+	}
+	if err = addInterceptTransmit(stack, options); err != nil {
+		return err
+	}
+	if err = addInterceptBeforeDeserialization(stack, options); err != nil {
+		return err
+	}
+	if err = addInterceptAfterDeserialization(stack, options); err != nil {
+		return err
+	}
+	if err = addSpanInitializeStart(stack); err != nil {
+		return err
+	}
+	if err = addSpanInitializeEnd(stack); err != nil {
+		return err
+	}
+	if err = addSpanBuildRequestStart(stack); err != nil {
+		return err
+	}
+	if err = addSpanBuildRequestEnd(stack); err != nil {
 		return err
 	}
 	return nil

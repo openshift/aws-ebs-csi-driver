@@ -136,9 +136,6 @@ type CreateEndpointConfigInput struct {
 	// [Instance Store Volumes]: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/InstanceStorage.html#instance-store-volumes
 	KmsKeyId *string
 
-	// The configuration parameters for utilization metrics.
-	MetricsConfig *types.MetricsConfig
-
 	// An array of ProductionVariant objects, one for each model that you want to host
 	// at this endpoint in shadow mode with production traffic replicated from the
 	// model specified on ProductionVariants . If you use this field, you can only
@@ -270,7 +267,40 @@ func (c *Client) addOperationCreateEndpointConfigMiddlewares(stack *middleware.S
 	if err = addInterceptAttempt(stack, options); err != nil {
 		return err
 	}
-	if err = addInterceptors(stack, options); err != nil {
+	if err = addInterceptExecution(stack, options); err != nil {
+		return err
+	}
+	if err = addInterceptBeforeSerialization(stack, options); err != nil {
+		return err
+	}
+	if err = addInterceptAfterSerialization(stack, options); err != nil {
+		return err
+	}
+	if err = addInterceptBeforeSigning(stack, options); err != nil {
+		return err
+	}
+	if err = addInterceptAfterSigning(stack, options); err != nil {
+		return err
+	}
+	if err = addInterceptTransmit(stack, options); err != nil {
+		return err
+	}
+	if err = addInterceptBeforeDeserialization(stack, options); err != nil {
+		return err
+	}
+	if err = addInterceptAfterDeserialization(stack, options); err != nil {
+		return err
+	}
+	if err = addSpanInitializeStart(stack); err != nil {
+		return err
+	}
+	if err = addSpanInitializeEnd(stack); err != nil {
+		return err
+	}
+	if err = addSpanBuildRequestStart(stack); err != nil {
+		return err
+	}
+	if err = addSpanBuildRequestEnd(stack); err != nil {
 		return err
 	}
 	return nil

@@ -4,7 +4,7 @@
 
 ## Overview
 
-The [Amazon Elastic Block Store](https://aws.amazon.com/ebs/) Container Storage Interface (CSI) Driver provides a [CSI](https://github.com/container-storage-interface/spec/blob/master/spec.md) interface used by Container Orchestrators to manage the lifecycle of Amazon EBS volumes and snapshots.
+The [Amazon Elastic Block Store](https://aws.amazon.com/ebs/) Container Storage Interface (CSI) Driver provides a [CSI](https://github.com/container-storage-interface/spec/blob/master/spec.md) interface used by Container Orchestrators to manage the lifecycle of Amazon EBS volumes.
 
 ## Features
 * **Static Provisioning** - Associate an externally-created EBS volume with a [PersistentVolume](https://kubernetes.io/docs/concepts/storage/persistent-volumes/) (PV) for consumption within Kubernetes.
@@ -14,14 +14,13 @@ The [Amazon Elastic Block Store](https://aws.amazon.com/ebs/) Container Storage 
 * **Volume Snapshots** - Create and restore [snapshots](https://kubernetes.io/docs/concepts/storage/volume-snapshots/) taken from a volume in Kubernetes.
 * **Volume Resizing** - Expand the volume by specifying a new size in the [PersistentVolumeClaim](https://kubernetes.io/docs/concepts/storage/persistent-volumes/#expanding-persistent-volumes-claims) (PVC).
 * **Volume Modification** - Change the properties (type, iops, or throughput) [via a `VolumeAttributesClass`](examples/kubernetes/modify-volume).
-* **Node-Local Volumes** - Mount pre-attached, node-specific EBS volumes using a single cluster-wide PV/PVC for node-local caching scenarios.
 
 ## Container Images
 
 | Driver Version | [registry.k8s.io](https://kubernetes.io/blog/2022/11/28/registry-k8s-io-faster-cheaper-ga/) Image | [ECR Public](https://gallery.ecr.aws/ebs-csi-driver/aws-ebs-csi-driver) Image |
 |----------------|---------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------|
-| v1.54.0        | registry.k8s.io/provider-aws/aws-ebs-csi-driver:v1.54.0                                           | public.ecr.aws/ebs-csi-driver/aws-ebs-csi-driver:v1.54.0                      |
-| v1.53.0        | registry.k8s.io/provider-aws/aws-ebs-csi-driver:v1.53.0                                           | public.ecr.aws/ebs-csi-driver/aws-ebs-csi-driver:v1.53.0                      |
+| v1.47.0        | registry.k8s.io/provider-aws/aws-ebs-csi-driver:v1.47.0                                           | public.ecr.aws/ebs-csi-driver/aws-ebs-csi-driver:v1.47.0                      |
+| v1.46.0        | registry.k8s.io/provider-aws/aws-ebs-csi-driver:v1.46.0                                           | public.ecr.aws/ebs-csi-driver/aws-ebs-csi-driver:v1.46.0                      |
 
 ## Releases
 
@@ -52,7 +51,6 @@ The EBS CSI Driver implements the [Container Storage Interface specification](ht
 * [Driver Installation](docs/install.md)
 * [Driver Launch Options](docs/options.md)
 * [StorageClass Parameters](docs/parameters.md)
-* [Node-Local Volumes](docs/node-local-volumes.md)
 * [Frequently Asked Questions](docs/faq.md)
 * [Volume Tagging](docs/tagging.md)
 * [Volume Modification](docs/modify-volume.md)

@@ -23,13 +23,12 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"slices"
 	"strings"
 	"sync"
 	"time"
 
 	csi "github.com/container-storage-interface/spec/lib/go/csi"
-	"github.com/kubernetes-sigs/aws-ebs-csi-driver/pkg/cloud/limits"
+	"github.com/kubernetes-sigs/aws-ebs-csi-driver/pkg/cloud"
 	"github.com/kubernetes-sigs/aws-ebs-csi-driver/pkg/cloud/metadata"
 	"github.com/kubernetes-sigs/aws-ebs-csi-driver/pkg/driver/internal"
 	"github.com/kubernetes-sigs/aws-ebs-csi-driver/pkg/mounter"
@@ -121,14 +120,8 @@ func (d *NodeService) NodeStageVolume(ctx context.Context, req *csi.NodeStageVol
 		return nil, status.Error(codes.InvalidArgument, "Volume capability not provided")
 	}
 
-	if isNodeLocalVolume(volumeID) {
-		if !isValidCapabilityForNodeLocal(volCap) {
-			return nil, status.Error(codes.InvalidArgument, "Volume capability not supported")
-		}
-	} else {
-		if !isValidVolumeCapabilities([]*csi.VolumeCapability{volCap}) {
-			return nil, status.Error(codes.InvalidArgument, "Volume capability not supported")
-		}
+	if !isValidVolumeCapabilities([]*csi.VolumeCapability{volCap}) {
+		return nil, status.Error(codes.InvalidArgument, "Volume capability not supported")
 	}
 	volumeContext := req.GetVolumeContext()
 	if isValidVolumeContext := isValidVolumeContext(volumeContext); !isValidVolumeContext {
@@ -181,10 +174,6 @@ func (d *NodeService) NodeStageVolume(ctx context.Context, req *csi.NodeStageVol
 	if err != nil {
 		return nil, err
 	}
-	ext4EncryptionSupport, err := recheckFormattingOptionParameter(context, Ext4EncryptionSupportKey, FileSystemConfigs, fsType)
-	if err != nil {
-		return nil, err
-	}
 
 	mountOptions := collectMountOptions(fsType, mountVolume.GetMountFlags())
 
@@ -210,14 +199,7 @@ func (d *NodeService) NodeStageVolume(ctx context.Context, req *csi.NodeStageVol
 		}
 	}
 
-	effectiveVolumeID := volumeID
-	if isNodeLocalVolume(volumeID) {
-		if realVolumeID, ok := req.GetPublishContext()[VolumeIDKey]; ok && realVolumeID != "" {
-			effectiveVolumeID = realVolumeID
-		}
-	}
-
-	source, err := d.mounter.FindDevicePath(devicePath, effectiveVolumeID, partition, d.metadata.GetRegion())
+	source, err := d.mounter.FindDevicePath(devicePath, volumeID, partition, d.metadata.GetRegion())
 	if err != nil {
 		return nil, status.Errorf(codes.NotFound, "Failed to find device path %s. %v", devicePath, err)
 	}
@@ -284,11 +266,8 @@ func (d *NodeService) NodeStageVolume(ctx context.Context, req *csi.NodeStageVol
 	if len(ext4ClusterSize) > 0 {
 		formatOptions = append(formatOptions, "-C", ext4ClusterSize)
 	}
-	if ext4EncryptionSupport == "true" {
-		formatOptions = append(formatOptions, "-O", "encrypt")
-	}
 	if fsType == FSTypeXfs && d.options.LegacyXFSProgs {
-		formatOptions = append(formatOptions, "-m", "bigtime=0,inobtcount=0,reflink=0", "-i", "nrext64=0")
+		formatOptions = append(formatOptions, "-m", "bigtime=0,inobtcount=0,reflink=0")
 	}
 	err = d.mounter.FormatAndMountSensitiveWithFormatOptions(source, target, fsType, mountOptions, nil, formatOptions)
 	if err != nil {
@@ -453,14 +432,8 @@ func (d *NodeService) NodePublishVolume(ctx context.Context, req *csi.NodePublis
 		return nil, status.Error(codes.InvalidArgument, "Volume capability not provided")
 	}
 
-	if isNodeLocalVolume(volumeID) {
-		if !isValidCapabilityForNodeLocal(volCap) {
-			return nil, status.Error(codes.InvalidArgument, "Volume capability not supported")
-		}
-	} else {
-		if !isValidVolumeCapabilities([]*csi.VolumeCapability{volCap}) {
-			return nil, status.Error(codes.InvalidArgument, "Volume capability not supported")
-		}
+	if !isValidVolumeCapabilities([]*csi.VolumeCapability{volCap}) {
+		return nil, status.Error(codes.InvalidArgument, "Volume capability not supported")
 	}
 
 	if ok := d.inFlight.Insert(volumeID); !ok {
@@ -658,14 +631,7 @@ func (d *NodeService) nodePublishVolumeForBlock(req *csi.NodePublishVolumeReques
 		}
 	}
 
-	effectiveVolumeID := volumeID
-	if isNodeLocalVolume(volumeID) {
-		if realVolumeID, ok := req.GetPublishContext()[VolumeIDKey]; ok && realVolumeID != "" {
-			effectiveVolumeID = realVolumeID
-		}
-	}
-
-	source, err := d.mounter.FindDevicePath(devicePath, effectiveVolumeID, partition, d.metadata.GetRegion())
+	source, err := d.mounter.FindDevicePath(devicePath, volumeID, partition, d.metadata.GetRegion())
 	if err != nil {
 		return status.Errorf(codes.NotFound, "Failed to find device path %s. %v", devicePath, err)
 	}
@@ -812,31 +778,45 @@ func (d *NodeService) getVolumesLimit() int64 {
 	}
 
 	instanceType := d.metadata.GetInstanceType()
-	availableAttachments, limitType := limits.GetVolumeLimits(instanceType)
-	klog.V(4).InfoS("getVolumesLimit: Retrieved inputs", "instanceType", instanceType, "attachmentLimit", availableAttachments, "limitType", limitType)
+	klog.V(4).InfoS("getVolumesLimit:", "instanceType", instanceType)
 
-	// Calculate reserved volume attachments (additional EBS volumes)
+	isNitro := cloud.IsNitroInstanceType(instanceType)
+	availableAttachments := cloud.GetMaxAttachments(isNitro)
+	klog.V(4).InfoS("getVolumesLimit:", "availableAttachments", availableAttachments)
+
 	reservedVolumeAttachments := d.options.ReservedVolumeAttachments
 	if reservedVolumeAttachments == -1 {
-		// Auto-detect number of reserved volume attachments - plus 1 to account for the root volume
-		reservedVolumeAttachments = d.metadata.GetNumBlockDeviceMappings() + 1
+		reservedVolumeAttachments = d.metadata.GetNumBlockDeviceMappings() + 1 // +1 for the root device
+		klog.V(4).InfoS("getVolumesLimit:", "numBlockDevices", (reservedVolumeAttachments - 1))
 	}
-	klog.V(4).InfoS("getVolumesLimit: Removing reserved attachments", "reservedVolumeAttachments", reservedVolumeAttachments)
-	availableAttachments -= reservedVolumeAttachments
+	klog.V(4).InfoS("getVolumesLimit:", "reservedVolumeAttachments", reservedVolumeAttachments)
 
-	// For shared attachment types, subtract ENIs
-	if limitType == util.AttachmentShared {
+	dedicatedLimit := cloud.GetDedicatedLimitForInstanceType(instanceType)
+	maxEBSAttachments, hasMaxVolumeLimit := cloud.GetEBSLimitForInstanceType(instanceType)
+	if hasMaxVolumeLimit {
+		availableAttachments = min(maxEBSAttachments, availableAttachments)
+	}
+	// For special dedicated limit instance types, the limit is only for EBS volumes
+	// For (all other) Nitro instances, attachments are shared between EBS volumes, ENIs and NVMe instance stores
+	if dedicatedLimit != 0 {
+		availableAttachments = dedicatedLimit
+		klog.V(4).InfoS("getVolumesLimit:", "dedicatedLimit", dedicatedLimit)
+	} else if isNitro {
 		enis := d.metadata.GetNumAttachedENIs()
-		klog.V(4).InfoS("getVolumesLimit: Removing ENIs on shared limit", "enis", enis)
-		availableAttachments -= (enis - 1)
+		klog.V(4).InfoS("getVolumesLimit:", "ENIs", enis)
+		reservedSlots := cloud.GetReservedSlotsForInstanceType(instanceType)
+		klog.V(4).InfoS("getVolumesLimit:", "reservedSlots", reservedSlots)
+		if hasMaxVolumeLimit {
+			availableAttachments = availableAttachments - (enis - 1) - reservedSlots
+		} else {
+			availableAttachments = availableAttachments - enis - reservedSlots
+		}
 	}
-
-	// Safety measure: Never return a limit of below 1, as Kubernetes will treat it as infinite
+	availableAttachments -= reservedVolumeAttachments
 	if availableAttachments <= 0 {
 		availableAttachments = 1
 	}
 
-	klog.V(4).InfoS("getVolumesLimit: Returning calculated limit", "availableAttachments", availableAttachments)
 	return int64(availableAttachments)
 }
 
@@ -844,7 +824,12 @@ func (d *NodeService) getVolumesLimit() int64 {
 // slice already contains a mount option. This is used to prevent
 // passing duplicate option to the mount command.
 func hasMountOption(options []string, opt string) bool {
-	return slices.Contains(options, opt)
+	for _, o := range options {
+		if o == opt {
+			return true
+		}
+	}
+	return false
 }
 
 // collectMountOptions returns array of mount options from
@@ -871,10 +856,6 @@ func collectMountOptions(fsType string, mntFlags []string) []string {
 // startNotReadyTaintWatcher launches a short‑lived Node informer that removes the
 // ebs.csi.aws.com/agent‑not‑ready taint. The informer is stopped after maxWatchDuration.
 func startNotReadyTaintWatcher(clientset kubernetes.Interface, maxWatchDuration time.Duration) {
-	if os.Getenv("DISABLE_TAINT_WATCHER") != "" {
-		klog.V(4).InfoS("DISABLE_TAINT_WATCHER set, skipping taint watcher")
-		return
-	}
 	nodeName := os.Getenv("CSI_NODE_NAME")
 	if nodeName == "" {
 		klog.V(4).InfoS("CSI_NODE_NAME missing, skipping taint watcher")
@@ -891,8 +872,7 @@ func startNotReadyTaintWatcher(clientset kubernetes.Interface, maxWatchDuration 
 	informer := factory.Core().V1().Nodes().Informer()
 
 	var mutex sync.Mutex
-	// Add additional 90 seconds to the context for the last-try taint removal
-	ctx, cancel := context.WithTimeout(context.Background(), maxWatchDuration+90*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), maxWatchDuration)
 	defer cancel()
 	attemptTaintRemoval := func(n *corev1.Node) {
 		if !hasNotReadyTaint(n) {
@@ -924,7 +904,7 @@ func startNotReadyTaintWatcher(clientset kubernetes.Interface, maxWatchDuration 
 				}
 				return false, nil // Continue retrying
 			}
-			// We either removed the taint, or there was no taint to remove
+			klog.V(2).InfoS("Successfully removed agent-not-ready taint", "node", n.Name)
 			return true, nil
 		})
 
@@ -934,12 +914,12 @@ func startNotReadyTaintWatcher(clientset kubernetes.Interface, maxWatchDuration 
 	}
 
 	if _, err := informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj any) {
+		AddFunc: func(obj interface{}) {
 			if n, ok := obj.(*corev1.Node); ok {
 				attemptTaintRemoval(n)
 			}
 		},
-		UpdateFunc: func(_, newObj any) {
+		UpdateFunc: func(_, newObj interface{}) {
 			if n, ok := newObj.(*corev1.Node); ok {
 				attemptTaintRemoval(n)
 			}
@@ -948,48 +928,26 @@ func startNotReadyTaintWatcher(clientset kubernetes.Interface, maxWatchDuration 
 		klog.ErrorS(err, "Taint‑watcher: failed to add event handler")
 		return
 	}
-	if err := informer.SetWatchErrorHandlerWithContext(func(handlerCtx context.Context, r *cache.Reflector, err error) {
-		if apierrors.IsUnauthorized(err) || apierrors.IsForbidden(err) {
-			// Informer doesn't have permission - cancel context
-			// to avoid spamming logs with informer errors
-			klog.V(8).InfoS("Taint-watcher: permission error, silently cancelling context")
-			cancel()
-		} else {
-			cache.DefaultWatchErrorHandler(handlerCtx, r, err)
-		}
-	}); err != nil {
-		klog.ErrorS(err, "Taint‑watcher: failed to add error handler")
-		return
-	}
 
 	factory.Start(ctx.Done())
 	if ok := cache.WaitForCacheSync(ctx.Done(), informer.HasSynced); !ok {
-		if ctx.Err() != nil {
-			// Context likely cancelled because of permissions error - log at higher
-			// verbosity in this case to avoid spamming logs of users that have
-			// modified their permissions to opt out
-			klog.V(8).InfoS("Taint-watcher: cache sync cancelled (likely permissions error)")
-		} else {
-			klog.ErrorS(nil, "Taint-watcher: cache sync failed")
-		}
-	} else {
-		// Immediate scan in case the taint is already present and no event fires
-		if obj, exists, err := informer.GetStore().GetByKey(nodeName); err == nil && exists {
-			if n, ok := obj.(*corev1.Node); ok {
-				attemptTaintRemoval(n)
-			}
-		}
-
-		// Informer is operational - wait for maxWatchDuration for it to handle Node updates
-		<-time.After(maxWatchDuration)
-		klog.V(8).InfoS("Taint-watcher: timeout reached; stopping")
+		klog.ErrorS(nil, "Taint-watcher: cache sync failed")
 	}
 
+	// Immediate scan in case the taint is already present and no event fires.
+	if obj, exists, err := informer.GetStore().GetByKey(nodeName); err == nil && exists {
+		if n, ok := obj.(*corev1.Node); ok {
+			attemptTaintRemoval(n)
+		}
+	}
+
+	<-time.After(maxWatchDuration)
+	klog.V(8).InfoS("Taint-watcher timeout reached; stopping")
+
 	// Try to remove the taint one last time in case we got extremely unlucky with the informer
-	// We still try this even if the informer failed, as we may only be missing the watch permission
 	lastChanceNode, err := clientset.CoreV1().Nodes().Get(ctx, nodeName, metav1.GetOptions{})
 	if err != nil {
-		klog.ErrorS(err, "Failed to get node for last chance taint removal", "node", nodeName)
+		klog.ErrorS(err, "Failed to get node for last chance", "node", nodeName)
 	} else {
 		attemptTaintRemoval(lastChanceNode)
 	}
@@ -1004,11 +962,11 @@ func hasNotReadyTaint(n *corev1.Node) bool {
 	return false
 }
 
-// JSONPatch struct for JSON patch operations.
+// Struct for JSON patch operations.
 type JSONPatch struct {
-	OP    string `json:"op,omitempty"`
-	Path  string `json:"path,omitempty"`
-	Value any    `json:"value"`
+	OP    string      `json:"op,omitempty"`
+	Path  string      `json:"path,omitempty"`
+	Value interface{} `json:"value"`
 }
 
 // removeNotReadyTaint removes the taint ebs.csi.aws.com/agent-not-ready from the local node
@@ -1067,9 +1025,9 @@ func checkAllocatable(ctx context.Context, clientset kubernetes.Interface, nodeN
 	}
 
 	for _, driver := range csiNode.Spec.Drivers {
-		if driver.Name == util.GetDriverName() {
+		if driver.Name == DriverName {
 			if driver.Allocatable != nil && driver.Allocatable.Count != nil {
-				klog.V(4).InfoS("CSINode Allocatable value is set", "nodeName", nodeName, "count", *driver.Allocatable.Count)
+				klog.InfoS("CSINode Allocatable value is set", "nodeName", nodeName, "count", *driver.Allocatable.Count)
 				return nil
 			}
 			return fmt.Errorf("isAllocatableSet: allocatable value not set for driver on node %s", nodeName)
