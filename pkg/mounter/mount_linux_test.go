@@ -20,6 +20,7 @@ package mounter
 
 import (
 	"errors"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -84,7 +85,11 @@ func TestNeedResize(t *testing.T) {
 
 func TestMakeDir(t *testing.T) {
 	// Setup the full driver and its environment
-	dir := t.TempDir()
+	dir, err := os.MkdirTemp("", "mount-ebs-csi")
+	if err != nil {
+		t.Fatalf("error creating directory %v", err)
+	}
+	defer os.RemoveAll(dir)
 
 	targetPath := filepath.Join(dir, "targetdir")
 
@@ -93,11 +98,11 @@ func TestMakeDir(t *testing.T) {
 		t.Fatalf("error creating mounter %v", err)
 	}
 
-	if err = mountObj.MakeDir(targetPath); err != nil {
+	if mountObj.MakeDir(targetPath) != nil {
 		t.Fatalf("Expect no error but got: %v", err)
 	}
 
-	if err = mountObj.MakeDir(targetPath); err != nil {
+	if mountObj.MakeDir(targetPath) != nil {
 		t.Fatalf("Expect no error but got: %v", err)
 	}
 
@@ -108,7 +113,11 @@ func TestMakeDir(t *testing.T) {
 
 func TestMakeFile(t *testing.T) {
 	// Setup the full driver and its environment
-	dir := t.TempDir()
+	dir, err := os.MkdirTemp("", "mount-ebs-csi")
+	if err != nil {
+		t.Fatalf("error creating directory %v", err)
+	}
+	defer os.RemoveAll(dir)
 
 	targetPath := filepath.Join(dir, "targetfile")
 
@@ -117,11 +126,11 @@ func TestMakeFile(t *testing.T) {
 		t.Fatalf("error creating mounter %v", err)
 	}
 
-	if err = mountObj.MakeFile(targetPath); err != nil {
+	if mountObj.MakeFile(targetPath) != nil {
 		t.Fatalf("Expect no error but got: %v", err)
 	}
 
-	if err = mountObj.MakeFile(targetPath); err != nil {
+	if mountObj.MakeFile(targetPath) != nil {
 		t.Fatalf("Expect no error but got: %v", err)
 	}
 
@@ -132,7 +141,11 @@ func TestMakeFile(t *testing.T) {
 
 func TestPathExists(t *testing.T) {
 	// Setup the full driver and its environment
-	dir := t.TempDir()
+	dir, err := os.MkdirTemp("", "mount-ebs-csi")
+	if err != nil {
+		t.Fatalf("error creating directory %v", err)
+	}
+	defer os.RemoveAll(dir)
 
 	targetPath := filepath.Join(dir, "notafile")
 
@@ -154,7 +167,11 @@ func TestPathExists(t *testing.T) {
 
 func TestGetDeviceName(t *testing.T) {
 	// Setup the full driver and its environment
-	dir := t.TempDir()
+	dir, err := os.MkdirTemp("", "mount-ebs-csi")
+	if err != nil {
+		t.Fatalf("error creating directory %v", err)
+	}
+	defer os.RemoveAll(dir)
 
 	targetPath := filepath.Join(dir, "notafile")
 

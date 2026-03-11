@@ -64,7 +64,7 @@ spec:
         runAsUser: 1000
       containers:
         - name: ebs-plugin
-          image: public.ecr.aws/ebs-csi-driver/aws-ebs-csi-driver:v1.54.0
+          image: public.ecr.aws/ebs-csi-driver/aws-ebs-csi-driver:v1.47.0
           imagePullPolicy: IfNotPresent
           args:
             - controller
@@ -116,15 +116,15 @@ spec:
               path: /healthz
               port: healthz
             initialDelaySeconds: 10
-            timeoutSeconds: 60
+            timeoutSeconds: 3
             periodSeconds: 10
-            failureThreshold: 10
+            failureThreshold: 5
           readinessProbe:
             httpGet:
               path: /healthz
               port: healthz
             initialDelaySeconds: 10
-            timeoutSeconds: 60
+            timeoutSeconds: 3
             periodSeconds: 10
             failureThreshold: 5
           resources:
@@ -138,9 +138,8 @@ spec:
             readOnlyRootFilesystem: true
             seccompProfile:
               type: RuntimeDefault
-          terminationMessagePolicy: FallbackToLogsOnError
         - name: csi-provisioner
-          image: public.ecr.aws/csi-components/csi-provisioner:v6.1.0-eksbuild.2
+          image: public.ecr.aws/csi-components/csi-provisioner:v5.3.0-eksbuild.4
           imagePullPolicy: IfNotPresent
           args:
             - --timeout=60s
@@ -173,9 +172,8 @@ spec:
             readOnlyRootFilesystem: true
             seccompProfile:
               type: RuntimeDefault
-          terminationMessagePolicy: FallbackToLogsOnError
         - name: csi-attacher
-          image: public.ecr.aws/csi-components/csi-attacher:v4.10.0-eksbuild.3
+          image: public.ecr.aws/csi-components/csi-attacher:v4.9.0-eksbuild.4
           imagePullPolicy: IfNotPresent
           args:
             - --timeout=6m
@@ -186,7 +184,6 @@ spec:
             - --kube-api-burst=100
             - --worker-threads=100
             - --retry-interval-max=5m
-            - --feature-gates=MutableCSINodeAllocatableCount=true
           env:
             - name: ADDRESS
               value: /var/lib/csi/sockets/pluginproxy/csi.sock
@@ -204,9 +201,8 @@ spec:
             readOnlyRootFilesystem: true
             seccompProfile:
               type: RuntimeDefault
-          terminationMessagePolicy: FallbackToLogsOnError
         - name: csi-snapshotter
-          image: public.ecr.aws/csi-components/csi-snapshotter:v8.4.0-eksbuild.3
+          image: public.ecr.aws/csi-components/csi-snapshotter:v8.3.0-eksbuild.2
           imagePullPolicy: IfNotPresent
           args:
             - --csi-address=$(ADDRESS)
@@ -234,9 +230,8 @@ spec:
             readOnlyRootFilesystem: true
             seccompProfile:
               type: RuntimeDefault
-          terminationMessagePolicy: FallbackToLogsOnError
         - name: csi-resizer
-          image: public.ecr.aws/csi-components/csi-resizer:v2.0.0-eksbuild.3
+          image: public.ecr.aws/csi-components/csi-resizer:v1.14.0-eksbuild.4
           imagePullPolicy: IfNotPresent
           args:
             - --timeout=60s
@@ -268,13 +263,11 @@ spec:
             readOnlyRootFilesystem: true
             seccompProfile:
               type: RuntimeDefault
-          terminationMessagePolicy: FallbackToLogsOnError
         - name: liveness-probe
-          image: public.ecr.aws/csi-components/livenessprobe:v2.17.0-eksbuild.3
+          image: public.ecr.aws/csi-components/livenessprobe:v2.16.0-eksbuild.5
           imagePullPolicy: IfNotPresent
           args:
             - --csi-address=/csi/csi.sock
-            - --probe-timeout=60s
           volumeMounts:
             - name: socket-dir
               mountPath: /csi
@@ -287,7 +280,6 @@ spec:
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
-          terminationMessagePolicy: FallbackToLogsOnError
       volumes:
         - name: socket-dir
           emptyDir: {}

@@ -21,8 +21,6 @@ import (
 	"os"
 
 	"github.com/aws/aws-sdk-go-v2/aws/arn"
-	"github.com/kubernetes-sigs/aws-ebs-csi-driver/pkg/util"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
 )
 
@@ -36,7 +34,6 @@ type Metadata struct {
 	NumBlockDeviceMappings int
 	OutpostArn             arn.ARN
 	IMDSClient             IMDS
-	K8sAPIClient           kubernetes.Interface
 }
 
 type MetadataServiceConfig struct {
@@ -46,9 +43,8 @@ type MetadataServiceConfig struct {
 }
 
 const (
-	SourceIMDS            = "imds"
-	SourceMetadataLabeler = "metadata-labeler"
-	SourceK8s             = "kubernetes"
+	SourceIMDS = "imds"
+	SourceK8s  = "kubernetes"
 )
 
 var (
@@ -64,13 +60,8 @@ func NewMetadataService(cfg MetadataServiceConfig, region string) (MetadataServi
 	for _, source := range cfg.MetadataSources {
 		switch source {
 		case SourceIMDS:
-			isHyperPodNode := util.IsHyperPodNode(os.Getenv("CSI_NODE_NAME"))
-			if os.Getenv("AWS_EC2_METADATA_DISABLED") == "true" || isHyperPodNode {
-				if isHyperPodNode {
-					klog.V(2).InfoS("HyperPod node detected. Will not rely on IMDS for instance metadata")
-				} else {
-					klog.V(2).InfoS("Environment variable AWS_EC2_METADATA_DISABLED set to 'true'. Will not rely on IMDS for instance metadata")
-				}
+			if os.Getenv("AWS_EC2_METADATA_DISABLED") == "true" {
+				klog.V(2).InfoS("Environment variable AWS_EC2_METADATA_DISABLED set to 'true'. Will not rely on IMDS for instance metadata")
 			} else {
 				klog.V(2).InfoS("Attempting to retrieve instance metadata from IMDS")
 				metadata, err := retrieveIMDSMetadata(cfg.IMDSClient)
@@ -80,17 +71,9 @@ func NewMetadataService(cfg MetadataServiceConfig, region string) (MetadataServi
 				}
 				klog.ErrorS(err, "Retrieving IMDS metadata failed")
 			}
-		case SourceMetadataLabeler:
-			klog.V(2).InfoS("Attempting to retrieve instance metadata from metadata labeler")
-			metadata, err := retrieveK8sMetadata(cfg.K8sAPIClient, true)
-			if err == nil {
-				klog.V(2).InfoS("Retrieved metadata from metadata labeler")
-				return metadata.overrideRegion(region), nil
-			}
-			klog.ErrorS(err, "Retrieving metadata labeler failed")
 		case SourceK8s:
 			klog.V(2).InfoS("Attempting to retrieve instance metadata from Kubernetes API")
-			metadata, err := retrieveK8sMetadata(cfg.K8sAPIClient, false)
+			metadata, err := retrieveK8sMetadata(cfg.K8sAPIClient)
 			if err == nil {
 				klog.V(2).InfoS("Retrieved metadata from Kubernetes")
 				return metadata.overrideRegion(region), nil
@@ -105,24 +88,19 @@ func NewMetadataService(cfg MetadataServiceConfig, region string) (MetadataServi
 	return nil, sourcesUnavailableErr(cfg.MetadataSources)
 }
 
-// UpdateMetadata refreshes metadata cache based upon driver startup metadata source.
+// UpdateMetadata refreshes ENI information.
+// We do not refresh blockDeviceMappings because IMDS only reports data from when instance starts (As of April 2025).
 func (m *Metadata) UpdateMetadata() error {
-	switch {
-	case m.IMDSClient != nil:
-		// We do not refresh blockDeviceMappings because IMDS only reports data from instance start (As of April 2025)
-		attachedENIs, err := getAttachedENIs(m.IMDSClient)
-		if err != nil {
-			return fmt.Errorf("failed to update ENI count via IMDS metadata source: %w", err)
-		}
-		m.NumAttachedENIs = attachedENIs
-	case m.K8sAPIClient != nil:
-		updatedMetadata, err := KubernetesAPIInstanceInfo(m.K8sAPIClient, true /* metadataLabeler */)
-		if updatedMetadata == nil || err != nil {
-			return fmt.Errorf("failed to update ENI and Block Device count via metadataLabeler source: %w", err)
-		}
-		m.NumAttachedENIs = updatedMetadata.NumAttachedENIs
-		m.NumBlockDeviceMappings = updatedMetadata.NumBlockDeviceMappings
+	if m.IMDSClient == nil {
+		// IMDS not available, skip updates
+		return nil
 	}
+
+	attachedENIs, err := getAttachedENIs(m.IMDSClient)
+	if err != nil {
+		return fmt.Errorf("failed to update ENI count: %w", err)
+	}
+	m.NumAttachedENIs = attachedENIs
 
 	return nil
 }
@@ -136,18 +114,13 @@ func retrieveIMDSMetadata(imdsClient IMDSClient) (*Metadata, error) {
 	return IMDSInstanceInfo(svc)
 }
 
-func retrieveK8sMetadata(k8sAPIClient KubernetesAPIClient, metadataLabeler bool) (*Metadata, error) {
+func retrieveK8sMetadata(k8sAPIClient KubernetesAPIClient) (*Metadata, error) {
 	clientset, err := k8sAPIClient()
 	if err != nil {
 		return nil, err
 	}
 
-	metadata, err := KubernetesAPIInstanceInfo(clientset, metadataLabeler)
-	if err != nil {
-		return nil, err
-	}
-
-	return metadata, nil
+	return KubernetesAPIInstanceInfo(clientset)
 }
 
 // Override the region on a Metadata object if it is non-empty.

@@ -51,15 +51,6 @@ spec:
         {
           "Effect": "Allow",
           "Action": [
-            "ec2:CopyVolumes"
-          ],
-          "Resource": [
-            "arn:aws:ec2:*:*:volume/vol-*"
-          ]
-        },
-        {
-          "Effect": "Allow",
-          "Action": [
             "ec2:AttachVolume",
             "ec2:DetachVolume"
           ],
@@ -72,8 +63,7 @@ spec:
           "Effect": "Allow",
           "Action": [
             "ec2:CreateVolume",
-            "ec2:EnableFastSnapshotRestores",
-            "ec2:LockSnapshot"
+            "ec2:EnableFastSnapshotRestores"
           ],
           "Resource": "arn:aws:ec2:*:*:snapshot/*"
         },
@@ -90,8 +80,7 @@ spec:
             "StringEquals": {
               "ec2:CreateAction": [
                 "CreateVolume",
-                "CreateSnapshot",
-                "CopyVolumes"
+                "CreateSnapshot"
               ]
             }
           }
@@ -109,8 +98,7 @@ spec:
         {
           "Effect": "Allow",
           "Action": [
-            "ec2:CreateVolume",
-            "ec2:CopyVolumes"
+            "ec2:CreateVolume"
           ],
           "Resource": "arn:aws:ec2:*:*:volume/*",
           "Condition": {
@@ -122,8 +110,7 @@ spec:
         {
           "Effect": "Allow",
           "Action": [
-            "ec2:CreateVolume",
-            "ec2:CopyVolumes"
+            "ec2:CreateVolume"
           ],
           "Resource": "arn:aws:ec2:*:*:volume/*",
           "Condition": {

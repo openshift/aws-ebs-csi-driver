@@ -54,7 +54,6 @@ type Options struct {
 	ExtraTags map[string]string
 	// ExtraVolumeTags is a map of tags that will be attached to each dynamically provisioned
 	// volume.
-	//
 	// Deprecated: Use ExtraTags instead.
 	ExtraVolumeTags map[string]string
 	// ID of the kubernetes cluster.
@@ -72,8 +71,6 @@ type Options struct {
 	ModifyVolumeRequestHandlerTimeout time.Duration
 	// flag to enable deprecated metrics
 	DeprecatedMetrics bool
-	// flag to enable node-local volume support
-	EnableNodeLocalVolumes bool
 
 	// #### Node options #####
 
@@ -94,7 +91,7 @@ type Options struct {
 	ReservedVolumeAttachments int
 	// ALPHA: WindowsHostProcess indicates whether the driver is running in a Windows privileged container
 	WindowsHostProcess bool
-	// LegacyXFSProgs formats XFS volumes with `bigtime=0,inobtcount=0,reflink=0,nrext64=0`, so that they can be mounted onto nodes with linux kernel ≤ v5.4. Volumes formatted with this option may experience issues after 2038, and will be unable to use some XFS features (for example, reflinks).
+	// LegacyXFSProgs formats XFS volumes with `bigtime=0,inobtcount=0,reflink=0`, so that they can be mounted onto nodes with linux kernel ≤ v5.4. Volumes formatted with this option may experience issues after 2038, and will be unable to use some XFS features (for example, reflinks).
 	LegacyXFSProgs bool
 	// CsiMountPointPath is the path where CSI volumes are expected to be mounted on the node.
 	CsiMountPointPath string
@@ -113,7 +110,7 @@ func (o *Options) AddFlags(f *flag.FlagSet) {
 	f.StringVar(&o.MetricsCertFile, "metrics-cert-file", "", "The path to a certificate to use for serving the metrics server over HTTPS. If the certificate is signed by a certificate authority, this file should be the concatenation of the server's certificate, any intermediates, and the CA's certificate. If this is non-empty, --http-endpoint and --metrics-key-file MUST also be non-empty.")
 	f.StringVar(&o.MetricsKeyFile, "metrics-key-file", "", "The path to a key to use for serving the metrics server over HTTPS. If this is non-empty, --http-endpoint and --metrics-cert-file MUST also be non-empty.")
 	f.BoolVar(&o.EnableOtelTracing, "enable-otel-tracing", false, "To enable opentelemetry tracing for the driver. The tracing is disabled by default. Configure the exporter endpoint with OTEL_EXPORTER_OTLP_ENDPOINT and other env variables, see https://opentelemetry.io/docs/specs/otel/configuration/sdk-environment-variables/#general-sdk-configuration.")
-	f.StringSliceVar(&o.MetadataSources, "metadata-sources", metadata.DefaultMetadataSources, "Dictates which sources are used to retrieve instance metadata. The driver will attempt to rely on each source in order until one succeeds. Valid options include 'imds', 'kubernetes', and (ALPHA) 'metadata-labeler'.")
+	f.StringSliceVar(&o.MetadataSources, "metadata-sources", metadata.DefaultMetadataSources, "Dictates which sources are used to retrieve instance metadata. The driver will attempt to rely on each source in order until one succeeds. Valid options include 'imds' and 'kubernetes'.")
 
 	// Controller options
 	if o.Mode == AllMode || o.Mode == ControllerMode {
@@ -126,14 +123,13 @@ func (o *Options) AddFlags(f *flag.FlagSet) {
 		f.BoolVar(&o.Batching, "batching", false, "To enable batching of API calls. This is especially helpful for improving performance in workloads that are sensitive to EC2 rate limits.")
 		f.DurationVar(&o.ModifyVolumeRequestHandlerTimeout, "modify-volume-request-handler-timeout", DefaultModifyVolumeRequestHandlerTimeout, "Timeout for the window in which volume modification calls must be received in order for them to coalesce into a single volume modification call to AWS. This must be lower than the csi-resizer and volumemodifier timeouts")
 		f.BoolVar(&o.DeprecatedMetrics, "deprecated-metrics", false, "DEPRECATED: To enable deprecated metrics. This parameter is only for backward compatibility and may be removed in a future release.")
-		f.BoolVar(&o.EnableNodeLocalVolumes, "enable-node-local-volumes", false, "Enable support for node-local volumes that use pre-attached EBS volumes.")
 	}
 	// Node options
 	if o.Mode == AllMode || o.Mode == NodeMode {
 		f.Int64Var(&o.VolumeAttachLimit, "volume-attach-limit", -1, "Value for the maximum number of volumes attachable per node. If specified, the limit applies to all nodes and overrides --reserved-volume-attachments. If not specified, the value is approximated from the instance type.")
 		f.IntVar(&o.ReservedVolumeAttachments, "reserved-volume-attachments", -1, "Number of volume attachments reserved for system use. Not used when --volume-attach-limit is specified. The total amount of volume attachments for a node is computed as: <nr. of attachments for corresponding instance type> - <number of NICs, if relevant to the instance type> - <reserved-volume-attachments value>. When -1, the amount of reserved attachments is loaded from instance metadata that captured state at node boot and may include not only system disks but also CSI volumes.")
 		f.BoolVar(&o.WindowsHostProcess, "windows-host-process", false, "ALPHA: Indicates whether the driver is running in a Windows privileged container")
-		f.BoolVar(&o.LegacyXFSProgs, "legacy-xfs", false, "Warning: This option will be removed in a future version of EBS CSI Driver. Formats XFS volumes with `bigtime=0,inobtcount=0,reflink=0,nrext64=0`, so that they can be mounted onto nodes with linux kernel ≤ v5.4. Volumes formatted with this option may experience issues after 2038, and will be unable to use some XFS features (for example, reflinks).")
+		f.BoolVar(&o.LegacyXFSProgs, "legacy-xfs", false, "Warning: This option will be removed in a future version of EBS CSI Driver. Formats XFS volumes with `bigtime=0,inobtcount=0,reflink=0`, so that they can be mounted onto nodes with linux kernel ≤ v5.4. Volumes formatted with this option may experience issues after 2038, and will be unable to use some XFS features (for example, reflinks).")
 		f.StringVar(&o.CsiMountPointPath, "csi-mount-point-prefix", "", "A prefix of the mountpoints of all CSI-managed volumes. If this value is non-empty, all volumes mounted to a path beginning with the provided value are assumed to be CSI volumes owned by the EBS CSI Driver and safe to treat as such (for example, by exposing volume metrics).")
 	}
 }
@@ -159,7 +155,7 @@ func (o *Options) Validate() error {
 	for i, s := range o.MetadataSources {
 		s = strings.ToLower(strings.TrimSpace(s))
 		switch s {
-		case metadata.SourceIMDS, metadata.SourceK8s, metadata.SourceMetadataLabeler:
+		case metadata.SourceIMDS, metadata.SourceK8s:
 			o.MetadataSources[i] = s
 		default:
 			return metadata.InvalidSourceErr(o.MetadataSources, s)

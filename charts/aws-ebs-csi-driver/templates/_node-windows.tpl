@@ -88,11 +88,7 @@ spec:
             {{- with .Values.node.loggingFormat }}
             - --logging-format={{ . }}
             {{- end }}
-            {{- if .Values.debugLogs }}
-            - --v=7
-            {{- else }}
             - --v={{ .Values.node.logLevel }}
-            {{- end }}
             {{- if .Values.node.otelTracing }}
             - --enable-otel-tracing=true
             {{- end}}
@@ -121,10 +117,6 @@ spec:
             {{- end }}
             {{- if .Values.fips }}
             - name: AWS_USE_FIPS_ENDPOINT
-              value: "true"
-            {{- end }}
-            {{- if .Values.node.serviceAccount.disableMutation }}
-            - name: DISABLE_TAINT_WATCHER
               value: "true"
             {{- end }}
             {{- with .Values.node.env }}
@@ -176,7 +168,6 @@ spec:
             preStop:
               exec:
                 command: ["/bin/aws-ebs-csi-driver", "pre-stop-hook"]
-          terminationMessagePolicy: FallbackToLogsOnError
         - name: node-driver-registrar
           image: {{ printf "%s%s:%s" (default "" .Values.image.containerRegistry) .Values.sidecars.nodeDriverRegistrar.image.repository .Values.sidecars.nodeDriverRegistrar.image.tag }}
           imagePullPolicy: {{ default .Values.image.pullPolicy .Values.sidecars.nodeDriverRegistrar.image.pullPolicy }}
@@ -187,15 +178,10 @@ spec:
           args:
             - --csi-address=$(ADDRESS)
             - --kubelet-registration-path=$(DRIVER_REG_SOCK_PATH)
-            - --http-endpoint=0.0.0.0:9809
           {{- if .Values.node.windowsHostProcess }}
             - --plugin-registration-path=$(PLUGIN_REG_DIR)
           {{- end }}
-            {{- if .Values.debugLogs }}
-            - --v=7
-            {{- else }}
             - --v={{ .Values.sidecars.nodeDriverRegistrar.logLevel }}
-            {{- end }}
           env:
             - name: ADDRESS
             {{- if .Values.node.windowsHostProcess }}
@@ -219,13 +205,15 @@ spec:
             {{- with .Values.sidecars.nodeDriverRegistrar.env }}
             {{- . | toYaml | nindent 12 }}
             {{- end }}
-          ports:
-            - name: healthz
-              containerPort: 9809
-          {{- with .Values.sidecars.nodeDriverRegistrar.livenessProbe }}
           livenessProbe:
-            {{- toYaml . | nindent 12 }}
-          {{- end }}
+            exec:
+              command:
+                - /csi-node-driver-registrar.exe
+                - --kubelet-registration-path=$(DRIVER_REG_SOCK_PATH)
+                - --mode=kubelet-registration-probe
+            initialDelaySeconds: 30
+            timeoutSeconds: 15
+            periodSeconds: 90
           volumeMounts:
             - name: plugin-dir
               mountPath: C:\csi
@@ -237,7 +225,6 @@ spec:
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          terminationMessagePolicy: FallbackToLogsOnError
         - name: liveness-probe
           image: {{ printf "%s%s:%s" (default "" .Values.image.containerRegistry) .Values.sidecars.livenessProbe.image.repository .Values.sidecars.livenessProbe.image.tag }}
           imagePullPolicy: {{ default .Values.image.pullPolicy .Values.sidecars.livenessProbe.image.pullPolicy }}
@@ -258,7 +245,6 @@ spec:
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          terminationMessagePolicy: FallbackToLogsOnError
       {{- if .Values.imagePullSecrets }}
       imagePullSecrets:
       {{- range .Values.imagePullSecrets }}
@@ -298,9 +284,5 @@ spec:
           {{- else }}
           emptyDir: {}
           {{- end }}
-      {{- if .Values.node.dnsConfig }}
-      dnsConfig:
-        {{- toYaml .Values.node.dnsConfig | nindent 8 }}
-      {{- end }}
 {{- end }}
 {{- end }}

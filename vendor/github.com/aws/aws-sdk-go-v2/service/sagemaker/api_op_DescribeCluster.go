@@ -56,15 +56,8 @@ type DescribeClusterOutput struct {
 	// This member is required.
 	InstanceGroups []types.ClusterInstanceGroupDetails
 
-	// The current autoscaling configuration and status for the autoscaler.
-	AutoScaling *types.ClusterAutoScalingConfigOutput
-
 	// The name of the SageMaker HyperPod cluster.
 	ClusterName *string
-
-	// The Amazon Resource Name (ARN) of the IAM role that HyperPod uses for cluster
-	// autoscaling operations.
-	ClusterRole *string
 
 	// The time when the SageMaker Cluster is created.
 	CreationTime *time.Time
@@ -84,11 +77,6 @@ type DescribeClusterOutput struct {
 	// The specialized instance groups for training models like Amazon Nova to be
 	// created in the SageMaker HyperPod cluster.
 	RestrictedInstanceGroups []types.ClusterRestrictedInstanceGroupDetails
-
-	// The current configuration for managed tier checkpointing on the HyperPod
-	// cluster. For example, this shows whether the feature is enabled and the
-	// percentage of cluster memory allocated for checkpoint storage.
-	TieredStorageConfig *types.ClusterTieredStorageConfig
 
 	// Specifies an Amazon Virtual Private Cloud (VPC) that your SageMaker jobs,
 	// hosted models, and compute resources have access to. You can control access to
@@ -197,7 +185,40 @@ func (c *Client) addOperationDescribeClusterMiddlewares(stack *middleware.Stack,
 	if err = addInterceptAttempt(stack, options); err != nil {
 		return err
 	}
-	if err = addInterceptors(stack, options); err != nil {
+	if err = addInterceptExecution(stack, options); err != nil {
+		return err
+	}
+	if err = addInterceptBeforeSerialization(stack, options); err != nil {
+		return err
+	}
+	if err = addInterceptAfterSerialization(stack, options); err != nil {
+		return err
+	}
+	if err = addInterceptBeforeSigning(stack, options); err != nil {
+		return err
+	}
+	if err = addInterceptAfterSigning(stack, options); err != nil {
+		return err
+	}
+	if err = addInterceptTransmit(stack, options); err != nil {
+		return err
+	}
+	if err = addInterceptBeforeDeserialization(stack, options); err != nil {
+		return err
+	}
+	if err = addInterceptAfterDeserialization(stack, options); err != nil {
+		return err
+	}
+	if err = addSpanInitializeStart(stack); err != nil {
+		return err
+	}
+	if err = addSpanInitializeEnd(stack); err != nil {
+		return err
+	}
+	if err = addSpanBuildRequestStart(stack); err != nil {
+		return err
+	}
+	if err = addSpanBuildRequestEnd(stack); err != nil {
 		return err
 	}
 	return nil

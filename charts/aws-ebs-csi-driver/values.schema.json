@@ -13,6 +13,11 @@
       "type": ["boolean", "null"],
       "description": "No effect - reserved for use in sub-charting"
     },
+    "a1CompatibilityDaemonSet": {
+      "type": "boolean",
+      "description": "Enable compatibility for the A1 instance family via use of an AL2-based image in a separate DaemonSet",
+      "default": false
+    },
     "additionalDaemonSets": {
       "type": ["object", "null"],
       "additionalProperties": false,
@@ -103,8 +108,8 @@
     },
     "nodeAllocatableUpdatePeriodSeconds": {
       "type": ["integer", "null"],
-      "description": "nodeAllocatableUpdatePeriodSeconds updates the node's max attachable volume count by directing Kubelet to periodically call NodeGetInfo at the configured interval. Kubernetes enforces a minimum update interval of 10 seconds. A value of -1 uses a automatically determined value dependent on metadata sources. This parameter is supported in Kubernetes 1.33+, the MutableCSINodeAllocatableCount feature gate must be enabled in kubelet and kube-apiserver.",
-      "default": -1
+      "description": "nodeAllocatableUpdatePeriodSeconds updates the node's max attachable volume count by directing Kubelet to periodically call NodeGetInfo at the configured interval. Kubernetes enforces a minimum update interval of 10 seconds. This parameter is supported in Kubernetes 1.33+, the MutableCSINodeAllocatableCount feature gate must be enabled in kubelet and kube-apiserver.",
+      "default": 10
     },
     "nodeComponentOnly": {
       "type": "boolean",
@@ -119,11 +124,6 @@
     "fips": {
       "type": "boolean",
       "description": "Instruct the AWS SDK to use AWS FIPS endpoints, and deploy container built with BoringCrypto (a FIPS-validated cryptographic library) instead of the Go default. The EBS CSI Driver FIPS images have not undergone FIPS certification, and no official guarantee is made about the compliance of these images under the FIPS standard. Users relying on these images for FIPS compliance should perform their own independent evaluation",
-      "default": "false"
-    },
-    "debugLogs": {
-      "type": "boolean",
-      "description": "Set maximum verbosity for logs of each container and other recommended debugging parameters such as enabling AWS SDK debug logging",
       "default": "false"
     },
     "fullnameOverride": {
@@ -298,16 +298,6 @@
               "type": ["string", "null"],
               "description": "Unhealthy pod eviction policy for the EBS CSI Controller Pod's PodDisruptionBudget",
               "default": null
-            },
-            "maxUnavailable": {
-              "type": ["integer", "string", "null"],
-              "description": "Maximum number or percentage of unavailable pods for the PodDisruptionBudget. If non-null, no default value is used for both maxUnavailable and minAvailable.",
-              "default": null
-            },
-            "minAvailable": {
-              "type": ["integer", "string", "null"],
-              "description": "Minimum number or percentage of available pods for the PodDisruptionBudget. If non-null, no default value is used for both maxUnavailable and minAvailable.",
-              "default": null
             }
           }
         },
@@ -477,11 +467,6 @@
               "default": false
             }
           }
-        },
-        "enableNodeLocalVolumes": {
-          "type": "boolean",
-          "description": "Enable support for node-local volumes that use pre-attached EBS volumes",
-          "default": false
         }
       }
     },
@@ -515,6 +500,17 @@
                         "key": "eks.amazonaws.com/compute-type",
                         "operator": "NotIn",
                         "values": ["fargate", "auto", "hybrid"]
+                      },
+                      {
+                        "key": "node.kubernetes.io/instance-type",
+                        "operator": "NotIn",
+                        "values": [
+                          "a1.medium",
+                          "a1.large",
+                          "a1.xlarge",
+                          "a1.2xlarge",
+                          "a1.4xlarge"
+                        ]
                       }
                     ]
                   }
@@ -662,7 +658,7 @@
           "default": false
         },
         "metadataSources": {
-          "description": "Comma separated list of metadata sources that override the default used by the EBS CSI Driver. Valid sources include 'imds', 'kubernetes', and (ALPHA) 'metadata-labeler'",
+          "description": "Comma separated list of metadata sources that override the default used by the EBS CSI Driver. Valid sources include 'imds' and 'kubernetes'",
           "type": ["string", "null"],
           "default": null
         },
@@ -706,11 +702,6 @@
               "type": ["object", "null"],
               "description": "Additional annotations added to the ebs-csi-node-sa service account",
               "default": null
-            },
-            "disableMutation": {
-              "type": ["boolean", "null"],
-              "description": "Disable mutating permissions for the node service account. When enabled, some features of the EBS CSI Driver node pods will not function, such as taint removal. Primarily useful in particularly security-sensitive environments, or on multi-tenant clusters that isolate tenants by node.",
-              "default": false
             }
           }
         },
@@ -772,11 +763,6 @@
             }
           },
           "description": "Enable opentelemetry tracing for the plugin running on the daemonset",
-          "default": null
-        },
-        "dnsConfig": {
-          "type": ["object", "null"],
-          "description": "DNS configuration for the node pods",
           "default": null
         }
       }
@@ -1125,42 +1111,35 @@
             },
             "livenessProbe": {
               "type": "object",
-              "additionalProperties": true
-            }
-          }
-        },
-        "metadataLabeler": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "additionalArgs": {
-              "type": "array",
-              "description": "Additional arguments passed to the metadataLabeler container",
-              "default": [],
-              "items": {
-                "type": "string"
+              "additionalProperties": false,
+              "properties": {
+                "exec": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "command": {
+                      "type": "array",
+                      "default": [
+                        "/csi-node-driver-registrar",
+                        "--kubelet-registration-path=$(DRIVER_REG_SOCK_PATH)",
+                        "--mode=kubelet-registration-probe"
+                      ]
+                    }
+                  }
+                },
+                "initialDelaySeconds": {
+                  "type": "integer",
+                  "default": 30
+                },
+                "periodSeconds": {
+                  "type": "integer",
+                  "default": 90
+                },
+                "timeoutSeconds": {
+                  "type": "integer",
+                  "default": 15
+                }
               }
-            },
-            "resources": {
-              "type": ["object", "null"],
-              "default": null
-            },
-            "enabled": {
-              "type": "boolean",
-              "description": "ALPHA: Enable the metadata-labeler sidecar to label Kubernetes Nodes with information from the EC2 API (e.g. number of ENIs). Also requires using metadata-labeler as the node's metadata source.",
-              "default": false
-            },
-            "logLevel": {
-              "type": "integer",
-              "description": "Set the level of verbosity of the logs",
-              "default": 4
-            },
-            "env": {
-              "type": "array",
-              "default": []
-            },
-            "securityContext": {
-              "type": "object"
             }
           }
         },

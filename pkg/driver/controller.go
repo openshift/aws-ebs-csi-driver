@@ -20,14 +20,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"maps"
 	"strconv"
 	"strings"
-	"time"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/aws/arn"
-	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/awslabs/volume-modifier-for-k8s/pkg/rpc"
 	csi "github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/kubernetes-sigs/aws-ebs-csi-driver/pkg/cloud"
@@ -51,7 +47,6 @@ var (
 	// controllerCaps represents the capability of controller service.
 	controllerCaps = []csi.ControllerServiceCapability_RPC_Type{
 		csi.ControllerServiceCapability_RPC_CREATE_DELETE_VOLUME,
-		csi.ControllerServiceCapability_RPC_CLONE_VOLUME,
 		csi.ControllerServiceCapability_RPC_PUBLISH_UNPUBLISH_VOLUME,
 		csi.ControllerServiceCapability_RPC_CREATE_DELETE_SNAPSHOT,
 		csi.ControllerServiceCapability_RPC_LIST_SNAPSHOTS,
@@ -118,7 +113,6 @@ func (d *ControllerService) CreateVolume(ctx context.Context, req *csi.CreateVol
 		throughput               int32
 		volumeInitializationRate int32
 		isEncrypted              bool
-		encryptedKey             string
 		kmsKeyID                 string
 		tagsToEvaluate           = make([]string, 0)
 		volumeTags               = map[string]string{
@@ -131,7 +125,6 @@ func (d *ControllerService) CreateVolume(ctx context.Context, req *csi.CreateVol
 		numberOfInodes              string
 		ext4BigAlloc                bool
 		ext4ClusterSize             string
-		ext4EncryptionSupport       bool
 		blockAttachUntilInitialized bool
 	)
 
@@ -149,9 +142,6 @@ func (d *ControllerService) CreateVolume(ctx context.Context, req *csi.CreateVol
 				return nil, status.Errorf(codes.InvalidArgument, "Could not parse invalid iopsPerGB: %v", parseIopsPerGBKeyErr)
 			}
 			iopsPerGB = int32(parseIopsPerGBKey)
-			volumeTags[cloud.IOPSPerGBKey] = strconv.Itoa(int(iopsPerGB))
-		case AllowAutoIOPSIncreaseOnModifyKey:
-			volumeTags[cloud.AllowAutoIOPSIncreaseOnModifyKey] = strconv.FormatBool(isTrue(value))
 		case AllowAutoIOPSPerGBIncreaseKey:
 			allowIOPSPerGBIncrease = isTrue(value)
 		case IopsKey:
@@ -174,7 +164,6 @@ func (d *ControllerService) CreateVolume(ctx context.Context, req *csi.CreateVol
 			throughput = int32(parseThroughput)
 		case EncryptedKey:
 			isEncrypted = isTrue(value)
-			encryptedKey = value
 		case KmsKeyIDKey:
 			kmsKeyID = value
 		case PVCNameKey:
@@ -215,8 +204,6 @@ func (d *ControllerService) CreateVolume(ctx context.Context, req *csi.CreateVol
 				return nil, status.Errorf(codes.InvalidArgument, "Could not parse ext4ClusterSize (%s): %v", value, err)
 			}
 			ext4ClusterSize = value
-		case Ext4EncryptionSupportKey:
-			ext4EncryptionSupport = isTrue(value)
 		case BlockAttachUntilInitializedKey:
 			blockAttachUntilInitialized = isTrue(value)
 		default:
@@ -278,15 +265,9 @@ func (d *ControllerService) CreateVolume(ctx context.Context, req *csi.CreateVol
 		return nil, status.Errorf(codes.InvalidArgument, "Invalid tag value: %v", err)
 	}
 
-	// fill volume tags - set cluster tags first so user tags can override them
-	if d.options.KubernetesClusterID != "" {
-		resourceLifecycleTag := ResourceLifecycleTagPrefix + d.options.KubernetesClusterID
-		volumeTags[resourceLifecycleTag] = ResourceLifecycleOwned
-		volumeTags[NameTag] = d.options.KubernetesClusterID + "-dynamic-" + volName
-		volumeTags[KubernetesClusterTag] = d.options.KubernetesClusterID
+	for k, v := range addTags {
+		volumeTags[k] = v
 	}
-
-	maps.Copy(volumeTags, addTags)
 
 	responseCtx := map[string]string{}
 
@@ -326,12 +307,6 @@ func (d *ControllerService) CreateVolume(ctx context.Context, req *csi.CreateVol
 			return nil, err
 		}
 	}
-	if ext4EncryptionSupport {
-		responseCtx[Ext4EncryptionSupportKey] = trueStr
-		if err = validateFormattingOption(volCap, Ext4EncryptionSupportKey, FileSystemConfigs); err != nil {
-			return nil, err
-		}
-	}
 	if blockAttachUntilInitialized {
 		responseCtx[BlockAttachUntilInitializedKey] = trueStr
 	}
@@ -341,57 +316,29 @@ func (d *ControllerService) CreateVolume(ctx context.Context, req *csi.CreateVol
 	}
 
 	snapshotID := ""
-	volumeID := ""
 	volumeSource := req.GetVolumeContentSource()
 	if volumeSource != nil {
-		sourceSnapshot := volumeSource.GetSnapshot()
-		sourceVolume := volumeSource.GetVolume()
-
-		if sourceSnapshot != nil && sourceVolume != nil {
-			return nil, status.Error(codes.InvalidArgument, "Cannot have more than one volume source")
-		}
-
-		if sourceSnapshot == nil && sourceVolume == nil {
+		if _, ok := volumeSource.GetType().(*csi.VolumeContentSource_Snapshot); !ok {
 			return nil, status.Error(codes.InvalidArgument, "Unsupported volumeContentSource type")
 		}
-
-		if sourceSnapshot != nil {
-			snapshotID = sourceSnapshot.GetSnapshotId()
+		sourceSnapshot := volumeSource.GetSnapshot()
+		if sourceSnapshot == nil {
+			return nil, status.Error(codes.InvalidArgument, "Error retrieving snapshot from the volumeContentSource")
 		}
-
-		if sourceVolume != nil {
-			if encryptedKey != "" && !isEncrypted {
-				return nil, status.Error(codes.InvalidArgument, "Cannot make an unencrypted clone")
-			}
-			volumeID = sourceVolume.GetVolumeId()
-		}
+		snapshotID = sourceSnapshot.GetSnapshotId()
 	}
-	var zone string
-	var zoneID string
-	var outpostArn string
-	// create or clone a new volume
-	if volumeID != "" {
-		sourceVolume, err := d.cloud.GetDiskByID(ctx, volumeID)
 
-		if kmsKeyID != "" && sourceVolume.KmsKeyID != kmsKeyID {
-			return nil, status.Errorf(codes.InvalidArgument, "Cannot provision clone with different KMS key than source volume")
-		}
+	// create a new volume
+	zone := pickAvailabilityZone(req.GetAccessibilityRequirements())
+	zoneID := pickAvailabilityZoneID(req.GetAccessibilityRequirements())
+	outpostArn := getOutpostArn(req.GetAccessibilityRequirements())
 
-		if err != nil {
-			return nil, status.Errorf(codes.NotFound, "Error source volume with volumeID %v not found: %v", volumeID, err)
-		}
-
-		err = checkSourceTopology(req.GetAccessibilityRequirements(), sourceVolume.AvailabilityZone, sourceVolume.OutpostArn, sourceVolume.AvailabilityZoneID)
-		if err != nil {
-			return nil, err
-		}
-		zone = sourceVolume.AvailabilityZone
-		zoneID = sourceVolume.AvailabilityZoneID
-		outpostArn = sourceVolume.OutpostArn
-	} else {
-		zone = pickAvailabilityZone(req.GetAccessibilityRequirements())
-		zoneID = pickAvailabilityZoneID(req.GetAccessibilityRequirements())
-		outpostArn = getOutpostArn(req.GetAccessibilityRequirements())
+	// fill volume tags
+	if d.options.KubernetesClusterID != "" {
+		resourceLifecycleTag := ResourceLifecycleTagPrefix + d.options.KubernetesClusterID
+		volumeTags[resourceLifecycleTag] = ResourceLifecycleOwned
+		volumeTags[NameTag] = d.options.KubernetesClusterID + "-dynamic-" + volName
+		volumeTags[KubernetesClusterTag] = d.options.KubernetesClusterID
 	}
 
 	opts := &cloud.DiskOptions{
@@ -408,7 +355,6 @@ func (d *ControllerService) CreateVolume(ctx context.Context, req *csi.CreateVol
 		Encrypted:                isEncrypted,
 		KmsKeyID:                 kmsKeyID,
 		SnapshotID:               snapshotID,
-		SourceVolumeID:           volumeID,
 		MultiAttachEnabled:       multiAttach,
 		VolumeInitializationRate: volumeInitializationRate,
 	}
@@ -417,14 +363,16 @@ func (d *ControllerService) CreateVolume(ctx context.Context, req *csi.CreateVol
 	if err != nil {
 		var errCode codes.Code
 		switch {
+		case errors.Is(err, cloud.ErrNotFound):
+			errCode = codes.NotFound
 		case errors.Is(err, cloud.ErrIdempotentParameterMismatch), errors.Is(err, cloud.ErrAlreadyExists):
 			errCode = codes.AlreadyExists
+		case errors.Is(err, cloud.ErrLimitExceeded):
+			errCode = codes.ResourceExhausted
 		case errors.Is(err, cloud.ErrInvalidArgument):
 			errCode = codes.InvalidArgument
-		case errors.Is(err, cloud.ErrSourceNotFound):
-			errCode = codes.NotFound
 		default:
-			errCode = codes.Aborted
+			errCode = codes.Internal
 		}
 		return nil, status.Errorf(errCode, "Could not create volume %q: %v", volName, err)
 	}
@@ -482,20 +430,12 @@ func validateDeleteVolumeRequest(req *csi.DeleteVolumeRequest) error {
 
 func (d *ControllerService) ControllerPublishVolume(ctx context.Context, req *csi.ControllerPublishVolumeRequest) (*csi.ControllerPublishVolumeResponse, error) {
 	klog.V(4).InfoS("ControllerPublishVolume: called", "args", util.SanitizeRequest(req))
-
-	volumeID := req.GetVolumeId()
-	nodeID := req.GetNodeId()
-
-	if isNodeLocalVolume(volumeID) {
-		if !d.options.EnableNodeLocalVolumes {
-			return nil, status.Error(codes.InvalidArgument, "node-local volumes are not enabled")
-		}
-		return d.controllerPublishVolumeNodeLocal(ctx, req)
-	}
-
 	if err := validateControllerPublishVolumeRequest(req); err != nil {
 		return nil, err
 	}
+
+	volumeID := req.GetVolumeId()
+	nodeID := req.GetNodeId()
 
 	if !d.inFlight.Insert(volumeID + nodeID) {
 		return nil, status.Error(codes.Aborted, fmt.Sprintf(internal.VolumeOperationAlreadyExistsErrorMsg, volumeID))
@@ -553,32 +493,6 @@ func validateControllerPublishVolumeRequest(req *csi.ControllerPublishVolumeRequ
 	return nil
 }
 
-func (d *ControllerService) controllerPublishVolumeNodeLocal(ctx context.Context, req *csi.ControllerPublishVolumeRequest) (*csi.ControllerPublishVolumeResponse, error) {
-	volumeID := req.GetVolumeId()
-	nodeID := req.GetNodeId()
-
-	deviceName := strings.TrimPrefix(volumeID, NodeLocalVolumeHandlePrefix)
-	if deviceName == "" || deviceName == volumeID {
-		return nil, status.Error(codes.InvalidArgument, "invalid node-local volume handle format")
-	}
-	deviceName = "/" + deviceName
-	realVolumeID, err := d.cloud.GetVolumeIDByNodeAndDevice(ctx, nodeID, deviceName)
-	if err != nil {
-		if errors.Is(err, cloud.ErrNotFound) {
-			return nil, status.Errorf(codes.NotFound, "Failed to find volume at device %s on node %s: %v", deviceName, nodeID, err)
-		}
-		return nil, status.Errorf(codes.Internal, "Failed to get volume at device %s on node %s: %v", deviceName, nodeID, err)
-	}
-
-	klog.InfoS("ControllerPublishVolume: resolved node-local volume", "volumeID", volumeID, "realVolumeID", realVolumeID, "nodeID", nodeID, "deviceName", deviceName)
-
-	pvInfo := map[string]string{
-		DevicePathKey: deviceName,
-		VolumeIDKey:   realVolumeID,
-	}
-	return &csi.ControllerPublishVolumeResponse{PublishContext: pvInfo}, nil
-}
-
 func (d *ControllerService) ControllerUnpublishVolume(ctx context.Context, req *csi.ControllerUnpublishVolumeRequest) (*csi.ControllerUnpublishVolumeResponse, error) {
 	klog.V(4).InfoS("ControllerUnpublishVolume: called", "args", util.SanitizeRequest(req))
 
@@ -588,11 +502,6 @@ func (d *ControllerService) ControllerUnpublishVolume(ctx context.Context, req *
 
 	volumeID := req.GetVolumeId()
 	nodeID := req.GetNodeId()
-
-	if isNodeLocalVolume(volumeID) {
-		klog.V(2).InfoS("ControllerUnpublishVolume: node-local mode, skipping detach", "volumeID", volumeID, "nodeID", nodeID)
-		return &csi.ControllerUnpublishVolumeResponse{}, nil
-	}
 
 	if !d.inFlight.Insert(volumeID + nodeID) {
 		return nil, status.Error(codes.Aborted, fmt.Sprintf(internal.VolumeOperationAlreadyExistsErrorMsg, volumeID))
@@ -663,30 +572,15 @@ func (d *ControllerService) ValidateVolumeCapabilities(ctx context.Context, req 
 		return nil, status.Error(codes.InvalidArgument, "Volume capabilities not provided")
 	}
 
-	// Node-local volumes don't need GetDiskByID validation
-	if !isNodeLocalVolume(volumeID) {
-		if _, err := d.cloud.GetDiskByID(ctx, volumeID); err != nil {
-			if errors.Is(err, cloud.ErrNotFound) {
-				return nil, status.Error(codes.NotFound, "Volume not found")
-			}
-			return nil, status.Errorf(codes.Internal, "Could not get volume with ID %q: %v", volumeID, err)
+	if _, err := d.cloud.GetDiskByID(ctx, volumeID); err != nil {
+		if errors.Is(err, cloud.ErrNotFound) {
+			return nil, status.Error(codes.NotFound, "Volume not found")
 		}
+		return nil, status.Errorf(codes.Internal, "Could not get volume with ID %q: %v", volumeID, err)
 	}
 
 	var confirmed *csi.ValidateVolumeCapabilitiesResponse_Confirmed
-	if isNodeLocalVolume(volumeID) {
-		// For node-local volumes, allow RWX
-		valid := true
-		for _, c := range volCaps {
-			if !isValidCapabilityForNodeLocal(c) {
-				valid = false
-				break
-			}
-		}
-		if valid {
-			confirmed = &csi.ValidateVolumeCapabilitiesResponse_Confirmed{VolumeCapabilities: volCaps}
-		}
-	} else if isValidVolumeCapabilities(volCaps) {
+	if isValidVolumeCapabilities(volCaps) {
 		confirmed = &csi.ValidateVolumeCapabilitiesResponse_Confirmed{VolumeCapabilities: volCaps}
 	}
 	return &csi.ValidateVolumeCapabilitiesResponse{
@@ -699,10 +593,6 @@ func (d *ControllerService) ControllerExpandVolume(ctx context.Context, req *csi
 	volumeID := req.GetVolumeId()
 	if len(volumeID) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "Volume ID not provided")
-	}
-
-	if isNodeLocalVolume(volumeID) {
-		return nil, status.Error(codes.InvalidArgument, "node-local volumes cannot be expanded")
 	}
 
 	capRange := req.GetCapacityRange()
@@ -742,10 +632,6 @@ func (d *ControllerService) ControllerModifyVolume(ctx context.Context, req *csi
 	volumeID := req.GetVolumeId()
 	if len(volumeID) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "Volume ID not provided")
-	}
-
-	if isNodeLocalVolume(volumeID) {
-		return nil, status.Error(codes.InvalidArgument, "node-local volumes cannot be modified")
 	}
 
 	options, err := parseModifyVolumeParameters(req.GetMutableParameters())
@@ -798,15 +684,6 @@ func isValidCapability(c *csi.VolumeCapability) bool {
 		klog.InfoS("isValidCapability: access mode is not supported", "accessMode", accessMode)
 		return false
 	}
-}
-
-func isNodeLocalVolume(volumeID string) bool {
-	return strings.HasPrefix(volumeID, NodeLocalVolumeHandlePrefix)
-}
-
-func isValidCapabilityForNodeLocal(c *csi.VolumeCapability) bool {
-	accessMode := c.GetAccessMode().GetMode()
-	return accessMode == SingleNodeWriter || accessMode == MultiNodeMultiWriter
 }
 
 func isBlock(capability *csi.VolumeCapability) bool {
@@ -869,7 +746,6 @@ func (d *ControllerService) CreateSnapshot(ctx context.Context, req *csi.CreateS
 	var vscTags []string
 	var fsrAvailabilityZones []string
 	vsProps := new(template.VolumeSnapshotProps)
-	vsLock := new(cloud.SnapshotLockOptions)
 	for key, value := range req.GetParameters() {
 		switch strings.ToLower(key) {
 		case VolumeSnapshotNameKey:
@@ -887,26 +763,6 @@ func (d *ControllerService) CreateSnapshot(ctx context.Context, req *csi.CreateS
 			} else {
 				return nil, status.Errorf(codes.InvalidArgument, "Invalid parameter value %s is not a valid arn", value)
 			}
-		case LockMode:
-			vsLock.LockMode = types.LockMode(value)
-		case LockDuration:
-			lockDuration, err := strconv.ParseInt(value, 10, 32)
-			if err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, "Could not parse SnapshotLockDuration: %q", value)
-			}
-			vsLock.LockDuration = aws.Int32(int32(lockDuration))
-		case LockExpirationDate:
-			expirationDate, err := time.Parse(time.RFC3339, value)
-			if err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, "Could not parse SnapshotLockExpirationDate: %q", value)
-			}
-			vsLock.ExpirationDate = &expirationDate
-		case LockCoolOffPeriod:
-			lockCoolOffPeriod, err := strconv.ParseInt(value, 10, 32)
-			if err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, "Could not parse SnapshotLockCoolOffPeriod: %q", value)
-			}
-			vsLock.CoolOffPeriod = aws.Int32(int32(lockCoolOffPeriod))
 		default:
 			if strings.HasPrefix(key, TagKeyPrefix) {
 				vscTags = append(vscTags, value)
@@ -930,9 +786,13 @@ func (d *ControllerService) CreateSnapshot(ctx context.Context, req *csi.CreateS
 		snapshotTags[resourceLifecycleTag] = ResourceLifecycleOwned
 		snapshotTags[NameTag] = d.options.KubernetesClusterID + "-dynamic-" + snapshotName
 	}
-	maps.Copy(snapshotTags, d.options.ExtraTags)
+	for k, v := range d.options.ExtraTags {
+		snapshotTags[k] = v
+	}
 
-	maps.Copy(snapshotTags, addTags)
+	for k, v := range addTags {
+		snapshotTags[k] = v
+	}
 
 	opts := &cloud.SnapshotOptions{
 		Tags:       snapshotTags,
@@ -967,18 +827,12 @@ func (d *ControllerService) CreateSnapshot(ctx context.Context, req *csi.CreateS
 	if len(fsrAvailabilityZones) > 0 {
 		_, err := d.cloud.EnableFastSnapshotRestores(ctx, fsrAvailabilityZones, snapshot.SnapshotID)
 		if err != nil {
-			return nil, d.cleanupSnapshotOnError(ctx, snapshot.SnapshotID, snapshotName, err, "Failed to create Fast Snapshot Restores")
+			if _, deleteErr := d.cloud.DeleteSnapshot(ctx, snapshot.SnapshotID); deleteErr != nil {
+				return nil, status.Errorf(codes.Internal, "Could not delete snapshot ID %q: %v", snapshotName, deleteErr)
+			}
+			return nil, status.Errorf(codes.Internal, "Failed to create Fast Snapshot Restores for snapshot ID %q: %v", snapshotName, err)
 		}
 	}
-
-	if vsLock.LockMode != "" || vsLock.LockDuration != nil || vsLock.ExpirationDate != nil || vsLock.CoolOffPeriod != nil {
-		vsLock.SnapshotId = &snapshot.SnapshotID
-		err := d.cloud.LockSnapshot(ctx, vsLock)
-		if err != nil {
-			return nil, d.cleanupSnapshotOnError(ctx, snapshot.SnapshotID, snapshotName, err, "Failed to lock snapshot")
-		}
-	}
-
 	return newCreateSnapshotResponse(snapshot), nil
 }
 
@@ -987,13 +841,8 @@ func validateCreateSnapshotRequest(req *csi.CreateSnapshotRequest) error {
 		return status.Error(codes.InvalidArgument, "Snapshot name not provided")
 	}
 
-	volumeID := req.GetSourceVolumeId()
-	if len(volumeID) == 0 {
+	if len(req.GetSourceVolumeId()) == 0 {
 		return status.Error(codes.InvalidArgument, "Snapshot volume source ID not provided")
-	}
-
-	if isNodeLocalVolume(volumeID) {
-		return status.Error(codes.InvalidArgument, "node-local volumes cannot be snapshotted")
 	}
 	return nil
 }
@@ -1141,51 +990,6 @@ func getOutpostArn(requirement *csi.TopologyRequirement) string {
 	return ""
 }
 
-// Check if source volumes topology matches with clones requisite topology requirements.
-func checkSourceTopology(requirement *csi.TopologyRequirement, sourceVolumeZone string, sourceVolumeOutpostArn string, sourceVolumeZoneID string) error {
-	if requirement.GetRequisite() == nil || requirement == nil {
-		return nil
-	}
-	for _, toplogy := range requirement.GetRequisite() {
-		zone, hasZone := toplogy.GetSegments()[WellKnownZoneTopologyKey]
-		if hasZone && zone == sourceVolumeZone {
-			_, hasOutpost := toplogy.GetSegments()[AwsOutpostIDKey]
-			if hasOutpost {
-				if BuildOutpostArn(toplogy.GetSegments()) == sourceVolumeOutpostArn {
-					return nil
-				}
-			} else {
-				return nil
-			}
-		}
-
-		zone, hasZone = toplogy.GetSegments()[ZoneTopologyKey]
-		if hasZone && zone == sourceVolumeZone {
-			_, hasOutpost := toplogy.GetSegments()[AwsOutpostIDKey]
-			if hasOutpost {
-				if BuildOutpostArn(toplogy.GetSegments()) == sourceVolumeOutpostArn {
-					return nil
-				}
-			} else {
-				return nil
-			}
-		}
-
-		zoneid, hasZoneID := toplogy.GetSegments()[ZoneIDTopologyKey]
-		if hasZoneID && zoneid == sourceVolumeZoneID {
-			_, hasOutpost := toplogy.GetSegments()[AwsOutpostIDKey]
-			if hasOutpost {
-				if BuildOutpostArn(toplogy.GetSegments()) == sourceVolumeOutpostArn {
-					return nil
-				}
-			} else {
-				return nil
-			}
-		}
-	}
-	return status.Errorf(codes.ResourceExhausted, "Cannot provision clone with the specified topology constraints")
-}
-
 func newCreateVolumeResponse(disk *cloud.Disk, ctx map[string]string) *csi.CreateVolumeResponse {
 	var src *csi.VolumeContentSource
 	if disk.SnapshotID != "" {
@@ -1193,16 +997,6 @@ func newCreateVolumeResponse(disk *cloud.Disk, ctx map[string]string) *csi.Creat
 			Type: &csi.VolumeContentSource_Snapshot{
 				Snapshot: &csi.VolumeContentSource_SnapshotSource{
 					SnapshotId: disk.SnapshotID,
-				},
-			},
-		}
-	}
-
-	if disk.SourceVolumeID != "" {
-		src = &csi.VolumeContentSource{
-			Type: &csi.VolumeContentSource_Volume{
-				Volume: &csi.VolumeContentSource_VolumeSource{
-					VolumeId: disk.SourceVolumeID,
 				},
 			},
 		}
@@ -1335,11 +1129,4 @@ func validateFormattingOption(volumeCapabilities []*csi.VolumeCapability, paramN
 
 func isTrue(value string) bool {
 	return value == trueStr
-}
-
-func (d *ControllerService) cleanupSnapshotOnError(ctx context.Context, snapshotID, snapshotName string, originalErr error, errorMsg string) error {
-	if _, deleteErr := d.cloud.DeleteSnapshot(ctx, snapshotID); deleteErr != nil {
-		return status.Errorf(codes.Internal, "Could not delete snapshot ID %q: %v", snapshotName, deleteErr)
-	}
-	return status.Errorf(codes.Internal, "%s for snapshot ID %q: %v", errorMsg, snapshotName, originalErr)
 }

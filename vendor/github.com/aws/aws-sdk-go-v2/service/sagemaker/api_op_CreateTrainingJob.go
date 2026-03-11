@@ -95,11 +95,34 @@ func (c *Client) CreateTrainingJob(ctx context.Context, params *CreateTrainingJo
 
 type CreateTrainingJobInput struct {
 
+	// The registry path of the Docker image that contains the training algorithm and
+	// algorithm-specific metadata, including the input mode. For more information
+	// about algorithms provided by SageMaker, see [Algorithms]. For information about providing
+	// your own algorithms, see [Using Your Own Algorithms with Amazon SageMaker].
+	//
+	// [Algorithms]: https://docs.aws.amazon.com/sagemaker/latest/dg/algos.html
+	// [Using Your Own Algorithms with Amazon SageMaker]: https://docs.aws.amazon.com/sagemaker/latest/dg/your-algorithms.html
+	//
+	// This member is required.
+	AlgorithmSpecification *types.AlgorithmSpecification
+
 	// Specifies the path to the S3 location where you want to store model artifacts.
 	// SageMaker creates subfolders for the artifacts.
 	//
 	// This member is required.
 	OutputDataConfig *types.OutputDataConfig
+
+	// The resources, including the ML compute instances and ML storage volumes, to
+	// use for model training.
+	//
+	// ML storage volumes store model artifacts and incremental states. Training
+	// algorithms might also use ML storage volumes for scratch space. If you want
+	// SageMaker to use the ML storage volume to store the training data, choose File
+	// as the TrainingInputMode in the algorithm specification. For distributed
+	// training algorithms, specify an instance count greater than 1.
+	//
+	// This member is required.
+	ResourceConfig *types.ResourceConfig
 
 	// The Amazon Resource Name (ARN) of an IAM role that SageMaker can assume to
 	// perform tasks on your behalf.
@@ -118,20 +141,23 @@ type CreateTrainingJobInput struct {
 	// This member is required.
 	RoleArn *string
 
+	// Specifies a limit to how long a model training job can run. It also specifies
+	// how long a managed Spot training job has to complete. When the job reaches the
+	// time limit, SageMaker ends the training job. Use this API to cap model training
+	// costs.
+	//
+	// To stop a job, SageMaker sends the algorithm the SIGTERM signal, which delays
+	// job termination for 120 seconds. Algorithms can use this 120-second window to
+	// save the model artifacts, so the results of training are not lost.
+	//
+	// This member is required.
+	StoppingCondition *types.StoppingCondition
+
 	// The name of the training job. The name must be unique within an Amazon Web
 	// Services Region in an Amazon Web Services account.
 	//
 	// This member is required.
 	TrainingJobName *string
-
-	// The registry path of the Docker image that contains the training algorithm and
-	// algorithm-specific metadata, including the input mode. For more information
-	// about algorithms provided by SageMaker, see [Algorithms]. For information about providing
-	// your own algorithms, see [Using Your Own Algorithms with Amazon SageMaker].
-	//
-	// [Algorithms]: https://docs.aws.amazon.com/sagemaker/latest/dg/algos.html
-	// [Using Your Own Algorithms with Amazon SageMaker]: https://docs.aws.amazon.com/sagemaker/latest/dg/your-algorithms.html
-	AlgorithmSpecification *types.AlgorithmSpecification
 
 	// Contains information about the output location for managed spot training
 	// checkpoint data.
@@ -242,12 +268,6 @@ type CreateTrainingJobInput struct {
 	// Your input must be in the same Amazon Web Services region as your training job.
 	InputDataConfig []types.Channel
 
-	//  The MLflow configuration using SageMaker managed MLflow.
-	MlflowConfig *types.MlflowConfig
-
-	//  The configuration for the model package.
-	ModelPackageConfig *types.ModelPackageConfig
-
 	// Configuration information for Amazon SageMaker Debugger system monitoring,
 	// framework profiling, and storage paths.
 	ProfilerConfig *types.ProfilerConfig
@@ -262,36 +282,13 @@ type CreateTrainingJobInput struct {
 	// [Access a training container through Amazon Web Services Systems Manager (SSM) for remote debugging]: https://docs.aws.amazon.com/sagemaker/latest/dg/train-remote-debugging.html
 	RemoteDebugConfig *types.RemoteDebugConfig
 
-	// The resources, including the ML compute instances and ML storage volumes, to
-	// use for model training.
-	//
-	// ML storage volumes store model artifacts and incremental states. Training
-	// algorithms might also use ML storage volumes for scratch space. If you want
-	// SageMaker to use the ML storage volume to store the training data, choose File
-	// as the TrainingInputMode in the algorithm specification. For distributed
-	// training algorithms, specify an instance count greater than 1.
-	ResourceConfig *types.ResourceConfig
-
 	// The number of times to retry the job when the job fails due to an
 	// InternalServerError .
 	RetryStrategy *types.RetryStrategy
 
-	//  The configuration for serverless training jobs.
-	ServerlessJobConfig *types.ServerlessJobConfig
-
 	// Contains information about attribute-based access control (ABAC) for the
 	// training job.
 	SessionChainingConfig *types.SessionChainingConfig
-
-	// Specifies a limit to how long a model training job can run. It also specifies
-	// how long a managed Spot training job has to complete. When the job reaches the
-	// time limit, SageMaker ends the training job. Use this API to cap model training
-	// costs.
-	//
-	// To stop a job, SageMaker sends the algorithm the SIGTERM signal, which delays
-	// job termination for 120 seconds. Algorithms can use this 120-second window to
-	// save the model artifacts, so the results of training are not lost.
-	StoppingCondition *types.StoppingCondition
 
 	// An array of key-value pairs. You can use tags to categorize your Amazon Web
 	// Services resources in different ways, for example, by purpose, owner, or
@@ -428,7 +425,40 @@ func (c *Client) addOperationCreateTrainingJobMiddlewares(stack *middleware.Stac
 	if err = addInterceptAttempt(stack, options); err != nil {
 		return err
 	}
-	if err = addInterceptors(stack, options); err != nil {
+	if err = addInterceptExecution(stack, options); err != nil {
+		return err
+	}
+	if err = addInterceptBeforeSerialization(stack, options); err != nil {
+		return err
+	}
+	if err = addInterceptAfterSerialization(stack, options); err != nil {
+		return err
+	}
+	if err = addInterceptBeforeSigning(stack, options); err != nil {
+		return err
+	}
+	if err = addInterceptAfterSigning(stack, options); err != nil {
+		return err
+	}
+	if err = addInterceptTransmit(stack, options); err != nil {
+		return err
+	}
+	if err = addInterceptBeforeDeserialization(stack, options); err != nil {
+		return err
+	}
+	if err = addInterceptAfterDeserialization(stack, options); err != nil {
+		return err
+	}
+	if err = addSpanInitializeStart(stack); err != nil {
+		return err
+	}
+	if err = addSpanInitializeEnd(stack); err != nil {
+		return err
+	}
+	if err = addSpanBuildRequestStart(stack); err != nil {
+		return err
+	}
+	if err = addSpanBuildRequestEnd(stack); err != nil {
 		return err
 	}
 	return nil
