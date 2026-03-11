@@ -103,12 +103,13 @@ type CreateLabelingJobInput struct {
 	//
 	//   - The name can't end with "-metadata".
 	//
-	//   - If you are using one of the following [built-in task types], the attribute name must end with
-	//   "-ref". If the task type you are using is not listed below, the attribute name
-	//   must not end with "-ref".
+	//   - If you are using one of the [built-in task types]or one of the following, the attribute name
+	//   must end with "-ref".
 	//
-	//   - Verification ( VerificationSemanticSegmentation ) labeling jobs for this
-	//   task type.
+	//   - Image semantic segmentation ( SemanticSegmentation) and adjustment (
+	//   AdjustmentSemanticSegmentation ) labeling jobs for this task type. One
+	//   exception is that verification ( VerificationSemanticSegmentation ) must not
+	//   end with -"ref".
 	//
 	//   - Video frame object detection ( VideoObjectDetection ), and adjustment and
 	//   verification ( AdjustmentVideoObjectDetection ) labeling jobs for this task
@@ -331,40 +332,7 @@ func (c *Client) addOperationCreateLabelingJobMiddlewares(stack *middleware.Stac
 	if err = addInterceptAttempt(stack, options); err != nil {
 		return err
 	}
-	if err = addInterceptExecution(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptBeforeSerialization(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptAfterSerialization(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptBeforeSigning(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptAfterSigning(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptTransmit(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptBeforeDeserialization(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptAfterDeserialization(stack, options); err != nil {
-		return err
-	}
-	if err = addSpanInitializeStart(stack); err != nil {
-		return err
-	}
-	if err = addSpanInitializeEnd(stack); err != nil {
-		return err
-	}
-	if err = addSpanBuildRequestStart(stack); err != nil {
-		return err
-	}
-	if err = addSpanBuildRequestEnd(stack); err != nil {
+	if err = addInterceptors(stack, options); err != nil {
 		return err
 	}
 	return nil

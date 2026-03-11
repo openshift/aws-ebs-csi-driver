@@ -33,14 +33,6 @@ spec:
                 - fargate
                 - auto
                 - hybrid
-              - key: node.kubernetes.io/instance-type
-                operator: NotIn
-                values:
-                - a1.medium
-                - a1.large
-                - a1.xlarge
-                - a1.2xlarge
-                - a1.4xlarge
       nodeSelector:
         kubernetes.io/os: windows
       serviceAccountName: ebs-csi-node-sa
@@ -50,7 +42,7 @@ spec:
         - operator: Exists
       containers:
         - name: ebs-plugin
-          image: public.ecr.aws/ebs-csi-driver/aws-ebs-csi-driver:v1.47.0
+          image: public.ecr.aws/ebs-csi-driver/aws-ebs-csi-driver:v1.54.0
           imagePullPolicy: IfNotPresent
           args:
             - node
@@ -108,27 +100,30 @@ spec:
             preStop:
               exec:
                 command: ["/bin/aws-ebs-csi-driver", "pre-stop-hook"]
+          terminationMessagePolicy: FallbackToLogsOnError
         - name: node-driver-registrar
-          image: public.ecr.aws/csi-components/csi-node-driver-registrar:v2.14.0-eksbuild.5
+          image: public.ecr.aws/csi-components/csi-node-driver-registrar:v2.15.0-eksbuild.3
           imagePullPolicy: IfNotPresent
           args:
             - --csi-address=$(ADDRESS)
             - --kubelet-registration-path=$(DRIVER_REG_SOCK_PATH)
+            - --http-endpoint=0.0.0.0:9809
             - --v=2
           env:
             - name: ADDRESS
               value: unix:/csi/csi.sock
             - name: DRIVER_REG_SOCK_PATH
               value: C:\var\lib\kubelet\plugins\ebs.csi.aws.com\csi.sock
+          ports:
+            - name: healthz
+              containerPort: 9809
           livenessProbe:
-            exec:
-              command:
-                - /csi-node-driver-registrar.exe
-                - --kubelet-registration-path=$(DRIVER_REG_SOCK_PATH)
-                - --mode=kubelet-registration-probe
+            httpGet:
+              path: /healthz
+              port: healthz
             initialDelaySeconds: 30
-            timeoutSeconds: 15
             periodSeconds: 90
+            timeoutSeconds: 15
           volumeMounts:
             - name: plugin-dir
               mountPath: C:\csi
@@ -142,8 +137,9 @@ spec:
             requests:
               cpu: 10m
               memory: 40Mi
+          terminationMessagePolicy: FallbackToLogsOnError
         - name: liveness-probe
-          image: public.ecr.aws/csi-components/livenessprobe:v2.16.0-eksbuild.5
+          image: public.ecr.aws/csi-components/livenessprobe:v2.17.0-eksbuild.3
           imagePullPolicy: IfNotPresent
           args:
             - --csi-address=unix:/csi/csi.sock
@@ -156,6 +152,7 @@ spec:
             requests:
               cpu: 10m
               memory: 40Mi
+          terminationMessagePolicy: FallbackToLogsOnError
       volumes:
         - name: kubelet-dir
           hostPath:

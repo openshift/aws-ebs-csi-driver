@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/kubernetes-sigs/aws-ebs-csi-driver/pkg/cloud"
+	"github.com/kubernetes-sigs/aws-ebs-csi-driver/pkg/util"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -39,6 +40,16 @@ const (
 	invalidTagSpecification     = "CSIVolumeName=extra-tag-value"
 	invalidParameter            = "invalid_parameter"
 )
+
+func init() {
+	// Ensure variables are initialized
+	// TODO: Figure out a cleaner way to do this in tests
+	initVariables()
+	// Need to set these here because we rely on them in ParseModifyVolumeParameters
+	// TODO: Figure out a cleaner method
+	cloud.AllowAutoIOPSIncreaseOnModifyKey = util.GetDriverName() + "/AllowAutoIOPSIncreaseOnModify"
+	cloud.IOPSPerGBKey = util.GetDriverName() + "/IOPSPerGb"
+}
 
 func TestMergeModifyVolumeRequest(t *testing.T) {
 	testCases := []struct {
@@ -151,9 +162,12 @@ func TestParseModifyVolumeParameters(t *testing.T) {
 		{
 			name: "basic params",
 			params: map[string]string{
-				ModificationKeyVolumeType: validType,
-				ModificationKeyIOPS:       validIops,
-				ModificationKeyThroughput: validThroughput,
+				ModificationKeyVolumeType:        validType,
+				ModificationKeyIOPS:              validIops,
+				ModificationKeyThroughput:        validThroughput,
+				AllowAutoIOPSIncreaseOnModifyKey: "true",
+				// IopsPerGB would not be actually allowed if IOPS is set but that is not checked in this function. Just testing that it properly parses it and adds the tag.
+				IopsPerGBKey:              "1000",
 				ModificationAddTag + "_1": validTagSpecificationInput,
 				ModificationAddTag + "_2": "key2={{ .PVCName }}",
 				ModificationAddTag + "_3": "key3={{ .PVCNamespace }}",
@@ -165,9 +179,11 @@ func TestParseModifyVolumeParameters(t *testing.T) {
 			},
 			expectedOptions: &modifyVolumeRequest{
 				modifyDiskOptions: cloud.ModifyDiskOptions{
-					VolumeType: validType,
-					IOPS:       validIopsInt,
-					Throughput: validThroughputInt,
+					VolumeType:                validType,
+					IOPS:                      validIopsInt,
+					Throughput:                validThroughputInt,
+					AllowIopsIncreaseOnResize: true,
+					IOPSPerGB:                 1000,
 				},
 				modifyTagsOptions: cloud.ModifyTagsOptions{
 					TagsToAdd: map[string]string{
@@ -175,6 +191,8 @@ func TestParseModifyVolumeParameters(t *testing.T) {
 						"key2": "ebs-claim",
 						"key3": "test-namespace",
 						"key4": "testPV-Name",
+						util.GetDriverName() + "/AllowAutoIOPSIncreaseOnModify": "true",
+						util.GetDriverName() + "/IOPSPerGb":                     "1000",
 					},
 					TagsToDelete: []string{
 						"key2",

@@ -18,7 +18,6 @@ package sanity
 
 import (
 	"fmt"
-	"os"
 	"path"
 	"testing"
 
@@ -42,17 +41,7 @@ func TestSanity(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	tmpDir, err := os.MkdirTemp("", "csi-sanity-")
-	if err != nil {
-		t.Fatalf("Failed to create sanity temp working dir: %v", err)
-	}
-	defer os.RemoveAll(tmpDir)
-
-	defer func() {
-		if err = os.RemoveAll(tmpDir); err != nil {
-			t.Fatalf("Failed to clean up sanity temp working dir %s: %v", tmpDir, err.Error())
-		}
-	}()
+	tmpDir := t.TempDir()
 
 	endpoint := fmt.Sprintf("unix:%s/csi.sock", tmpDir)
 	mountPath := path.Join(tmpDir, "mount")
@@ -80,7 +69,7 @@ func TestSanity(t *testing.T) {
 		Resource:  "op-1234567890abcdef0",
 	}
 
-	drv, err := driver.NewDriver(newFakeCloud(*fakeMetadata, mountPath), driverOptions, newFakeMounter(), newFakeMetadataService(instanceID, region, availabilityZone, *outpostArn), nil)
+	drv, err := driver.NewDriver(newFakeCloud(fakeMetadata, mountPath), driverOptions, newFakeMounter(), newFakeMetadataService(instanceID, region, availabilityZone, *outpostArn), nil)
 	if err != nil {
 		t.Fatalf("Failed to create fake driver: %v", err.Error())
 	}

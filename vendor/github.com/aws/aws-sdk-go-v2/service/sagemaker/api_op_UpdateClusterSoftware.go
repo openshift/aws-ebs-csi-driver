@@ -54,7 +54,7 @@ type UpdateClusterSoftwareInput struct {
 	//
 	//   - default : Use the default latest system image
 	//
-	// f you choose to use a custom AMI ( CustomAmiId ), ensure it meets the following
+	// If you choose to use a custom AMI ( CustomAmiId ), ensure it meets the following
 	// requirements:
 	//
 	//   - Encryption: The custom AMI must be unencrypted.
@@ -67,7 +67,9 @@ type UpdateClusterSoftwareInput struct {
 	//
 	// When updating the instance group's AMI through the UpdateClusterSoftware
 	// operation, if an instance group uses a custom AMI, you must provide an ImageId
-	// or use the default as input.
+	// or use the default as input. Note that if you don't specify an instance group in
+	// your UpdateClusterSoftware request, then all of the instance groups are patched
+	// with the specified image.
 	ImageId *string
 
 	// The array of instance groups for which to update AMI versions.
@@ -184,40 +186,7 @@ func (c *Client) addOperationUpdateClusterSoftwareMiddlewares(stack *middleware.
 	if err = addInterceptAttempt(stack, options); err != nil {
 		return err
 	}
-	if err = addInterceptExecution(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptBeforeSerialization(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptAfterSerialization(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptBeforeSigning(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptAfterSigning(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptTransmit(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptBeforeDeserialization(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptAfterDeserialization(stack, options); err != nil {
-		return err
-	}
-	if err = addSpanInitializeStart(stack); err != nil {
-		return err
-	}
-	if err = addSpanInitializeEnd(stack); err != nil {
-		return err
-	}
-	if err = addSpanBuildRequestStart(stack); err != nil {
-		return err
-	}
-	if err = addSpanBuildRequestEnd(stack); err != nil {
+	if err = addInterceptors(stack, options); err != nil {
 		return err
 	}
 	return nil

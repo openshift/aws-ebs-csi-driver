@@ -29,6 +29,9 @@ test-e2e-single-az)
 test-e2e-multi-az)
   TEST="multi-az"
   ;;
+test-e2e-disruptive)
+  TEST="disruptive"
+  ;;
 test-e2e-external)
   TEST="external"
   ;;
@@ -44,13 +47,6 @@ test-e2e-external-arm64)
   ;;
 test-e2e-external-eks)
   TEST="external"
-  export CLUSTER_TYPE="eksctl"
-  ;;
-test-e2e-external-a1-eks)
-  TEST="external-a1-eks"
-  export K8S_VERSION_EKSCTL="1.30"
-  export INSTANCE_TYPE="a1.large"
-  export IMAGE_ARCH="arm64"
   export CLUSTER_TYPE="eksctl"
   ;;
 test-e2e-external-eks-bottlerocket)

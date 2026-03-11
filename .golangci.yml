@@ -65,6 +65,7 @@ linters:
     - varnamelen # Long var names happen
     - wsl # Too strict of a whitespace linter
     - wsl_v5 # Too strict
+    - prealloc # Many false positives
     # Consider adding in future
     - err113 # Do not create errors dynamically from scratch. Instead, wrap static (package-level) error.
     - wrapcheck # Same as err113
@@ -76,6 +77,16 @@ linters:
     - noinlineerr # We use inline errors
     - embeddedstructfieldcheck # We have a few instances of this
   settings:
+    forbidigo:
+      forbid:
+        # Forbid testing anti-patterns Any/AssignableToTypeOf
+        - pattern: ^gomock\.Any$
+          msg: gomock.Any() is forbidden. Use gomock.Eq() or testutil matchers instead.
+        - pattern: ^gomock\.AssignableToTypeOf$
+          msg: gomock.AssignableToTypeOf() is forbidden. Use gomock.Eq() or testutil matchers instead.
+        # Default pattern, keep it enabled
+        - pattern: ^(fmt\.Print(|f|ln)|print|println)$
+          msg: Printing using fmt is forbidden. Use klog instead.
     revive:
       rules:
         # Using += 1 instead of ++ is fine
@@ -96,11 +107,12 @@ linters:
       - comments
       - common-false-positives
       - legacy
-      - std-error-handling
     rules:
       # gosec recommends ignoring test files
+      # also, allow init() in unit tests
       - linters:
           - gosec
+          - gochecknoinits
         path: (.+)_test.go
       - linters:
           - gosec

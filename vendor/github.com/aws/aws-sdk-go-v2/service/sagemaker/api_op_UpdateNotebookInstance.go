@@ -14,6 +14,14 @@ import (
 // Updates a notebook instance. NotebookInstance updates include upgrading or
 // downgrading the ML compute instance used for your notebook instance to
 // accommodate changes in your workload requirements.
+//
+// This API can attach lifecycle configurations to notebook instances. Lifecycle
+// configuration scripts execute with root access and the notebook instance's IAM
+// execution role privileges. Principals with this permission and access to
+// lifecycle configurations can execute code with the execution role's credentials.
+// See [Customize a Notebook Instance Using a Lifecycle Configuration Script]for security best practices.
+//
+// [Customize a Notebook Instance Using a Lifecycle Configuration Script]: https://docs.aws.amazon.com/sagemaker/latest/dg/notebook-lifecycle-config.html
 func (c *Client) UpdateNotebookInstance(ctx context.Context, params *UpdateNotebookInstanceInput, optFns ...func(*Options)) (*UpdateNotebookInstanceOutput, error) {
 	if params == nil {
 		params = &UpdateNotebookInstanceInput{}
@@ -94,11 +102,20 @@ type UpdateNotebookInstanceInput struct {
 	// The Amazon ML compute instance type.
 	InstanceType types.InstanceType
 
+	// The IP address type for the notebook instance. Specify ipv4 for IPv4-only
+	// connectivity or dualstack for both IPv4 and IPv6 connectivity. The notebook
+	// instance must be stopped before updating this setting. When you specify
+	// dualstack , the subnet must support IPv6 addressing.
+	IpAddressType types.IPAddressType
+
 	// The name of a lifecycle configuration to associate with the notebook instance.
 	// For information about lifestyle configurations, see [Step 2.1: (Optional) Customize a Notebook Instance].
 	//
 	// [Step 2.1: (Optional) Customize a Notebook Instance]: https://docs.aws.amazon.com/sagemaker/latest/dg/notebook-lifecycle-config.html
 	LifecycleConfigName *string
+
+	// The platform identifier of the notebook instance runtime environment.
+	PlatformIdentifier *string
 
 	// The Amazon Resource Name (ARN) of the IAM role that SageMaker AI can assume to
 	// access the notebook instance. For more information, see [SageMaker AI Roles].
@@ -228,40 +245,7 @@ func (c *Client) addOperationUpdateNotebookInstanceMiddlewares(stack *middleware
 	if err = addInterceptAttempt(stack, options); err != nil {
 		return err
 	}
-	if err = addInterceptExecution(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptBeforeSerialization(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptAfterSerialization(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptBeforeSigning(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptAfterSigning(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptTransmit(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptBeforeDeserialization(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptAfterDeserialization(stack, options); err != nil {
-		return err
-	}
-	if err = addSpanInitializeStart(stack); err != nil {
-		return err
-	}
-	if err = addSpanInitializeEnd(stack); err != nil {
-		return err
-	}
-	if err = addSpanBuildRequestStart(stack); err != nil {
-		return err
-	}
-	if err = addSpanBuildRequestEnd(stack); err != nil {
+	if err = addInterceptors(stack, options); err != nil {
 		return err
 	}
 	return nil

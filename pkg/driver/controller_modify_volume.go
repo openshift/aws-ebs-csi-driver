@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"reflect"
 	"strconv"
 	"strings"
@@ -36,7 +37,7 @@ import (
 
 const (
 	ModificationKeyVolumeType = "type"
-	// Retained for backwards compatibility, but not recommended.
+	// DeprecatedModificationKeyVolumeType is retained for backwards compatibility, but not recommended.
 	DeprecatedModificationKeyVolumeType = "volumeType"
 
 	ModificationKeyIOPS = "iops"
@@ -146,11 +147,17 @@ func executeModifyVolumeRequest(c cloud.Cloud) func(string, modifyVolumeRequest)
 		if err != nil {
 			return 0, err
 		}
-		if (req.modifyDiskOptions.IOPS != 0) || (req.modifyDiskOptions.Throughput != 0) || (req.modifyDiskOptions.VolumeType != "") || (req.newSize != 0) {
+
+		if (req.modifyDiskOptions.IOPS != 0) || (req.modifyDiskOptions.Throughput != 0) || (req.modifyDiskOptions.VolumeType != "") || (req.newSize != 0) || (req.modifyDiskOptions.IOPSPerGB != 0) {
 			actualSizeGiB, err := c.ResizeOrModifyDisk(ctx, volumeID, req.newSize, &req.modifyDiskOptions)
 			if err != nil {
 				switch {
 				case errors.Is(err, cloud.ErrInvalidArgument):
+					// Returning Internal error instead of InvaliArgument because at this point any tag modifications have succeeded.
+					// It would not be correct to return an error that is considered infeasible by the resizer if the volume was already modified in any way.
+					if len(req.modifyTagsOptions.TagsToAdd) > 0 || len(req.modifyTagsOptions.TagsToDelete) > 0 {
+						return 0, status.Errorf(codes.Internal, "Could not modify volume (invalid argument) %q: %v", volumeID, err)
+					}
 					return 0, status.Errorf(codes.InvalidArgument, "Could not modify volume (invalid argument) %q: %v", volumeID, err)
 				case errors.Is(err, cloud.ErrNotFound):
 					return 0, status.Errorf(codes.NotFound, "Could not modify volume (not found) %q: %v", volumeID, err)
@@ -176,6 +183,7 @@ func parseModifyVolumeParameters(params map[string]string) (*modifyVolumeRequest
 		},
 	}
 	var rawTagsToAdd []string
+	var noValidationTags = make(map[string]string)
 	tProps := new(template.PVProps)
 	for key, value := range params {
 		switch key {
@@ -200,6 +208,16 @@ func parseModifyVolumeParameters(params map[string]string) (*modifyVolumeRequest
 			options.modifyDiskOptions.VolumeType = value
 		case ModificationKeyVolumeType:
 			options.modifyDiskOptions.VolumeType = value
+		case IopsPerGBKey:
+			noValidationTags[cloud.IOPSPerGBKey] = value
+			iopsPerGb, err := strconv.ParseInt(value, 10, 32)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "Could not parse IopsPerGb: %q", value)
+			}
+			options.modifyDiskOptions.IOPSPerGB = int32(iopsPerGb)
+		case AllowAutoIOPSIncreaseOnModifyKey:
+			noValidationTags[cloud.AllowAutoIOPSIncreaseOnModifyKey] = value
+			options.modifyDiskOptions.AllowIopsIncreaseOnResize = isTrue(value)
 		case PVCNameKey:
 			tProps.PVCName = value
 		case PVCNamespaceKey:
@@ -224,6 +242,7 @@ func parseModifyVolumeParameters(params map[string]string) (*modifyVolumeRequest
 	if err := validateExtraTags(addTags, false); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "Invalid tag value: %v", err)
 	}
+	maps.Copy(addTags, noValidationTags)
 	options.modifyTagsOptions.TagsToAdd = addTags
 	return &options, nil
 }

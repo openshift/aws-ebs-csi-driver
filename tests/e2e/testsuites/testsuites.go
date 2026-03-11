@@ -21,9 +21,13 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	volumesnapshotv1 "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1"
 	snapshotclientset "github.com/kubernetes-csi/external-snapshotter/client/v4/clientset/versioned"
 	awscloud "github.com/kubernetes-sigs/aws-ebs-csi-driver/pkg/cloud"
+	"github.com/kubernetes-sigs/aws-ebs-csi-driver/pkg/util"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	apps "k8s.io/api/apps/v1"
@@ -169,7 +173,7 @@ func (t *TestVolumeSnapshotClass) CreateStaticVolumeSnapshotContent(snapshotID s
 				Name:      volumeSnapshotNameStatic,
 				Namespace: t.namespace.Name,
 			},
-			Driver: "ebs.csi.aws.com",
+			Driver: util.GetDriverName(),
 			Source: volumesnapshotv1.VolumeSnapshotContentSource{
 				SnapshotHandle: aws.String(snapshotID),
 			},
@@ -199,6 +203,37 @@ func (t *TestVolumeSnapshotClass) ReadyToUse(snapshot *volumesnapshotv1.VolumeSn
 		return *vs.Status.ReadyToUse, nil
 	})
 	framework.ExpectNoError(err)
+}
+
+func (t *TestVolumeSnapshotClass) unlockSnapshot(vs *volumesnapshotv1.VolumeSnapshot) {
+	By("Unlocking Volume Snapshot " + vs.Name)
+	cfg, err := config.LoadDefaultConfig(context.Background())
+	if err != nil {
+		By(fmt.Sprintf("Failed to load AWS config, skipping unlock: %v", err))
+		return
+	}
+	ec2Client := ec2.NewFromConfig(cfg)
+
+	result, err := ec2Client.DescribeSnapshots(context.Background(), &ec2.DescribeSnapshotsInput{
+		Filters: []types.Filter{
+			{
+				Name:   aws.String("tag:" + awscloud.SnapshotNameTagKey),
+				Values: []string{"snapshot-" + string(vs.UID)},
+			},
+		},
+	})
+	if err != nil || len(result.Snapshots) == 0 {
+		return // Snapshot not found or error, skip unlock
+	}
+
+	snapshotId := *result.Snapshots[0].SnapshotId
+
+	_, err = ec2Client.UnlockSnapshot(context.Background(), &ec2.UnlockSnapshotInput{
+		SnapshotId: aws.String(snapshotId),
+	})
+	if err != nil {
+		By(fmt.Sprintf("Failed to unlock snapshot %s: %v", snapshotId, err))
+	}
 }
 
 func (t *TestVolumeSnapshotClass) DeleteSnapshot(vs *volumesnapshotv1.VolumeSnapshot) {
@@ -373,7 +408,7 @@ func (t *TestPersistentVolumeClaim) ValidateProvisionedPersistentVolume() {
 
 			keyFound := false
 			for _, v := range t.persistentVolume.Spec.NodeAffinity.Required.NodeSelectorTerms[0].MatchExpressions {
-				if v.Key == "topology.ebs.csi.aws.com/zone" {
+				if v.Key == "topology"+util.GetDriverName()+"/zone" {
 					keyFound = true
 					Expect(v.Key).To(Equal(t.storageClass.AllowedTopologies[0].MatchLabelExpressions[0].Key))
 				}

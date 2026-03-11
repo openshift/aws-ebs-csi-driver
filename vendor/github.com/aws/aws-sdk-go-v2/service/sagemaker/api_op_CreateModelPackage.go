@@ -135,6 +135,9 @@ type CreateModelPackageInput struct {
 	// versioned models.
 	ModelPackageName *string
 
+	//  The package registration type of the model package input.
+	ModelPackageRegistrationType types.ModelPackageRegistrationType
+
 	// The Amazon Simple Storage Service (Amazon S3) path where the sample payload is
 	// stored. This path must point to a single gzip compressed tar archive (.tar.gz
 	// suffix). This archive can hold multiple files that are all equally used in the
@@ -294,40 +297,7 @@ func (c *Client) addOperationCreateModelPackageMiddlewares(stack *middleware.Sta
 	if err = addInterceptAttempt(stack, options); err != nil {
 		return err
 	}
-	if err = addInterceptExecution(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptBeforeSerialization(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptAfterSerialization(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptBeforeSigning(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptAfterSigning(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptTransmit(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptBeforeDeserialization(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptAfterDeserialization(stack, options); err != nil {
-		return err
-	}
-	if err = addSpanInitializeStart(stack); err != nil {
-		return err
-	}
-	if err = addSpanInitializeEnd(stack); err != nil {
-		return err
-	}
-	if err = addSpanBuildRequestStart(stack); err != nil {
-		return err
-	}
-	if err = addSpanBuildRequestEnd(stack); err != nil {
+	if err = addInterceptors(stack, options); err != nil {
 		return err
 	}
 	return nil

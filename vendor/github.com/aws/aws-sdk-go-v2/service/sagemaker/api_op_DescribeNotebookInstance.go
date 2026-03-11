@@ -94,6 +94,10 @@ type DescribeNotebookInstanceOutput struct {
 	// The type of ML compute instance running on the notebook instance.
 	InstanceType types.InstanceType
 
+	// The IP address type configured for the notebook instance. Returns ipv4 for
+	// IPv4-only connectivity or dualstack for both IPv4 and IPv6 connectivity.
+	IpAddressType types.IPAddressType
+
 	// The Amazon Web Services KMS key ID SageMaker AI uses to encrypt data when
 	// storing it on the ML storage volume attached to the instance.
 	KmsKeyId *string
@@ -248,40 +252,7 @@ func (c *Client) addOperationDescribeNotebookInstanceMiddlewares(stack *middlewa
 	if err = addInterceptAttempt(stack, options); err != nil {
 		return err
 	}
-	if err = addInterceptExecution(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptBeforeSerialization(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptAfterSerialization(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptBeforeSigning(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptAfterSigning(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptTransmit(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptBeforeDeserialization(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptAfterDeserialization(stack, options); err != nil {
-		return err
-	}
-	if err = addSpanInitializeStart(stack); err != nil {
-		return err
-	}
-	if err = addSpanInitializeEnd(stack); err != nil {
-		return err
-	}
-	if err = addSpanBuildRequestStart(stack); err != nil {
-		return err
-	}
-	if err = addSpanBuildRequestEnd(stack); err != nil {
+	if err = addInterceptors(stack, options); err != nil {
 		return err
 	}
 	return nil

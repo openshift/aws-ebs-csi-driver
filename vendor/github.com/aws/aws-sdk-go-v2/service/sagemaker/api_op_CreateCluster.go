@@ -11,10 +11,11 @@ import (
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
-// Creates a SageMaker HyperPod cluster. SageMaker HyperPod is a capability of
-// SageMaker for creating and managing persistent clusters for developing large
-// machine learning models, such as large language models (LLMs) and diffusion
-// models. To learn more, see [Amazon SageMaker HyperPod]in the Amazon SageMaker Developer Guide.
+// Creates an Amazon SageMaker HyperPod cluster. SageMaker HyperPod is a
+// capability of SageMaker for creating and managing persistent clusters for
+// developing large machine learning models, such as large language models (LLMs)
+// and diffusion models. To learn more, see [Amazon SageMaker HyperPod]in the Amazon SageMaker Developer
+// Guide.
 //
 // [Amazon SageMaker HyperPod]: https://docs.aws.amazon.com/sagemaker/latest/dg/sagemaker-hyperpod.html
 func (c *Client) CreateCluster(ctx context.Context, params *CreateClusterInput, optFns ...func(*Options)) (*CreateClusterOutput, error) {
@@ -38,6 +39,17 @@ type CreateClusterInput struct {
 	//
 	// This member is required.
 	ClusterName *string
+
+	// The autoscaling configuration for the cluster. Enables automatic scaling of
+	// cluster nodes based on workload demand using a Karpenter-based system.
+	AutoScaling *types.ClusterAutoScalingConfig
+
+	// The Amazon Resource Name (ARN) of the IAM role that HyperPod assumes to perform
+	// cluster autoscaling operations. This role must have permissions for
+	// sagemaker:BatchAddClusterNodes and sagemaker:BatchDeleteClusterNodes . This is
+	// only required when autoscaling is enabled and when HyperPod is performing
+	// autoscaling operations.
+	ClusterRole *string
 
 	// The instance groups to be created in the SageMaker HyperPod cluster.
 	InstanceGroups []types.ClusterInstanceGroupSpecification
@@ -75,6 +87,12 @@ type CreateClusterInput struct {
 	//
 	// [Tagging Amazon Web Services Resources User Guide]: https://docs.aws.amazon.com/tag-editor/latest/userguide/tagging.html
 	Tags []types.Tag
+
+	// The configuration for managed tier checkpointing on the HyperPod cluster. When
+	// enabled, this feature uses a multi-tier storage approach for storing model
+	// checkpoints, providing faster checkpoint operations and improved fault tolerance
+	// across cluster nodes.
+	TieredStorageConfig *types.ClusterTieredStorageConfig
 
 	// Specifies the Amazon Virtual Private Cloud (VPC) that is associated with the
 	// Amazon SageMaker HyperPod cluster. You can control access to and from your
@@ -216,40 +234,7 @@ func (c *Client) addOperationCreateClusterMiddlewares(stack *middleware.Stack, o
 	if err = addInterceptAttempt(stack, options); err != nil {
 		return err
 	}
-	if err = addInterceptExecution(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptBeforeSerialization(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptAfterSerialization(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptBeforeSigning(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptAfterSigning(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptTransmit(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptBeforeDeserialization(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptAfterDeserialization(stack, options); err != nil {
-		return err
-	}
-	if err = addSpanInitializeStart(stack); err != nil {
-		return err
-	}
-	if err = addSpanInitializeEnd(stack); err != nil {
-		return err
-	}
-	if err = addSpanBuildRequestStart(stack); err != nil {
-		return err
-	}
-	if err = addSpanBuildRequestEnd(stack); err != nil {
+	if err = addInterceptors(stack, options); err != nil {
 		return err
 	}
 	return nil

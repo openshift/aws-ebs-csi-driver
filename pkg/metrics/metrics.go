@@ -21,15 +21,18 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"golang.org/x/time/rate"
 	"k8s.io/klog/v2"
 )
 
 const (
-	namespace = "aws_ebs_csi_"
+	namespace        = "aws_ebs_csi_"
+	metricsRateLimit = 5  // requests per second
+	metricsRateBurst = 10 // burst capacity
 )
 
 var (
-	r          *metricRecorder // singleton instance of metricRecorder
+	r          *MetricRecorder // singleton instance of metricRecorder
 	once       sync.Once
 	operations = []string{
 		"CreateVolume",
@@ -51,36 +54,36 @@ var (
 	}
 )
 
-type metricRecorder struct {
+type MetricRecorder struct {
 	registry        *prometheus.Registry
-	metrics         map[string]interface{}
+	metrics         map[string]any
 	asyncEC2Metrics *AsyncEC2Collector
 }
 
 // Recorder returns the singleton instance of metricRecorder.
 // nil is returned if the recorder is not initialized.
-func Recorder() *metricRecorder {
+func Recorder() *MetricRecorder {
 	return r
 }
 
 // InitializeRecorder initializes a new metricRecorder instance if it hasn't been initialized.
-func InitializeRecorder(deprecatedMetrics bool) *metricRecorder {
+func InitializeRecorder(deprecatedMetrics bool) (*MetricRecorder, *prometheus.Registry) {
 	once.Do(func() {
-		r = &metricRecorder{
+		r = &MetricRecorder{
 			registry: prometheus.NewRegistry(),
-			metrics:  make(map[string]interface{}),
+			metrics:  make(map[string]any),
 		}
 	})
-	return r
+	return r, r.registry
 }
 
 // InitializeNVME registers the NVMe collector for gathering metrics from NVMe devices.
-func (m *metricRecorder) InitializeNVME(csiMountPointPath, instanceID string) {
+func (m *MetricRecorder) InitializeNVME(csiMountPointPath, instanceID string) {
 	registerNVMECollector(r, csiMountPointPath, instanceID)
 }
 
 // InitializeAsyncEC2Metrics initializes and registers AsyncEC2Collector for gathering metrics on async EC2 operations.
-func (m *metricRecorder) InitializeAsyncEC2Metrics(minimumEmissionThreshold time.Duration) {
+func (m *MetricRecorder) InitializeAsyncEC2Metrics(minimumEmissionThreshold time.Duration) {
 	variableLabels := []string{"volume_id", "instance_id", "attachment_state"}
 	cacheCleanupInterval := 15 * time.Minute
 
@@ -120,7 +123,7 @@ func AsyncEC2Metrics() *AsyncEC2Collector {
 }
 
 // IncreaseCount increases the counter metric by 1.
-func (m *metricRecorder) IncreaseCount(name string, helpText string, labels map[string]string) {
+func (m *MetricRecorder) IncreaseCount(name string, helpText string, labels map[string]string) {
 	if m == nil {
 		return // recorder is not initialized
 	}
@@ -143,7 +146,7 @@ func (m *metricRecorder) IncreaseCount(name string, helpText string, labels map[
 }
 
 // ObserveHistogram records the given value in the histogram metric.
-func (m *metricRecorder) ObserveHistogram(name string, helpText string, value float64, labels map[string]string, buckets []float64) {
+func (m *MetricRecorder) ObserveHistogram(name string, helpText string, value float64, labels map[string]string, buckets []float64) {
 	if m == nil {
 		return // recorder is not initialized
 	}
@@ -164,15 +167,28 @@ func (m *metricRecorder) ObserveHistogram(name string, helpText string, value fl
 	}
 }
 
+// rateLimitMiddleware applies rate limiting to metric HTTP requests.
+func rateLimitMiddleware(limiter *rate.Limiter, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !limiter.Allow() {
+			http.Error(w, "Rate limit exceeded", http.StatusTooManyRequests)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
 // InitializeMetricsHandler starts a new HTTP server to expose the metrics.
-func (m *metricRecorder) InitializeMetricsHandler(address, path, certFile, keyFile string) {
+func (m *MetricRecorder) InitializeMetricsHandler(address, path, certFile, keyFile string) {
 	if m == nil {
 		klog.InfoS("InitializeMetricsHandler: metric recorder is not initialized")
 		return
 	}
 
+	limiter := rate.NewLimiter(metricsRateLimit, metricsRateBurst)
 	mux := http.NewServeMux()
-	mux.Handle(path, promhttp.HandlerFor(m.registry, promhttp.HandlerOpts{ErrorHandling: promhttp.ContinueOnError}))
+	metricsHandler := promhttp.HandlerFor(m.registry, promhttp.HandlerOpts{ErrorHandling: promhttp.ContinueOnError})
+	mux.Handle(path, rateLimitMiddleware(limiter, metricsHandler))
 
 	server := &http.Server{
 		Addr:        address,
@@ -197,7 +213,7 @@ func (m *metricRecorder) InitializeMetricsHandler(address, path, certFile, keyFi
 	}()
 }
 
-func (m *metricRecorder) registerHistogramVec(name, help string, labels []string, buckets []float64) *prometheus.HistogramVec {
+func (m *MetricRecorder) registerHistogramVec(name, help string, labels []string, buckets []float64) *prometheus.HistogramVec {
 	if metric, exists := m.metrics[name]; exists {
 		if histogramVec, ok := metric.(*prometheus.HistogramVec); ok {
 			return histogramVec
@@ -218,7 +234,7 @@ func (m *metricRecorder) registerHistogramVec(name, help string, labels []string
 	return histogram
 }
 
-func (m *metricRecorder) registerCounterVec(name, help string, labels []string) {
+func (m *MetricRecorder) registerCounterVec(name, help string, labels []string) {
 	if _, exists := m.metrics[name]; exists {
 		return
 	}
@@ -241,7 +257,7 @@ func getLabelNames(labels map[string]string) []string {
 	return names
 }
 
-func (m *metricRecorder) initializeMetricWithOperations(name, help string, labelNames []string) {
+func (m *MetricRecorder) initializeMetricWithOperations(name, help string, labelNames []string) {
 	if _, exists := m.metrics[name]; !exists {
 		metric := m.registerHistogramVec(name, help, labelNames, nil)
 		for _, op := range operations {
@@ -251,7 +267,7 @@ func (m *metricRecorder) initializeMetricWithOperations(name, help string, label
 }
 
 // InitializeAPIMetrics registers and initializes any `aws_ebs_csi` metric that has known label values on driver startup. Setting deprecatedMetrics to true also initializes deprecated metrics.
-func (m *metricRecorder) InitializeAPIMetrics(deprecatedMetrics bool) {
+func (m *MetricRecorder) InitializeAPIMetrics(deprecatedMetrics bool) {
 	labelNames := []string{"request"}
 	m.initializeMetricWithOperations(
 		APIRequestDuration,

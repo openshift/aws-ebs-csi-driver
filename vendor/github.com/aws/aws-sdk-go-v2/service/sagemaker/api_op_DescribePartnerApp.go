@@ -35,6 +35,10 @@ type DescribePartnerAppInput struct {
 	// This member is required.
 	Arn *string
 
+	// When set to TRUE , the response includes available upgrade information for the
+	// SageMaker Partner AI App. Default is FALSE .
+	IncludeAvailableUpgrade *bool
+
 	noSmithyDocumentSerde
 }
 
@@ -49,12 +53,24 @@ type DescribePartnerAppOutput struct {
 	// The authorization type that users use to access the SageMaker Partner AI App.
 	AuthType types.PartnerAppAuthType
 
+	// A map of available minor version upgrades for the SageMaker Partner AI App. The
+	// key is the semantic version number, and the value is a list of release notes for
+	// that version. A null value indicates no upgrades are available.
+	AvailableUpgrade *types.AvailableUpgrade
+
 	// The URL of the SageMaker Partner AI App that the Application SDK uses to
 	// support in-app calls for the user.
 	BaseUrl *string
 
 	// The time that the SageMaker Partner AI App was created.
 	CreationTime *time.Time
+
+	// The end-of-life date for the current version of the SageMaker Partner AI App.
+	CurrentVersionEolDate *time.Time
+
+	// Indicates whether the SageMaker Partner AI App is configured for automatic
+	// minor version upgrades during scheduled maintenance windows.
+	EnableAutoMinorVersionUpgrade *bool
 
 	// When set to TRUE , the SageMaker Partner AI App sets the Amazon Web Services IAM
 	// session name or the authenticated IAM user as the identity of the SageMaker
@@ -82,6 +98,25 @@ type DescribePartnerAppOutput struct {
 	Name *string
 
 	// The status of the SageMaker Partner AI App.
+	//
+	//   - Creating: SageMaker AI is creating the partner AI app. The partner AI app
+	//   is not available during creation.
+	//
+	//   - Updating: SageMaker AI is updating the partner AI app. The partner AI app
+	//   is not available when updating.
+	//
+	//   - Deleting: SageMaker AI is deleting the partner AI app. The partner AI app
+	//   is not available during deletion.
+	//
+	//   - Available: The partner AI app is provisioned and accessible.
+	//
+	//   - Failed: The partner AI app is in a failed state and isn't available.
+	//   SageMaker AI is investigating the issue. For further guidance, contact Amazon
+	//   Web Services Support.
+	//
+	//   - UpdateFailed: The partner AI app couldn't be updated but is available.
+	//
+	//   - Deleted: The partner AI app is permanently deleted and not available.
 	Status types.PartnerAppStatus
 
 	// The instance type and size of the cluster attached to the SageMaker Partner AI
@@ -195,40 +230,7 @@ func (c *Client) addOperationDescribePartnerAppMiddlewares(stack *middleware.Sta
 	if err = addInterceptAttempt(stack, options); err != nil {
 		return err
 	}
-	if err = addInterceptExecution(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptBeforeSerialization(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptAfterSerialization(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptBeforeSigning(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptAfterSigning(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptTransmit(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptBeforeDeserialization(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptAfterDeserialization(stack, options); err != nil {
-		return err
-	}
-	if err = addSpanInitializeStart(stack); err != nil {
-		return err
-	}
-	if err = addSpanInitializeEnd(stack); err != nil {
-		return err
-	}
-	if err = addSpanBuildRequestStart(stack); err != nil {
-		return err
-	}
-	if err = addSpanBuildRequestEnd(stack); err != nil {
+	if err = addInterceptors(stack, options); err != nil {
 		return err
 	}
 	return nil
