@@ -113,7 +113,7 @@ test/coverage:
 tools: bin/aws bin/ct bin/eksctl bin/ginkgo bin/golangci-lint bin/gomplate bin/helm bin/kops bin/kubetest2 bin/mockgen bin/shfmt
 
 .PHONY: update
-update: update/gofmt update/kustomize update/mockgen update/gomod update/shfmt
+update: update/gofmt update/kustomize update/mockgen update/gomod update/shfmt update/generate-license-header
 	@echo "All updates succeeded!"
 
 .PHONY: verify
