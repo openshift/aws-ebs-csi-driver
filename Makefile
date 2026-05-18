@@ -316,3 +316,4 @@ verify/govet:
 .PHONY: verify/update
 verify/update: bin/helm bin/mockgen
 	./hack/verify-update.sh
+
