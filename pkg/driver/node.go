@@ -23,6 +23,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -824,12 +825,7 @@ func (d *NodeService) getVolumesLimit() int64 {
 // slice already contains a mount option. This is used to prevent
 // passing duplicate option to the mount command.
 func hasMountOption(options []string, opt string) bool {
-	for _, o := range options {
-		if o == opt {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(options, opt)
 }
 
 // collectMountOptions returns array of mount options from
@@ -914,12 +910,12 @@ func startNotReadyTaintWatcher(clientset kubernetes.Interface, maxWatchDuration 
 	}
 
 	if _, err := informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj interface{}) {
+		AddFunc: func(obj any) {
 			if n, ok := obj.(*corev1.Node); ok {
 				attemptTaintRemoval(n)
 			}
 		},
-		UpdateFunc: func(_, newObj interface{}) {
+		UpdateFunc: func(_, newObj any) {
 			if n, ok := newObj.(*corev1.Node); ok {
 				attemptTaintRemoval(n)
 			}
@@ -964,9 +960,9 @@ func hasNotReadyTaint(n *corev1.Node) bool {
 
 // Struct for JSON patch operations.
 type JSONPatch struct {
-	OP    string      `json:"op,omitempty"`
-	Path  string      `json:"path,omitempty"`
-	Value interface{} `json:"value"`
+	OP    string `json:"op,omitempty"`
+	Path  string `json:"path,omitempty"`
+	Value any    `json:"value"`
 }
 
 // removeNotReadyTaint removes the taint ebs.csi.aws.com/agent-not-ready from the local node
