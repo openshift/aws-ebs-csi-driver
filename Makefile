@@ -113,7 +113,8 @@ update: update/gofix update/gofmt update/kustomize update/mockgen update/gomod u
 	@echo "All updates succeeded!"
 
 .PHONY: verify
-verify: verify/govet verify/golangci-lint verify/update
+# OpenShift carry: do not run golint, it frequently fails when ART bumps go
+verify: verify/govet verify/update
 	@echo "All verifications passed!"
 
 .PHONY: cluster/create
