@@ -62,6 +62,11 @@ type CreatePartnerAppInput struct {
 	// A unique token that guarantees that the call to this API is idempotent.
 	ClientToken *string
 
+	// When set to TRUE , the SageMaker Partner AI App is automatically upgraded to the
+	// latest minor version during the next scheduled maintenance window, if one is
+	// available. Default is FALSE .
+	EnableAutoMinorVersionUpgrade *bool
+
 	// When set to TRUE , the SageMaker Partner AI App sets the Amazon Web Services IAM
 	// session name or the authenticated IAM user as the identity of the SageMaker
 	// Partner AI App user.
@@ -127,7 +132,7 @@ func (c *Client) addOperationCreatePartnerAppMiddlewares(stack *middleware.Stack
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
+	if err = addRetry(stack, options, c); err != nil {
 		return err
 	}
 	if err = addRawResponseToMetadata(stack); err != nil {
@@ -149,9 +154,6 @@ func (c *Client) addOperationCreatePartnerAppMiddlewares(stack *middleware.Stack
 		return err
 	}
 	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
-		return err
-	}
-	if err = addTimeOffsetBuild(stack, c); err != nil {
 		return err
 	}
 	if err = addUserAgentRetryMode(stack, options); err != nil {
@@ -190,40 +192,7 @@ func (c *Client) addOperationCreatePartnerAppMiddlewares(stack *middleware.Stack
 	if err = addInterceptAttempt(stack, options); err != nil {
 		return err
 	}
-	if err = addInterceptExecution(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptBeforeSerialization(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptAfterSerialization(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptBeforeSigning(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptAfterSigning(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptTransmit(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptBeforeDeserialization(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptAfterDeserialization(stack, options); err != nil {
-		return err
-	}
-	if err = addSpanInitializeStart(stack); err != nil {
-		return err
-	}
-	if err = addSpanInitializeEnd(stack); err != nil {
-		return err
-	}
-	if err = addSpanBuildRequestStart(stack); err != nil {
-		return err
-	}
-	if err = addSpanBuildRequestEnd(stack); err != nil {
+	if err = addInterceptors(stack, options); err != nil {
 		return err
 	}
 	return nil

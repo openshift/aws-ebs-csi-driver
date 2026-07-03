@@ -7,6 +7,7 @@ To help manage volumes in the aws account, CSI driver will automatically add tag
 | CSIVolumeSnapshotName  | volumeSnapshotContentName | CSIVolumeSnapshotName = snapcontent-69477690-803b-4d3e-a61a-03c7b2592a76 | add to all snapshots, for recording associated VolumeSnapshot id and checking if a given snapshot was already created                                    |
 | ebs.csi.aws.com/cluster| true                      | ebs.csi.aws.com/cluster = true                                      | add to all volumes and snapshots, for allowing users to use a policy to limit csi driver's permission to just the resources it manages.                      |
 | kubernetes.io/cluster/X| owned                     | kubernetes.io/cluster/aws-cluster-id-1 = owned                      | add to all volumes and snapshots if k8s-tag-cluster-id argument is set to X.|
+| ebs.csi.aws.com/cluster-name | cluster-name | ebs.csi.aws.com/cluster-name = my-cluster | add to all volumes and snapshots if k8s-tag-cluster-id argument is set, for cluster-scoped IAM policies.|
 | extra-key              | extra-value               | extra-key = extra-value                                             | add to all volumes and snapshots if extraTags argument is set|
 
 # StorageClass Tagging
@@ -29,7 +30,7 @@ parameters:
   tagSpecification_3: "key3="
 ```
 
-Provisioning a volume using this StorageClass will apply two tags:
+Provisioning a volume using this StorageClass will apply three tags:
 
 ```
 key1=value1
@@ -121,7 +122,7 @@ The AWS EBS CSI Driver supports the modifying of tags of existing volumes throug
 
 If a key has the prefix `tagSpecification`, the CSI driver will treat the value as a key-value pair to be added to the existing volume. If there is already an existing tag with the specified key, the CSI driver will overwrite the value of that tag with the new value specified. 
 ```
-apiVersion: storage.k8s.io/v1beta1
+apiVersion: storage.k8s.io/v1
 kind: VolumeAttributesClass
 metadata:
   name: io2-class
@@ -140,7 +141,7 @@ parameters:
 
 If a key has the prefix `tagDeletion`, the CSI driver will treat the value as a tag key, and the existing tag with that key will be removed from the volume.
 ```
-apiVersion: storage.k8s.io/v1beta1
+apiVersion: storage.k8s.io/v1
 kind: VolumeAttributesClass
 metadata:
   name: io2-class

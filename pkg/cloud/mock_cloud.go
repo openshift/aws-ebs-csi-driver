@@ -140,6 +140,20 @@ func (mr *MockCloudMockRecorder) DetachDisk(ctx, volumeID, nodeID interface{}) *
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DetachDisk", reflect.TypeOf((*MockCloud)(nil).DetachDisk), ctx, volumeID, nodeID)
 }
 
+// DryRun mocks base method.
+func (m *MockCloud) DryRun(ctx context.Context) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DryRun", ctx)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DryRun indicates an expected call of DryRun.
+func (mr *MockCloudMockRecorder) DryRun(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DryRun", reflect.TypeOf((*MockCloud)(nil).DryRun), ctx)
+}
+
 // EnableFastSnapshotRestores mocks base method.
 func (m *MockCloud) EnableFastSnapshotRestores(ctx context.Context, availabilityZones []string, snapshotID string) (*ec2.EnableFastSnapshotRestoresOutput, error) {
 	m.ctrl.T.Helper()
@@ -185,6 +199,21 @@ func (mr *MockCloudMockRecorder) GetDiskByName(ctx, name, capacityBytes interfac
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDiskByName", reflect.TypeOf((*MockCloud)(nil).GetDiskByName), ctx, name, capacityBytes)
 }
 
+// GetInstancesPatching mocks base method.
+func (m *MockCloud) GetInstancesPatching(ctx context.Context, nodeIDs []string) ([]*types.Instance, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetInstancesPatching", ctx, nodeIDs)
+	ret0, _ := ret[0].([]*types.Instance)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetInstancesPatching indicates an expected call of GetInstancesPatching.
+func (mr *MockCloudMockRecorder) GetInstancesPatching(ctx, nodeIDs interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetInstancesPatching", reflect.TypeOf((*MockCloud)(nil).GetInstancesPatching), ctx, nodeIDs)
+}
+
 // GetSnapshotByID mocks base method.
 func (m *MockCloud) GetSnapshotByID(ctx context.Context, snapshotID string) (*Snapshot, error) {
 	m.ctrl.T.Helper()
@@ -213,6 +242,21 @@ func (m *MockCloud) GetSnapshotByName(ctx context.Context, name string) (*Snapsh
 func (mr *MockCloudMockRecorder) GetSnapshotByName(ctx, name interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSnapshotByName", reflect.TypeOf((*MockCloud)(nil).GetSnapshotByName), ctx, name)
+}
+
+// GetVolumeIDByNodeAndDevice mocks base method.
+func (m *MockCloud) GetVolumeIDByNodeAndDevice(ctx context.Context, nodeID, deviceName string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetVolumeIDByNodeAndDevice", ctx, nodeID, deviceName)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetVolumeIDByNodeAndDevice indicates an expected call of GetVolumeIDByNodeAndDevice.
+func (mr *MockCloudMockRecorder) GetVolumeIDByNodeAndDevice(ctx, nodeID, deviceName interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVolumeIDByNodeAndDevice", reflect.TypeOf((*MockCloud)(nil).GetVolumeIDByNodeAndDevice), ctx, nodeID, deviceName)
 }
 
 // IsVolumeInitialized mocks base method.
@@ -245,6 +289,20 @@ func (mr *MockCloudMockRecorder) ListSnapshots(ctx, volumeID, maxResults, nextTo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListSnapshots", reflect.TypeOf((*MockCloud)(nil).ListSnapshots), ctx, volumeID, maxResults, nextToken)
 }
 
+// LockSnapshot mocks base method.
+func (m *MockCloud) LockSnapshot(ctx context.Context, lockOptions *SnapshotLockOptions) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LockSnapshot", ctx, lockOptions)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// LockSnapshot indicates an expected call of LockSnapshot.
+func (mr *MockCloudMockRecorder) LockSnapshot(ctx, lockOptions interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LockSnapshot", reflect.TypeOf((*MockCloud)(nil).LockSnapshot), ctx, lockOptions)
+}
+
 // ModifyTags mocks base method.
 func (m *MockCloud) ModifyTags(ctx context.Context, volumeID string, tagOptions ModifyTagsOptions) error {
 	m.ctrl.T.Helper()
@@ -275,16 +333,16 @@ func (mr *MockCloudMockRecorder) ResizeOrModifyDisk(ctx, volumeID, newSizeBytes,
 }
 
 // WaitForAttachmentState mocks base method.
-func (m *MockCloud) WaitForAttachmentState(ctx context.Context, expectedState types.VolumeAttachmentState, volumeID, expectedInstance, expectedDevice string, alreadyAssigned bool) (*types.VolumeAttachment, error) {
+func (m *MockCloud) WaitForAttachmentState(ctx context.Context, expectedState types.VolumeAttachmentState, volumeID, expectedInstance, expectedDevice string, alreadyAssigned bool, expectedCardIndex *int32) (*types.VolumeAttachment, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WaitForAttachmentState", ctx, expectedState, volumeID, expectedInstance, expectedDevice, alreadyAssigned)
+	ret := m.ctrl.Call(m, "WaitForAttachmentState", ctx, expectedState, volumeID, expectedInstance, expectedDevice, alreadyAssigned, expectedCardIndex)
 	ret0, _ := ret[0].(*types.VolumeAttachment)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // WaitForAttachmentState indicates an expected call of WaitForAttachmentState.
-func (mr *MockCloudMockRecorder) WaitForAttachmentState(ctx, expectedState, volumeID, expectedInstance, expectedDevice, alreadyAssigned interface{}) *gomock.Call {
+func (mr *MockCloudMockRecorder) WaitForAttachmentState(ctx, expectedState, volumeID, expectedInstance, expectedDevice, alreadyAssigned, expectedCardIndex interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WaitForAttachmentState", reflect.TypeOf((*MockCloud)(nil).WaitForAttachmentState), ctx, expectedState, volumeID, expectedInstance, expectedDevice, alreadyAssigned)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WaitForAttachmentState", reflect.TypeOf((*MockCloud)(nil).WaitForAttachmentState), ctx, expectedState, volumeID, expectedInstance, expectedDevice, alreadyAssigned, expectedCardIndex)
 }

@@ -88,6 +88,9 @@ type CreateModelPackageInput struct {
 	//   inference.
 	InferenceSpecification *types.InferenceSpecification
 
+	// The storage type of the model package.
+	ManagedStorageType types.ManagedStorageType
+
 	// Metadata properties of the tracking entity, trial, or trial component.
 	MetadataProperties *types.MetadataProperties
 
@@ -134,6 +137,9 @@ type CreateModelPackageInput struct {
 	// This parameter is required for unversioned models. It is not applicable to
 	// versioned models.
 	ModelPackageName *string
+
+	//  The package registration type of the model package input.
+	ModelPackageRegistrationType types.ModelPackageRegistrationType
 
 	// The Amazon Simple Storage Service (Amazon S3) path where the sample payload is
 	// stored. This path must point to a single gzip compressed tar archive (.tar.gz
@@ -231,7 +237,7 @@ func (c *Client) addOperationCreateModelPackageMiddlewares(stack *middleware.Sta
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
+	if err = addRetry(stack, options, c); err != nil {
 		return err
 	}
 	if err = addRawResponseToMetadata(stack); err != nil {
@@ -253,9 +259,6 @@ func (c *Client) addOperationCreateModelPackageMiddlewares(stack *middleware.Sta
 		return err
 	}
 	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
-		return err
-	}
-	if err = addTimeOffsetBuild(stack, c); err != nil {
 		return err
 	}
 	if err = addUserAgentRetryMode(stack, options); err != nil {
@@ -294,40 +297,7 @@ func (c *Client) addOperationCreateModelPackageMiddlewares(stack *middleware.Sta
 	if err = addInterceptAttempt(stack, options); err != nil {
 		return err
 	}
-	if err = addInterceptExecution(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptBeforeSerialization(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptAfterSerialization(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptBeforeSigning(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptAfterSigning(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptTransmit(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptBeforeDeserialization(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptAfterDeserialization(stack, options); err != nil {
-		return err
-	}
-	if err = addSpanInitializeStart(stack); err != nil {
-		return err
-	}
-	if err = addSpanInitializeEnd(stack); err != nil {
-		return err
-	}
-	if err = addSpanBuildRequestStart(stack); err != nil {
-		return err
-	}
-	if err = addSpanBuildRequestEnd(stack); err != nil {
+	if err = addInterceptors(stack, options); err != nil {
 		return err
 	}
 	return nil

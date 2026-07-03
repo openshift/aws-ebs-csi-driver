@@ -31,7 +31,6 @@ rules:
     resources:
       - services
       - nodes
-      - nodes/proxy
       - persistentvolumes
       - persistentvolumeclaims
       - pods
@@ -203,9 +202,9 @@ spec:
       resources:
         requests:
           cpu: 2000m
-          memory: 4Gi
+          memory: 8Gi
         limits:
-          memory: 4Gi
+          memory: 8Gi
       command: [ "/bin/sh", "-c" ]
       args:
         - |

@@ -35,15 +35,36 @@ These values are typically set by the [AWS CCM](https://github.com/kubernetes/cl
 
 Kubernetes metadata does not provide information about the number of ENIs or EBS volumes attached to an instance. Thus, when performing volume limit calculations, node pods using Kubernetes metadata will assume one ENI and one EBS volume (the root volume) is attached.
 
+#### Metadata Labeler
+
+**Note: This metadata source is currently in alpha and disabled by default.**
+
+The `metadata-labeler` sidecar (and corresponding metadata source) allow passing information from the EC2 API via labels on the sidecars, similar to the labels applied by the AWS CCM used by the `kubernetes` source.
+
+For the Instance ID, type, region, and AZ, this metadata source uses the same logic as the `kubernetes` metadata source and has the same requirements. In addition, this metadata source uses labels applied by the EBS CSI `metadata-labeler` sidecar for the number of ENIs and extra EBS volumes attached to an instance.
+
+To enable this metadata source:
+- Set `sidecars.metadataLabeler.enabled` to `true`
+- Include `metadata-labeler` in `node.metadataSources` list. E.g. setting `node.metadataSources` to `"metadata-labeler,kubernetes"` will first attempt to use this new metadata source, then fallback to Kubernetes metadata.
+- EBS CSI Controller Pods must hold Kubernetes RBAC permission to patch Node objects (this is automatically enabled in the EBS CSI Helm chart via `sidecars.metadataLabeler.enabled`).
+
 ## Installation
 ### Set up driver permissions
 
 > [!NOTE]  
 > The example policy and documentation below use the [`aws` partition in ARNs](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference-arns.html). When installing the EBS CSI Driver on other partitions, replace instances of `arn:aws:` with the local partition, such as `arn:aws-us-gov:` for AWS GovCloud.
 
-The driver requires IAM permissions to talk to Amazon EBS to manage the volume on user's behalf. [The example policy here](./example-iam-policy.json) defines these permissions. AWS maintains a [managed policy version of the example policy](https://docs.aws.amazon.com/aws-managed-policy/latest/reference/AmazonEBSCSIDriverPolicy.html), available at ARN `arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy`.
+The driver requires IAM permissions to talk to Amazon EBS to manage the volume on user's behalf. [The example policy here](./AmazonEBSCSIDriverPolicyV2.json) defines these permissions. AWS maintains a [managed policy version of the example policy](https://docs.aws.amazon.com/aws-managed-policy/latest/reference/AmazonEBSCSIDriverPolicyV2.html), available at ARN `arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicyV2`.
 
-The baseline example policy excludes permissions for some rarer and potentially dangerous usecases. For these usecases, additional statements are necessary:
+The baseline example policy scopes permissions to volumes and snapshots crated by the EBS CSI Driver. Review the following if this affects your workflow:
+
+<details>
+<summary>Static provisioning (importing externally-created volumes or snapshots)</summary>
+<br>
+<code>AmazonEBSCSIDriverPolicyV2</code> scopes permissions to volumes and snapshots tagged with <code>ebs.csi.aws.com/cluster: true</code>. The driver automatically applies this tag to dynamically provisioned resources. If you use <a href="https://github.com/kubernetes-sigs/aws-ebs-csi-driver/tree/master/examples/kubernetes/static-provisioning">static provisioning</a> (i.e. importing externally-created EBS volumes or snapshots), you must manually tag those resources with <code>ebs.csi.aws.com/cluster: true</code> for the driver to manage them. For more details, see <a href="https://github.com/kubernetes-sigs/aws-ebs-csi-driver/issues/2918">the announcement</a>.
+</details>
+
+The baseline example policy also excludes permissions for some rarer and potentially dangerous usecases. For these usecases, additional statements are necessary:
 
 <details>
 <summary>Encrypted EBS Volumes via KMS</summary>
@@ -129,7 +150,7 @@ You may deploy the EBS CSI driver via Kustomize, Helm, or as an [Amazon EKS mana
 
 #### Kustomize
 ```sh
-kubectl apply -k "github.com/kubernetes-sigs/aws-ebs-csi-driver/deploy/kubernetes/overlays/stable/?ref=release-1.47"
+kubectl apply -k "github.com/kubernetes-sigs/aws-ebs-csi-driver/deploy/kubernetes/overlays/stable/?ref=release-1.61"
 ```
 
 *Note: Using the master branch to deploy the driver is not supported as the master branch may contain upcoming features incompatible with the currently released stable version of the driver.*

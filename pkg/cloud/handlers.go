@@ -29,7 +29,7 @@ import (
 	"k8s.io/klog/v2"
 )
 
-// RecordRequestsHandler is added to the Complete chain; called after any request.
+// RecordRequestsMiddleware is added to the Complete chain; called after any request.
 func RecordRequestsMiddleware(deprecatedMetrics bool) func(*middleware.Stack) error {
 	return func(stack *middleware.Stack) error {
 		return stack.Finalize.Add(middleware.FinalizeMiddlewareFunc("RecordRequestsMiddleware", func(ctx context.Context, input middleware.FinalizeInput, next middleware.FinalizeHandler) (output middleware.FinalizeOutput, metadata middleware.Metadata, err error) {
@@ -83,7 +83,7 @@ func LogServerErrorsMiddleware() func(*middleware.Stack) error {
 						// under normal bursty/high-TPS workloads
 						klog.V(4).ErrorS(apiErr, "Throttle error from AWS API")
 					} else {
-						klog.ErrorS(apiErr, "Error from AWS API")
+						klog.V(3).ErrorS(apiErr, "Error from AWS API")
 					}
 				} else {
 					klog.ErrorS(err, "Unknown error attempting to contact AWS API")

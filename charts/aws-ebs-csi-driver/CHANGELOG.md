@@ -1,5 +1,218 @@
 # Helm chart
 
+## 2.61.1
+
+ - Bumped EBS CSI Driver to `v1.61.1`
+ - Bumped `csi-provisioner` to `v6.2.0-eksbuild.7`
+ - Bumped `csi-attacher` to `v4.12.0-eksbuild.2`
+ - Bumped `csi-snapshotter` to `v8.6.0-eksbuild.2`
+ - Bumped `csi-resizer` to `v2.2.0-eksbuild.2`
+ - Bumped `csi-node-driver-registrar` to `v2.17.0-eksbuild.2`
+ - Bumped `livenessprobe` to `v2.19.0-eksbuild.2`
+ - Bumped `volume-modifier-for-k8s` to `v0.9.5-eksbuild.2`
+
+## 2.60.1
+
+ - Bumped EBS CSI Driver to `v1.60.1`
+ - Bumped `csi-provisioner` to `v6.2.0-eksbuild.5`
+ - Bumped `csi-attacher` to `v4.11.0-eksbuild.6`
+ - Bumped `csi-snapshotter` to `v8.5.0-eksbuild.6`
+ - Bumped `csi-resizer` to `v2.1.0-eksbuild.6`
+ - Bumped `csi-node-driver-registrar` to `v2.16.0-eksbuild.6`
+ - Bumped `livenessprobe` to `v2.18.0-eksbuild.6`
+ - Bumped `volume-modifier-for-k8s` to `v0.9.4-eksbuild.4`
+
+## 2.60.0
+
+ - Bumped EBS CSI Driver to `v1.60.0`
+ - Bumped `csi-provisioner` to `v6.2.0-eksbuild.4`
+ - Bumped `csi-attacher` to `v4.11.0-eksbuild.5`
+ - Bumped `csi-snapshotter` to `v8.5.0-eksbuild.5`
+ - Bumped `csi-resizer` to `v2.1.0-eksbuild.5`
+ - Bumped `csi-node-driver-registrar` to `v2.16.0-eksbuild.5`
+ - Bumped `livenessprobe` to `v2.18.0-eksbuild.5`
+
+## 2.59.0
+
+ - Bumped EBS CSI Driver to `v1.59.0`
+ - Bumped `csi-provisioner` to `v6.2.0-eksbuild.3`
+ - Bumped `csi-attacher` to `v4.11.0-eksbuild.4`
+ - Bumped `csi-snapshotter` to `v8.5.0-eksbuild.4`
+ - Bumped `csi-resizer` to `v2.1.0-eksbuild.4`
+ - Bumped `csi-node-driver-registrar` to `v2.16.0-eksbuild.4`
+ - Bumped `livenessprobe` to `v2.18.0-eksbuild.4`
+ - Bumped `volume-modifier-for-k8s` to `v0.9.4-eksbuild.2`
+
+## 2.58.0
+
+Bumped driver to `v1.58.0`
+
+## 2.57.0
+
+### Security
+
+This release includes a fix for critical [CVE-2026-33186](https://github.com/advisories/GHSA-p77j-4mvh-x3m3) in all containers.
+
+### Other (Cleanup or Flake)
+
+- Reduced default memory for node-driver-registrar and liveness-probe sidecars from 256Mi/40Mi to 32Mi/32Mi on Linux and 150Mi/150Mi on Windows. Sidecar resource defaults are now independent of node.resources and controller.resources. ([#2884](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2884), [@torredil](https://github.com/torredil))
+
+## 2.56.1
+
+### Security
+
+This release upgrades to the latest volume-modifer-for-k8s version to adress CVE-2025-68121 and CVE-2026-24051
+
+## 2.56.0
+
+- Bump driver version to `v1.56.0`.
+- Bump sidecars to latest to address the following.
+   - a bug where retries could cause volumes to be provisioned in the wrong availability zone. ([#1466](https://github.com/kubernetes-csi/external-provisioner/pull/1466), [@torredil](https://github.com/torredil))
+   - a bug where the csi-resizer would crash with "concurrent map writes" when multiple resize operations failed simultaneously. ([#557](https://github.com/kubernetes-csi/external-resizer/pull/557), [@torredil](https://github.com/torredil))
+
+### Feature
+
+- Allow overriding node-driver-registrar liveness probe /healthz endpoint. ([#2865](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2865), [@jukie](https://github.com/jukie))
+
+### Other (Cleanup or Flake)
+
+- Rename health and metrics ports ([#2867](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2867), [@ElijahQuinones](https://github.com/ElijahQuinones))
+
+## 2.55.1
+
+### Security
+
+This release upgrades to the latest CSI sidecar builds to address CVE-2025-61726.
+
+## 2.55.0
+
+### Urgent Upgrade Notes
+*(No, really, you MUST read this before you upgrade)*
+
+`v1.54.0` was last minor version of the EBS CSI Driver to publish an `-a1compat` image for compatibility with `a1.*` family Amazon EC2 instances. The EBS CSI Driver team recommends upgrading to a more recent [AWS Graviton](https://aws.amazon.com/ec2/graviton/) instance type.
+
+**The `a1CompatibilityDaemonSet` parameter has been removed.** The parameter will have no effect, and installation may fail when attempting to install via a method that validates the Helm schema, such as the Helm CLI.
+
+### Feature
+
+- Enable `MutableCSINodeAllocatableCount` feature gate in external-attacher ([#2826](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2826), [@torredil](https://github.com/torredil))
+
+### Bug or Regression
+
+- Replaced deprecated node-driver-registrar liveness probe command with /healthz endpoint ([#2819](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2819), [@mdzraf](https://github.com/mdzraf))
+
+### Other (Cleanup or Flake)
+
+- Removed all `a1compat` references in Helm chart ([#2823](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2823), [@ConnorJC3](https://github.com/ConnorJC3))
+
+## 2.54.1
+
+### Bugfix
+
+- Fix VAC fallback on 1.33 and before by not explicitly enabling feature gate ([#2815](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2815), [@ConnorJC3](https://github.com/ConnorJC3))
+
+## 2.54.0
+
+### `a1CompatibilityDaemonSet` Deprecation Warning
+
+**`v1.54.0` will be the last minor version of the EBS CSI Driver to publish an `-a1compat` image for compatibility with `a1.*` family Amazon EC2 instances.** `v1.55.0` and later will not support `a1.*` instances. The EBS CSI Driver team recommends upgrading to a more recent [AWS Graviton](https://aws.amazon.com/ec2/graviton/) instance type.
+
+As a result, EBS CSI Driver Helm Chart versions `2.55.0` and later will not support the `a1CompatibilityDaemonSet` parameter. The parameter will have no effect, and installation may fail when attempting to install via a method that validates the Helm schema, such as the Helm CLI.
+
+### Feature
+
+- Enable VAC v1beta1 fallback for K8s 1.31-1.33 ([#2806](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2806), [@torredil](https://github.com/torredil))
+
+## 2.53.0
+
+- Add dnsConfig Helm parameter for node pods. ([#2778](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2778), [@torredil](https://github.com/torredil))
+- Check for specific ServiceMonitor CRD availability instead of generic `monitoring.coreos.com/v1` API group when creating service monitor object for metrics. ([#2779](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2779), [@torredil](https://github.com/torredil))
+- Bump driver version to `v1.53.0`.
+
+## 2.52.1
+
+- Bump driver version to `v1.52.1`.
+- Bump sidecars to latest.
+
+## 2.52.0
+
+### Feature
+
+- Bump driver version to `v1.52.0`.
+- Add Helm parameter `node.serviceAccount.disableMutation` to disable mutating RBAC permissions to the `ebs-csi-node` service account. When enabled, driver features such as taint removal may not function. ([#2723](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2723), [@ConnorJC3](https://github.com/ConnorJC3))
+- Add ALPHA metadata-labeler sidecar and metadata source ([#2591](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2591), [@sylviah23](https://github.com/sylviah23))
+
+## 2.51.3
+
+- Bump driver version to `v1.51.2`.
+- Bump sidecars to latest.
+
+## 2.51.1
+
+- Bump driver version to `v1.51.1`.
+
+## 2.51.0
+
+- Bump driver version to `v1.51.0`.
+
+### Feature
+
+- Add Helm parameters to customize PDB `maxUnavailable` and `minAvailable` ([#2703](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2703), [@ConnorJC3](https://github.com/ConnorJC3))
+
+## 2.50.4
+
+- Bump driver version to `v1.50.3`.
+- Bump sidecars to latest.
+
+## 2.50.2
+
+- Bump driver version to `v1.50.2`.
+
+## 2.50.1
+
+- Bump driver version to `v1.50.1`.
+
+## 2.50.0
+
+### Feature
+
+- Bump driver version to `v1.50.0`.
+
+## 2.49.3
+
+- Bump driver version to `v1.49.2`.
+- Bump sidecars to latest.
+
+## 2.49.2
+
+- Bump driver version to `v1.49.1`
+
+## 2.49.1
+
+### Feature
+
+- Add `terminationMessagePolicy: FallbackToLogsOnError` to all containers to use log messages as termination message ([#2672](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2672), [@ConnorJC3](https://github.com/ConnorJC3))
+
+## 2.49.0
+
+### Feature
+
+- Add `debugLogs` Helm parameter to turn on maximum verbosity logging ([#2624](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2624), [@AndrewSirenko](https://github.com/AndrewSirenko))
+- Add `containerPort` declarations for containers in Helm chart to support metrics discovery by monitoring systems ([#2654](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2654), [@torredil](https://github.com/torredil))
+
+## 2.48.0
+
+### Feature
+
+- Bump driver version to `v1.48.0`
+- Add support for custom relabelings in ServiceMonitor via `controller.serviceMonitor.extraRelabelings` configuration option ([#2594](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2594), [@bartier](https://github.com/bartier))
+- Align node and controller metrics to consistent experience supporting `prometheus.io` annotations and `ServiceMonitor` objects for both; Enable sidecar metrics when controller metrics are enabled ([#2558](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2558), [@ConnorJC3](https://github.com/ConnorJC3))
+
+## v2.47.1
+
+- Bump Driver version to `v1.47.1`
+- Bump csi-sidecars to new eksbuild version
+
 ## v2.47.0
 
 ### Feature

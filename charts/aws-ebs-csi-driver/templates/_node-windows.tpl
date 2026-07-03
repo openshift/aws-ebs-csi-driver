@@ -88,7 +88,11 @@ spec:
             {{- with .Values.node.loggingFormat }}
             - --logging-format={{ . }}
             {{- end }}
+            {{- if .Values.debugLogs }}
+            - --v=7
+            {{- else }}
             - --v={{ .Values.node.logLevel }}
+            {{- end }}
             {{- if .Values.node.otelTracing }}
             - --enable-otel-tracing=true
             {{- end}}
@@ -117,6 +121,10 @@ spec:
             {{- end }}
             {{- if .Values.fips }}
             - name: AWS_USE_FIPS_ENDPOINT
+              value: "true"
+            {{- end }}
+            {{- if .Values.node.serviceAccount.disableMutation }}
+            - name: DISABLE_TAINT_WATCHER
               value: "true"
             {{- end }}
             {{- with .Values.node.env }}
@@ -168,6 +176,7 @@ spec:
             preStop:
               exec:
                 command: ["/bin/aws-ebs-csi-driver", "pre-stop-hook"]
+          terminationMessagePolicy: FallbackToLogsOnError
         - name: node-driver-registrar
           image: {{ printf "%s%s:%s" (default "" .Values.image.containerRegistry) .Values.sidecars.nodeDriverRegistrar.image.repository .Values.sidecars.nodeDriverRegistrar.image.tag }}
           imagePullPolicy: {{ default .Values.image.pullPolicy .Values.sidecars.nodeDriverRegistrar.image.pullPolicy }}
@@ -178,10 +187,15 @@ spec:
           args:
             - --csi-address=$(ADDRESS)
             - --kubelet-registration-path=$(DRIVER_REG_SOCK_PATH)
+            - --http-endpoint=0.0.0.0:{{ .Values.sidecars.nodeDriverRegistrar.healthPort }}
           {{- if .Values.node.windowsHostProcess }}
             - --plugin-registration-path=$(PLUGIN_REG_DIR)
           {{- end }}
+            {{- if .Values.debugLogs }}
+            - --v=7
+            {{- else }}
             - --v={{ .Values.sidecars.nodeDriverRegistrar.logLevel }}
+            {{- end }}
           env:
             - name: ADDRESS
             {{- if .Values.node.windowsHostProcess }}
@@ -205,15 +219,13 @@ spec:
             {{- with .Values.sidecars.nodeDriverRegistrar.env }}
             {{- . | toYaml | nindent 12 }}
             {{- end }}
+          ports:
+            - name: healthz-ndr
+              containerPort: {{ .Values.sidecars.nodeDriverRegistrar.healthPort }}
+          {{- with .Values.sidecars.nodeDriverRegistrar.livenessProbe }}
           livenessProbe:
-            exec:
-              command:
-                - /csi-node-driver-registrar.exe
-                - --kubelet-registration-path=$(DRIVER_REG_SOCK_PATH)
-                - --mode=kubelet-registration-probe
-            initialDelaySeconds: 30
-            timeoutSeconds: 15
-            periodSeconds: 90
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           volumeMounts:
             - name: plugin-dir
               mountPath: C:\csi
@@ -221,10 +233,18 @@ spec:
               mountPath: C:\registration
             - name: probe-dir
               mountPath: C:\var\lib\kubelet\plugins\ebs.csi.aws.com
-          {{- with default .Values.node.resources .Values.sidecars.nodeDriverRegistrar.resources }}
+          {{- with .Values.sidecars.nodeDriverRegistrar.resources }}
           resources:
             {{- toYaml . | nindent 12 }}
+          {{- else }}
+          resources:
+            requests:
+              cpu: 10m
+              memory: 150Mi
+            limits:
+              memory: 150Mi
           {{- end }}
+          terminationMessagePolicy: FallbackToLogsOnError
         - name: liveness-probe
           image: {{ printf "%s%s:%s" (default "" .Values.image.containerRegistry) .Values.sidecars.livenessProbe.image.repository .Values.sidecars.livenessProbe.image.tag }}
           imagePullPolicy: {{ default .Values.image.pullPolicy .Values.sidecars.livenessProbe.image.pullPolicy }}
@@ -241,10 +261,18 @@ spec:
           volumeMounts:
             - name: plugin-dir
               mountPath: C:\csi
-          {{- with default .Values.node.resources .Values.sidecars.livenessProbe.resources }}
+          {{- with .Values.sidecars.livenessProbe.resources }}
           resources:
             {{- toYaml . | nindent 12 }}
+          {{- else }}
+          resources:
+            requests:
+              cpu: 10m
+              memory: 150Mi
+            limits:
+              memory: 150Mi
           {{- end }}
+          terminationMessagePolicy: FallbackToLogsOnError
       {{- if .Values.imagePullSecrets }}
       imagePullSecrets:
       {{- range .Values.imagePullSecrets }}
@@ -284,5 +312,9 @@ spec:
           {{- else }}
           emptyDir: {}
           {{- end }}
+      {{- if .Values.node.dnsConfig }}
+      dnsConfig:
+        {{- toYaml .Values.node.dnsConfig | nindent 8 }}
+      {{- end }}
 {{- end }}
 {{- end }}

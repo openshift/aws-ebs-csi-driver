@@ -1,3 +1,1176 @@
+# 1.61.1
+
+## Dependencies
+
+### Added
+_Nothing has changed._
+
+### Changed
+- github.com/aws/aws-sdk-go-v2/config: [v1.32.17 → v1.32.22](https://github.com/aws/aws-sdk-go-v2/compare/config/v1.32.17...config/v1.32.22)
+- github.com/aws/aws-sdk-go-v2/credentials: [v1.19.16 → v1.19.21](https://github.com/aws/aws-sdk-go-v2/compare/credentials/v1.19.16...credentials/v1.19.21)
+- github.com/aws/aws-sdk-go-v2/feature/ec2/imds: [v1.18.23 → v1.18.27](https://github.com/aws/aws-sdk-go-v2/compare/feature/ec2/imds/v1.18.23...feature/ec2/imds/v1.18.27)
+- github.com/aws/aws-sdk-go-v2/internal/configsources: [v1.4.23 → v1.4.27](https://github.com/aws/aws-sdk-go-v2/compare/internal/configsources/v1.4.23...internal/configsources/v1.4.27)
+- github.com/aws/aws-sdk-go-v2/internal/endpoints/v2: [v2.7.23 → v2.7.27](https://github.com/aws/aws-sdk-go-v2/compare/internal/endpoints/v2/v2.7.23...internal/endpoints/v2/v2.7.27)
+- github.com/aws/aws-sdk-go-v2/internal/v4a: [v1.4.24 → v1.4.28](https://github.com/aws/aws-sdk-go-v2/compare/internal/v4a/v1.4.24...internal/v4a/v1.4.28)
+- github.com/aws/aws-sdk-go-v2/service/ec2: [v1.303.0 → v1.305.1](https://github.com/aws/aws-sdk-go-v2/compare/service/ec2/v1.303.0...service/ec2/v1.305.1)
+- github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding: [v1.13.9 → v1.13.11](https://github.com/aws/aws-sdk-go-v2/compare/service/internal/accept-encoding/v1.13.9...service/internal/accept-encoding/v1.13.11)
+- github.com/aws/aws-sdk-go-v2/service/internal/presigned-url: [v1.13.23 → v1.13.27](https://github.com/aws/aws-sdk-go-v2/compare/service/internal/presigned-url/v1.13.23...service/internal/presigned-url/v1.13.27)
+- github.com/aws/aws-sdk-go-v2/service/sagemaker: [v1.248.0 → v1.251.1](https://github.com/aws/aws-sdk-go-v2/compare/service/sagemaker/v1.248.0...service/sagemaker/v1.251.1)
+- github.com/aws/aws-sdk-go-v2/service/signin: [v1.0.11 → v1.1.3](https://github.com/aws/aws-sdk-go-v2/compare/service/signin/v1.0.11...service/signin/v1.1.3)
+- github.com/aws/aws-sdk-go-v2/service/sso: [v1.30.17 → v1.31.1](https://github.com/aws/aws-sdk-go-v2/compare/service/sso/v1.30.17...service/sso/v1.31.1)
+- github.com/aws/aws-sdk-go-v2/service/ssooidc: [v1.35.21 → v1.36.4](https://github.com/aws/aws-sdk-go-v2/compare/service/ssooidc/v1.35.21...service/ssooidc/v1.36.4)
+- github.com/aws/aws-sdk-go-v2/service/sts: [v1.42.1 → v1.43.1](https://github.com/aws/aws-sdk-go-v2/compare/service/sts/v1.42.1...service/sts/v1.43.1)
+- github.com/aws/aws-sdk-go-v2: [v1.41.7 → v1.41.11](https://github.com/aws/aws-sdk-go-v2/compare/v1.41.7...v1.41.11)
+- github.com/aws/smithy-go: [v1.25.1 → v1.27.0](https://github.com/aws/smithy-go/compare/v1.25.1...v1.27.0)
+- github.com/awslabs/volume-modifier-for-k8s: [v0.9.4 → v0.9.5](https://github.com/awslabs/volume-modifier-for-k8s/compare/v0.9.4...v0.9.5)
+- github.com/go-openapi/jsonreference: [v0.21.5 → v0.21.6](https://github.com/go-openapi/jsonreference/compare/v0.21.5...v0.21.6)
+- github.com/go-openapi/testify/v2: [v2.4.2 → v2.5.1](https://github.com/go-openapi/testify/compare/v2.4.2...v2.5.1)
+- github.com/golang-jwt/jwt/v5: [v5.3.0 → v5.3.1](https://github.com/golang-jwt/jwt/compare/v5.3.0...v5.3.1)
+- github.com/prometheus/common: [v0.67.5 → v0.68.1](https://github.com/prometheus/common/compare/v0.67.5...v0.68.1)
+- go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc: v0.68.0 → v0.69.0
+- go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc: v1.43.0 → v1.44.0
+- go.opentelemetry.io/otel/exporters/otlp/otlptrace: v1.43.0 → v1.44.0
+- go.opentelemetry.io/otel/metric: v1.43.0 → v1.44.0
+- go.opentelemetry.io/otel/sdk/metric: v1.43.0 → v1.44.0
+- go.opentelemetry.io/otel/sdk: v1.43.0 → v1.44.0
+- go.opentelemetry.io/otel/trace: v1.43.0 → v1.44.0
+- go.opentelemetry.io/otel: v1.43.0 → v1.44.0
+- golang.org/x/net: v0.54.0 → v0.55.0
+- golang.org/x/sys: v0.44.0 → v0.45.0
+- google.golang.org/genproto/googleapis/api: aa98bba → 3dc84a4
+- google.golang.org/genproto/googleapis/rpc: aa98bba → 3dc84a4
+- k8s.io/csi-translation-lib: v0.35.2 → v0.36.1
+- k8s.io/kubectl: v0.35.3 → v0.36.1
+
+### Removed
+- github.com/gogo/protobuf: [v1.3.2](https://github.com/gogo/protobuf/tree/v1.3.2)
+
+# v1.60.1
+
+Bump all CSI sidecars (csi-attacher, csi-node-driver-registrar, csi-provisioner, csi-resizer, csi-snapshotter, livenessprobe, snapshot-controller, volume-modifier-for-k8s) to address `CVE-2026-33814` in `golang.org/x/net` ([#2941](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2941), [@ElijahQuinones](https://github.com/ElijahQuinones)).
+
+## Dependencies
+
+### Added
+_Nothing has changed._
+
+### Changed
+- github.com/aws/aws-sdk-go-v2/service/ec2: [v1.301.0 → v1.303.0](https://github.com/aws/aws-sdk-go-v2/compare/service/ec2/v1.301.0...service/ec2/v1.303.0)
+- github.com/aws/aws-sdk-go-v2/service/sagemaker: [v1.246.0 → v1.248.0](https://github.com/aws/aws-sdk-go-v2/compare/service/sagemaker/v1.246.0...service/sagemaker/v1.248.0)
+- github.com/kubernetes-csi/csi-lib-utils: [v0.23.2 → v0.24.0](https://github.com/kubernetes-csi/csi-lib-utils/compare/v0.23.2...v0.24.0)
+- google.golang.org/genproto/googleapis/api: 3700d41 → aa98bba
+- google.golang.org/genproto/googleapis/rpc: 3700d41 → aa98bba
+- google.golang.org/grpc: v1.81.0 → v1.81.1
+- k8s.io/kube-openapi: ef417d0 → aa012df
+
+### Removed
+_Nothing has changed._
+
+# v1.60.0
+
+## Changes by Kind
+
+### Bug or Regression
+
+- Fix init order bug that allowed modifying tags reserved for use by the EBS CSI Driver ([#2932](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2932), [@ElijahQuinones](https://github.com/ElijahQuinones))
+- Fix possible nil pointer deref on clones path ([#2931](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2931), [@ElijahQuinones](https://github.com/ElijahQuinones))
+- Add mutex to MetricRecorder to prevent crashes caused by concurrent access ([#2933](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2933), [@ElijahQuinones](https://github.com/ElijahQuinones))
+
+## Dependencies
+
+### Added
+- k8s.io/streaming: v0.36.1
+
+### Changed
+- github.com/aws/aws-sdk-go-v2/config: [v1.32.16 → v1.32.17](https://github.com/aws/aws-sdk-go-v2/compare/config/v1.32.16...config/v1.32.17)
+- github.com/aws/aws-sdk-go-v2/credentials: [v1.19.15 → v1.19.16](https://github.com/aws/aws-sdk-go-v2/compare/credentials/v1.19.15...credentials/v1.19.16)
+- github.com/aws/aws-sdk-go-v2/feature/ec2/imds: [v1.18.22 → v1.18.23](https://github.com/aws/aws-sdk-go-v2/compare/feature/ec2/imds/v1.18.22...feature/ec2/imds/v1.18.23)
+- github.com/aws/aws-sdk-go-v2/internal/configsources: [v1.4.22 → v1.4.23](https://github.com/aws/aws-sdk-go-v2/compare/internal/configsources/v1.4.22...internal/configsources/v1.4.23)
+- github.com/aws/aws-sdk-go-v2/internal/endpoints/v2: [v2.7.22 → v2.7.23](https://github.com/aws/aws-sdk-go-v2/compare/internal/endpoints/v2/v2.7.22...internal/endpoints/v2/v2.7.23)
+- github.com/aws/aws-sdk-go-v2/internal/v4a: [v1.4.23 → v1.4.24](https://github.com/aws/aws-sdk-go-v2/compare/internal/v4a/v1.4.23...internal/v4a/v1.4.24)
+- github.com/aws/aws-sdk-go-v2/service/ec2: [v1.297.1 → v1.301.0](https://github.com/aws/aws-sdk-go-v2/compare/service/ec2/v1.297.1...service/ec2/v1.301.0)
+- github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding: [v1.13.8 → v1.13.9](https://github.com/aws/aws-sdk-go-v2/compare/service/internal/accept-encoding/v1.13.8...service/internal/accept-encoding/v1.13.9)
+- github.com/aws/aws-sdk-go-v2/service/internal/presigned-url: [v1.13.22 → v1.13.23](https://github.com/aws/aws-sdk-go-v2/compare/service/internal/presigned-url/v1.13.22...service/internal/presigned-url/v1.13.23)
+- github.com/aws/aws-sdk-go-v2/service/sagemaker: [v1.241.0 → v1.246.0](https://github.com/aws/aws-sdk-go-v2/compare/service/sagemaker/v1.241.0...service/sagemaker/v1.246.0)
+- github.com/aws/aws-sdk-go-v2/service/signin: [v1.0.10 → v1.0.11](https://github.com/aws/aws-sdk-go-v2/compare/service/signin/v1.0.10...service/signin/v1.0.11)
+- github.com/aws/aws-sdk-go-v2/service/sso: [v1.30.16 → v1.30.17](https://github.com/aws/aws-sdk-go-v2/compare/service/sso/v1.30.16...service/sso/v1.30.17)
+- github.com/aws/aws-sdk-go-v2/service/ssooidc: [v1.35.20 → v1.35.21](https://github.com/aws/aws-sdk-go-v2/compare/service/ssooidc/v1.35.20...service/ssooidc/v1.35.21)
+- github.com/aws/aws-sdk-go-v2/service/sts: [v1.42.0 → v1.42.1](https://github.com/aws/aws-sdk-go-v2/compare/service/sts/v1.42.0...service/sts/v1.42.1)
+- github.com/aws/aws-sdk-go-v2: [v1.41.6 → v1.41.7](https://github.com/aws/aws-sdk-go-v2/compare/v1.41.6...v1.41.7)
+- github.com/aws/smithy-go: [v1.25.0 → v1.25.1](https://github.com/aws/smithy-go/compare/v1.25.0...v1.25.1)
+- github.com/cncf/xds/go: [ee656c7 → dba9d58](https://github.com/cncf/xds/compare/ee656c7...dba9d58)
+- github.com/envoyproxy/go-control-plane/envoy: [v1.36.0 → v1.37.0](https://github.com/envoyproxy/go-control-plane/compare/envoy/v1.36.0...envoy/v1.37.0)
+- github.com/envoyproxy/protoc-gen-validate: [v1.3.0 → v1.3.3](https://github.com/envoyproxy/protoc-gen-validate/compare/v1.3.0...v1.3.3)
+- github.com/fxamacker/cbor/v2: [v2.9.1 → v2.9.2](https://github.com/fxamacker/cbor/compare/v2.9.1...v2.9.2)
+- github.com/go-jose/go-jose/v4: [v4.1.3 → v4.1.4](https://github.com/go-jose/go-jose/compare/v4.1.3...v4.1.4)
+- go.opentelemetry.io/contrib/detectors/gcp: v1.39.0 → v1.42.0
+- go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp: v0.61.0 → v0.65.0
+- go.uber.org/zap: v1.27.1 → v1.28.0
+- golang.org/x/crypto: v0.50.0 → v0.51.0
+- golang.org/x/mod: v0.34.0 → v0.35.0
+- golang.org/x/net: v0.53.0 → v0.54.0
+- golang.org/x/sys: v0.43.0 → v0.44.0
+- golang.org/x/telemetry: 579e4da → be6f6cb
+- golang.org/x/term: v0.42.0 → v0.43.0
+- golang.org/x/text: v0.36.0 → v0.37.0
+- golang.org/x/tools: v0.43.0 → v0.44.0
+- google.golang.org/genproto/googleapis/api: afd174a → 3700d41
+- google.golang.org/genproto/googleapis/rpc: afd174a → 3700d41
+- google.golang.org/grpc: v1.80.0 → v1.81.0
+- google.golang.org/protobuf: v1.36.11 → f2248ac
+- k8s.io/api: v0.35.4 → v0.36.1
+- k8s.io/apimachinery: v0.35.4 → v0.36.1
+- k8s.io/client-go: v0.35.4 → v0.36.1
+- k8s.io/component-base: v0.35.4 → v0.36.1
+- k8s.io/gengo/v2: 85fd79d → ec3ebc5
+- k8s.io/kube-openapi: ec9c827 → ef417d0
+- k8s.io/mount-utils: v0.35.4 → v0.36.1
+- k8s.io/utils: 28399d8 → ff6756f
+
+### Removed
+- github.com/armon/go-socks5: [e753329](https://github.com/armon/go-socks5/tree/e753329)
+- github.com/cenkalti/backoff/v4: [v4.3.0](https://github.com/cenkalti/backoff/tree/v4.3.0)
+- github.com/gregjones/httpcache: [901d907](https://github.com/gregjones/httpcache/tree/901d907)
+
+# v1.59.0
+
+## Changes by Kind
+
+### Urgent Upgrade Notes
+*(No, really, you MUST read this before you upgrade)*
+
+#### `DescribeInstanceTypes` at runtime
+
+The EBS CSI Driver now calls `DescribeInstanceTypes` at runtime to determine if an instance has [multiple EBS cards](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs_cards.html) and handle such cases appropriately. Today, the EBS CSI Driver falls back to a hardcoded table generated at the time of release if `DescribeInstanceTypes` fails.
+
+**In a future release of the driver, this fallback will be removed and `DescribeInstanceTypes` will be mandatory.** AWS is releasing a change to the AWS-managed IAM policies for the EBS CSI Driver to include `DescribeInstanceTypes`. If you use a custom IAM policy, you will need to add `DescribeInstanceTypes` to your policy. The exact release this deprecation will be carried out is not currently decided, this warning will be repeated in the future when a date is chosen.
+
+#### New Managed Policies
+
+New AWS-managed IAM policies are available for the EBS CSI Driver that restrict the IAM permissions to align with least-privilege best practices. For more information and migration guidance see https://github.com/kubernetes-sigs/aws-ebs-csi-driver/issues/2918
+
+### Feature
+
+- Call DescribeInstanceTypes at runtime for EBS multi-card instances ([#2916](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2916), [@ConnorJC3](https://github.com/ConnorJC3))
+
+### Bug or Regression
+
+- Prevent deletion of reserved tag keys during volume modification ([#2919](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2919), [@torredil](https://github.com/torredil))
+
+## Dependencies
+
+### Added
+- github.com/aws/aws-sdk-go-v2/internal/v4a: [v1.4.23](https://github.com/aws/aws-sdk-go-v2/tree/v1.4.23)
+
+### Changed
+- github.com/aws/aws-sdk-go-v2: [v1.41.5 → v1.41.6](https://github.com/aws/aws-sdk-go-v2/compare/v1.41.5...v1.41.6)
+- github.com/aws/aws-sdk-go-v2/config: [v1.32.13 → v1.32.16](https://github.com/aws/aws-sdk-go-v2/compare/v1.32.13...v1.32.16)
+- github.com/aws/aws-sdk-go-v2/credentials: [v1.19.13 → v1.19.15](https://github.com/aws/aws-sdk-go-v2/compare/v1.19.13...v1.19.15)
+- github.com/aws/aws-sdk-go-v2/feature/ec2/imds: [v1.18.21 → v1.18.22](https://github.com/aws/aws-sdk-go-v2/compare/v1.18.21...v1.18.22)
+- github.com/aws/aws-sdk-go-v2/internal/configsources: [v1.4.21 → v1.4.22](https://github.com/aws/aws-sdk-go-v2/compare/v1.4.21...v1.4.22)
+- github.com/aws/aws-sdk-go-v2/internal/endpoints/v2: [v2.7.21 → v2.7.22](https://github.com/aws/aws-sdk-go-v2/compare/v2.7.21...v2.7.22)
+- github.com/aws/aws-sdk-go-v2/service/ec2: [v1.296.2 → v1.297.1](https://github.com/aws/aws-sdk-go-v2/compare/v1.296.2...v1.297.1)
+- github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding: [v1.13.7 → v1.13.8](https://github.com/aws/aws-sdk-go-v2/compare/v1.13.7...v1.13.8)
+- github.com/aws/aws-sdk-go-v2/service/internal/presigned-url: [v1.13.21 → v1.13.22](https://github.com/aws/aws-sdk-go-v2/compare/v1.13.21...v1.13.22)
+- github.com/aws/aws-sdk-go-v2/service/sagemaker: [v1.238.0 → v1.241.0](https://github.com/aws/aws-sdk-go-v2/compare/v1.238.0...v1.241.0)
+- github.com/aws/aws-sdk-go-v2/service/signin: [v1.0.9 → v1.0.10](https://github.com/aws/aws-sdk-go-v2/compare/v1.0.9...v1.0.10)
+- github.com/aws/aws-sdk-go-v2/service/sso: [v1.30.14 → v1.30.16](https://github.com/aws/aws-sdk-go-v2/compare/v1.30.14...v1.30.16)
+- github.com/aws/aws-sdk-go-v2/service/ssooidc: [v1.35.18 → v1.35.20](https://github.com/aws/aws-sdk-go-v2/compare/v1.35.18...v1.35.20)
+- github.com/aws/aws-sdk-go-v2/service/sts: [v1.41.10 → v1.42.0](https://github.com/aws/aws-sdk-go-v2/compare/v1.41.10...v1.42.0)
+- github.com/aws/smithy-go: [v1.24.2 → v1.25.0](https://github.com/aws/smithy-go/compare/v1.24.2...v1.25.0)
+- github.com/go-openapi/jsonpointer: [v0.22.5 → v0.23.1](https://github.com/go-openapi/jsonpointer/compare/v0.22.5...v0.23.1)
+- github.com/go-openapi/swag: [v0.25.5 → v0.26.0](https://github.com/go-openapi/swag/compare/v0.25.5...v0.26.0)
+- github.com/go-openapi/swag/cmdutils: [v0.25.5 → v0.26.0](https://github.com/go-openapi/swag/compare/v0.25.5...v0.26.0)
+- github.com/go-openapi/swag/conv: [v0.25.5 → v0.26.0](https://github.com/go-openapi/swag/compare/v0.25.5...v0.26.0)
+- github.com/go-openapi/swag/fileutils: [v0.25.5 → v0.26.0](https://github.com/go-openapi/swag/compare/v0.25.5...v0.26.0)
+- github.com/go-openapi/swag/jsonname: [v0.25.5 → v0.26.0](https://github.com/go-openapi/swag/compare/v0.25.5...v0.26.0)
+- github.com/go-openapi/swag/jsonutils: [v0.25.5 → v0.26.0](https://github.com/go-openapi/swag/compare/v0.25.5...v0.26.0)
+- github.com/go-openapi/swag/jsonutils/fixtures_test: [v0.25.5 → v0.26.0](https://github.com/go-openapi/swag/compare/v0.25.5...v0.26.0)
+- github.com/go-openapi/swag/loading: [v0.25.5 → v0.26.0](https://github.com/go-openapi/swag/compare/v0.25.5...v0.26.0)
+- github.com/go-openapi/swag/mangling: [v0.25.5 → v0.26.0](https://github.com/go-openapi/swag/compare/v0.25.5...v0.26.0)
+- github.com/go-openapi/swag/netutils: [v0.25.5 → v0.26.0](https://github.com/go-openapi/swag/compare/v0.25.5...v0.26.0)
+- github.com/go-openapi/swag/stringutils: [v0.25.5 → v0.26.0](https://github.com/go-openapi/swag/compare/v0.25.5...v0.26.0)
+- github.com/go-openapi/swag/typeutils: [v0.25.5 → v0.26.0](https://github.com/go-openapi/swag/compare/v0.25.5...v0.26.0)
+- github.com/go-openapi/swag/yamlutils: [v0.25.5 → v0.26.0](https://github.com/go-openapi/swag/compare/v0.25.5...v0.26.0)
+- github.com/go-openapi/testify/enable/yaml/v2: [v2.4.0 → v2.4.2](https://github.com/go-openapi/testify/compare/v2.4.0...v2.4.2)
+- github.com/go-openapi/testify/v2: [v2.4.0 → v2.4.2](https://github.com/go-openapi/testify/compare/v2.4.0...v2.4.2)
+- github.com/grpc-ecosystem/grpc-gateway/v2: [v2.28.0 → v2.29.0](https://github.com/grpc-ecosystem/grpc-gateway/compare/v2.28.0...v2.29.0)
+- github.com/moby/spdystream: [v0.5.0 → v0.5.1](https://github.com/moby/spdystream/compare/v0.5.0...v0.5.1)
+- go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc: v0.67.0 → v0.68.0
+- go.opentelemetry.io/otel: v1.42.0 → v1.43.0
+- go.opentelemetry.io/otel/exporters/otlp/otlptrace: v1.42.0 → v1.43.0
+- go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc: v1.42.0 → v1.43.0
+- go.opentelemetry.io/otel/metric: v1.42.0 → v1.43.0
+- go.opentelemetry.io/otel/sdk: v1.42.0 → v1.43.0
+- go.opentelemetry.io/otel/sdk/metric: v1.42.0 → v1.43.0
+- go.opentelemetry.io/otel/trace: v1.42.0 → v1.43.0
+- golang.org/x/crypto: v0.49.0 → v0.50.0
+- golang.org/x/mod: v0.33.0 → v0.34.0
+- golang.org/x/net: v0.52.0 → v0.53.0
+- golang.org/x/sys: v0.42.0 → v0.43.0
+- golang.org/x/telemetry: e7419c6 → 579e4da
+- golang.org/x/term: v0.41.0 → v0.42.0
+- golang.org/x/text: v0.35.0 → v0.36.0
+- golang.org/x/tools: v0.42.0 → v0.43.0
+- google.golang.org/genproto/googleapis/api: 9d38bb4 → afd174a
+- google.golang.org/genproto/googleapis/rpc: 9d38bb4 → afd174a
+- k8s.io/api: v0.35.3 → v0.35.4
+- k8s.io/apimachinery: v0.35.3 → v0.35.4
+- k8s.io/client-go: v0.35.3 → v0.35.4
+- k8s.io/component-base: v0.35.3 → v0.35.4
+- k8s.io/kube-openapi: 16be699 → ec9c827
+- k8s.io/mount-utils: v0.35.3 → v0.35.4
+- sigs.k8s.io/structured-merge-diff/v6: v6.3.2 → v6.4.0
+
+### Removed
+- github.com/aws/aws-sdk-go-v2/internal/ini: [v1.8.6](https://github.com/aws/aws-sdk-go-v2/tree/v1.8.6)
+
+# v1.58.0
+
+## Changes by Kind
+
+### Feature
+
+- When --k8s-tag-cluster-id is set, tag volumes and snapshots with `ebs.csi.aws.com/cluster-name` to support cluster-scoped IAM policies. ([#2899](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2899), [@torredil](https://github.com/torredil))
+
+### Bug or Regression
+
+- Handle duplicate CreateVolume RPCs for in-use volumes ([#2908](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2908), [@ConnorJC3](https://github.com/ConnorJC3))
+
+### Other (Cleanup or Flake)
+
+- Append driver mode to user agent string for metadata labeler container. ([#2907](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2907), [@torredil](https://github.com/torredil))
+
+## Dependencies
+
+### Added
+_Nothing has changed._
+
+### Changed
+- github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp: [v1.30.0 → v1.31.0](https://github.com/GoogleCloudPlatform/opentelemetry-operations-go/compare/detectors/gcp/v1.30.0...detectors/gcp/v1.31.0)
+- github.com/aws/aws-sdk-go-v2/config: [v1.32.12 → v1.32.13](https://github.com/aws/aws-sdk-go-v2/compare/config/v1.32.12...config/v1.32.13)
+- github.com/aws/aws-sdk-go-v2/credentials: [v1.19.12 → v1.19.13](https://github.com/aws/aws-sdk-go-v2/compare/credentials/v1.19.12...credentials/v1.19.13)
+- github.com/aws/aws-sdk-go-v2/feature/ec2/imds: [v1.18.20 → v1.18.21](https://github.com/aws/aws-sdk-go-v2/compare/feature/ec2/imds/v1.18.20...feature/ec2/imds/v1.18.21)
+- github.com/aws/aws-sdk-go-v2/internal/configsources: [v1.4.20 → v1.4.21](https://github.com/aws/aws-sdk-go-v2/compare/internal/configsources/v1.4.20...internal/configsources/v1.4.21)
+- github.com/aws/aws-sdk-go-v2/internal/endpoints/v2: [v2.7.20 → v2.7.21](https://github.com/aws/aws-sdk-go-v2/compare/internal/endpoints/v2/v2.7.20...internal/endpoints/v2/v2.7.21)
+- github.com/aws/aws-sdk-go-v2/service/ec2: [v1.296.0 → v1.296.2](https://github.com/aws/aws-sdk-go-v2/compare/service/ec2/v1.296.0...service/ec2/v1.296.2)
+- github.com/aws/aws-sdk-go-v2/service/internal/presigned-url: [v1.13.20 → v1.13.21](https://github.com/aws/aws-sdk-go-v2/compare/service/internal/presigned-url/v1.13.20...service/internal/presigned-url/v1.13.21)
+- github.com/aws/aws-sdk-go-v2/service/sagemaker: [v1.236.1 → v1.238.0](https://github.com/aws/aws-sdk-go-v2/compare/service/sagemaker/v1.236.1...service/sagemaker/v1.238.0)
+- github.com/aws/aws-sdk-go-v2/service/signin: [v1.0.8 → v1.0.9](https://github.com/aws/aws-sdk-go-v2/compare/service/signin/v1.0.8...service/signin/v1.0.9)
+- github.com/aws/aws-sdk-go-v2/service/sso: [v1.30.13 → v1.30.14](https://github.com/aws/aws-sdk-go-v2/compare/service/sso/v1.30.13...service/sso/v1.30.14)
+- github.com/aws/aws-sdk-go-v2/service/ssooidc: [v1.35.17 → v1.35.18](https://github.com/aws/aws-sdk-go-v2/compare/service/ssooidc/v1.35.17...service/ssooidc/v1.35.18)
+- github.com/aws/aws-sdk-go-v2/service/sts: [v1.41.9 → v1.41.10](https://github.com/aws/aws-sdk-go-v2/compare/service/sts/v1.41.9...service/sts/v1.41.10)
+- github.com/aws/aws-sdk-go-v2: [v1.41.4 → v1.41.5](https://github.com/aws/aws-sdk-go-v2/compare/v1.41.4...v1.41.5)
+- github.com/fxamacker/cbor/v2: [v2.9.0 → v2.9.1](https://github.com/fxamacker/cbor/compare/v2.9.0...v2.9.1)
+- gonum.org/v1/gonum: v0.16.0 → v0.17.0
+- google.golang.org/genproto/googleapis/api: d00831a → 9d38bb4
+- google.golang.org/genproto/googleapis/rpc: d00831a → 9d38bb4
+- google.golang.org/grpc: v1.79.3 → v1.80.0
+- k8s.io/kube-openapi: 5883c5e → 16be699
+
+### Removed
+_Nothing has changed._
+
+# v1.57.1
+
+### Security
+
+Bump go version to adress stdlib CVEs
+
+# v1.57.0
+
+## Changes by Kind
+### Note
+
+The following instance types incorrectly report 128 attachments from the `DescribeInstanceTypes` API but currently only support 64 attachments and have been manually pinned to 64 volumes when calculating the attachment limit:
+- `8gn.48xlarge`
+- `m8gn.48xlarge`
+- `c8gn.48xlarge`
+
+### Security
+
+This release includes a fix for critical [CVE-2026-33186](https://github.com/advisories/GHSA-p77j-4mvh-x3m3) in all containers.
+
+### Other (Cleanup or Flake)
+
+- Rescan disks before resize operations on Windows. ([#2881](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2881), [@torredil](https://github.com/torredil))
+
+## Dependencies
+
+### Added
+_Nothing has changed._
+
+### Changed
+- github.com/aws/aws-sdk-go-v2/config: [v1.32.9 → v1.32.12](https://github.com/aws/aws-sdk-go-v2/compare/config/v1.32.9...config/v1.32.12)
+- github.com/aws/aws-sdk-go-v2/credentials: [v1.19.9 → v1.19.12](https://github.com/aws/aws-sdk-go-v2/compare/credentials/v1.19.9...credentials/v1.19.12)
+- github.com/aws/aws-sdk-go-v2/feature/ec2/imds: [v1.18.17 → v1.18.20](https://github.com/aws/aws-sdk-go-v2/compare/feature/ec2/imds/v1.18.17...feature/ec2/imds/v1.18.20)
+- github.com/aws/aws-sdk-go-v2/internal/configsources: [v1.4.17 → v1.4.20](https://github.com/aws/aws-sdk-go-v2/compare/internal/configsources/v1.4.17...internal/configsources/v1.4.20)
+- github.com/aws/aws-sdk-go-v2/internal/endpoints/v2: [v2.7.17 → v2.7.20](https://github.com/aws/aws-sdk-go-v2/compare/internal/endpoints/v2/v2.7.17...internal/endpoints/v2/v2.7.20)
+- github.com/aws/aws-sdk-go-v2/internal/ini: [v1.8.4 → v1.8.6](https://github.com/aws/aws-sdk-go-v2/compare/internal/ini/v1.8.4...internal/ini/v1.8.6)
+- github.com/aws/aws-sdk-go-v2/service/ec2: [v1.290.0 → v1.295.0](https://github.com/aws/aws-sdk-go-v2/compare/service/ec2/v1.290.0...service/ec2/v1.295.0)
+- github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding: [v1.13.4 → v1.13.7](https://github.com/aws/aws-sdk-go-v2/compare/service/internal/accept-encoding/v1.13.4...service/internal/accept-encoding/v1.13.7)
+- github.com/aws/aws-sdk-go-v2/service/internal/presigned-url: [v1.13.17 → v1.13.20](https://github.com/aws/aws-sdk-go-v2/compare/service/internal/presigned-url/v1.13.17...service/internal/presigned-url/v1.13.20)
+- github.com/aws/aws-sdk-go-v2/service/sagemaker: [v1.233.0 → v1.236.1](https://github.com/aws/aws-sdk-go-v2/compare/service/sagemaker/v1.233.0...service/sagemaker/v1.236.1)
+- github.com/aws/aws-sdk-go-v2/service/signin: [v1.0.5 → v1.0.8](https://github.com/aws/aws-sdk-go-v2/compare/service/signin/v1.0.5...service/signin/v1.0.8)
+- github.com/aws/aws-sdk-go-v2/service/sso: [v1.30.10 → v1.30.13](https://github.com/aws/aws-sdk-go-v2/compare/service/sso/v1.30.10...service/sso/v1.30.13)
+- github.com/aws/aws-sdk-go-v2/service/ssooidc: [v1.35.14 → v1.35.17](https://github.com/aws/aws-sdk-go-v2/compare/service/ssooidc/v1.35.14...service/ssooidc/v1.35.17)
+- github.com/aws/aws-sdk-go-v2/service/sts: [v1.41.6 → v1.41.9](https://github.com/aws/aws-sdk-go-v2/compare/service/sts/v1.41.6...service/sts/v1.41.9)
+- github.com/aws/aws-sdk-go-v2: [v1.41.1 → v1.41.4](https://github.com/aws/aws-sdk-go-v2/compare/v1.41.1...v1.41.4)
+- github.com/aws/smithy-go: [v1.24.0 → v1.24.2](https://github.com/aws/smithy-go/compare/v1.24.0...v1.24.2)
+- github.com/awslabs/volume-modifier-for-k8s: [v0.9.1 → v0.9.4](https://github.com/awslabs/volume-modifier-for-k8s/compare/v0.9.1...v0.9.4)
+- github.com/go-openapi/jsonpointer: [v0.22.4 → v0.22.5](https://github.com/go-openapi/jsonpointer/compare/v0.22.4...v0.22.5)
+- github.com/go-openapi/jsonreference: [v0.21.4 → v0.21.5](https://github.com/go-openapi/jsonreference/compare/v0.21.4...v0.21.5)
+- github.com/go-openapi/swag/cmdutils: [v0.25.4 → v0.25.5](https://github.com/go-openapi/swag/compare/cmdutils/v0.25.4...cmdutils/v0.25.5)
+- github.com/go-openapi/swag/conv: [v0.25.4 → v0.25.5](https://github.com/go-openapi/swag/compare/conv/v0.25.4...conv/v0.25.5)
+- github.com/go-openapi/swag/fileutils: [v0.25.4 → v0.25.5](https://github.com/go-openapi/swag/compare/fileutils/v0.25.4...fileutils/v0.25.5)
+- github.com/go-openapi/swag/jsonname: [v0.25.4 → v0.25.5](https://github.com/go-openapi/swag/compare/jsonname/v0.25.4...jsonname/v0.25.5)
+- github.com/go-openapi/swag/jsonutils/fixtures_test: [v0.25.4 → v0.25.5](https://github.com/go-openapi/swag/compare/jsonutils/fixtures_test/v0.25.4...jsonutils/fixtures_test/v0.25.5)
+- github.com/go-openapi/swag/jsonutils: [v0.25.4 → v0.25.5](https://github.com/go-openapi/swag/compare/jsonutils/v0.25.4...jsonutils/v0.25.5)
+- github.com/go-openapi/swag/loading: [v0.25.4 → v0.25.5](https://github.com/go-openapi/swag/compare/loading/v0.25.4...loading/v0.25.5)
+- github.com/go-openapi/swag/mangling: [v0.25.4 → v0.25.5](https://github.com/go-openapi/swag/compare/mangling/v0.25.4...mangling/v0.25.5)
+- github.com/go-openapi/swag/netutils: [v0.25.4 → v0.25.5](https://github.com/go-openapi/swag/compare/netutils/v0.25.4...netutils/v0.25.5)
+- github.com/go-openapi/swag/stringutils: [v0.25.4 → v0.25.5](https://github.com/go-openapi/swag/compare/stringutils/v0.25.4...stringutils/v0.25.5)
+- github.com/go-openapi/swag/typeutils: [v0.25.4 → v0.25.5](https://github.com/go-openapi/swag/compare/typeutils/v0.25.4...typeutils/v0.25.5)
+- github.com/go-openapi/swag/yamlutils: [v0.25.4 → v0.25.5](https://github.com/go-openapi/swag/compare/yamlutils/v0.25.4...yamlutils/v0.25.5)
+- github.com/go-openapi/swag: [v0.25.4 → v0.25.5](https://github.com/go-openapi/swag/compare/v0.25.4...v0.25.5)
+- github.com/go-openapi/testify/enable/yaml/v2: [v2.0.2 → v2.4.0](https://github.com/go-openapi/testify/compare/enable/yaml/v2/v2.0.2...enable/yaml/v2/v2.4.0)
+- github.com/go-openapi/testify/v2: [v2.0.2 → v2.4.0](https://github.com/go-openapi/testify/compare/v2.0.2...v2.4.0)
+- github.com/prometheus/procfs: [v0.19.2 → v0.20.1](https://github.com/prometheus/procfs/compare/v0.19.2...v0.20.1)
+- go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc: v0.65.0 → v0.67.0
+- go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc: v1.40.0 → v1.42.0
+- go.opentelemetry.io/otel/exporters/otlp/otlptrace: v1.40.0 → v1.42.0
+- go.opentelemetry.io/otel/metric: v1.40.0 → v1.42.0
+- go.opentelemetry.io/otel/sdk/metric: v1.40.0 → v1.42.0
+- go.opentelemetry.io/otel/sdk: v1.40.0 → v1.42.0
+- go.opentelemetry.io/otel/trace: v1.40.0 → v1.42.0
+- go.opentelemetry.io/otel: v1.40.0 → v1.42.0
+- go.opentelemetry.io/proto/otlp: v1.9.0 → v1.10.0
+- go.yaml.in/yaml/v2: v2.4.3 → v2.4.4
+- golang.org/x/crypto: v0.48.0 → v0.49.0
+- golang.org/x/mod: v0.32.0 → v0.33.0
+- golang.org/x/net: v0.50.0 → v0.52.0
+- golang.org/x/oauth2: v0.35.0 → v0.36.0
+- golang.org/x/sync: v0.19.0 → v0.20.0
+- golang.org/x/sys: v0.41.0 → v0.42.0
+- golang.org/x/telemetry: bd525da → e7419c6
+- golang.org/x/term: v0.40.0 → v0.41.0
+- golang.org/x/text: v0.34.0 → v0.35.0
+- golang.org/x/time: v0.14.0 → v0.15.0
+- golang.org/x/tools: v0.41.0 → v0.42.0
+- google.golang.org/genproto/googleapis/api: 42d3e9b → 0b37fe3
+- google.golang.org/genproto/googleapis/rpc: 42d3e9b → 0b37fe3
+- google.golang.org/grpc: v1.79.1 → v1.79.3
+- k8s.io/api: v0.35.1 → v0.35.3
+- k8s.io/apimachinery: v0.35.1 → v0.35.3
+- k8s.io/client-go: v0.35.1 → v0.35.3
+- k8s.io/component-base: v0.35.1 → v0.35.3
+- k8s.io/csi-translation-lib: v0.34.3 → v0.35.2
+- k8s.io/klog/v2: v2.130.1 → v2.140.0
+- k8s.io/kube-openapi: a19766b → 5883c5e
+- k8s.io/kubectl: v0.34.3 → v0.35.3
+- k8s.io/mount-utils: v0.35.1 → v0.35.3
+
+### Removed
+_Nothing has changed._
+
+# v1.56.0
+
+## Changes by Kind
+
+### Feature
+
+- Add support for Windows Server 2025 ([#2831](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2831), [@ElijahQuinones](https://github.com/ElijahQuinones))
+- Update CSI sidecar images to address CVE-2025-61726 ([#2849](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2849), [@torredil](https://github.com/torredil))
+
+### Bug or Regression
+
+- Fix error handling when re-fetching the node object during agent-not-ready taint removal attempts. ([#2847](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2847), [@torredil](https://github.com/torredil))
+
+## Dependencies
+
+### Added
+_Nothing has changed._
+
+### Changed
+- cel.dev/expr: v0.24.0 → v0.25.1
+- github.com/aws/aws-sdk-go-v2/config: [v1.32.7 → v1.32.9](https://github.com/aws/aws-sdk-go-v2/compare/config/v1.32.7...config/v1.32.9)
+- github.com/aws/aws-sdk-go-v2/credentials: [v1.19.7 → v1.19.9](https://github.com/aws/aws-sdk-go-v2/compare/credentials/v1.19.7...credentials/v1.19.9)
+- github.com/aws/aws-sdk-go-v2/service/ec2: [v1.281.0 → v1.290.0](https://github.com/aws/aws-sdk-go-v2/compare/service/ec2/v1.281.0...service/ec2/v1.290.0)
+- github.com/aws/aws-sdk-go-v2/service/sagemaker: [v1.230.1 → v1.233.0](https://github.com/aws/aws-sdk-go-v2/compare/service/sagemaker/v1.230.1...service/sagemaker/v1.233.0)
+- github.com/aws/aws-sdk-go-v2/service/sso: [v1.30.9 → v1.30.10](https://github.com/aws/aws-sdk-go-v2/compare/service/sso/v1.30.9...service/sso/v1.30.10)
+- github.com/aws/aws-sdk-go-v2/service/ssooidc: [v1.35.13 → v1.35.14](https://github.com/aws/aws-sdk-go-v2/compare/service/ssooidc/v1.35.13...service/ssooidc/v1.35.14)
+- github.com/cncf/xds/go: [0feb691 → ee656c7](https://github.com/cncf/xds/compare/0feb691...ee656c7)
+- github.com/envoyproxy/go-control-plane/envoy: [v1.35.0 → v1.36.0](https://github.com/envoyproxy/go-control-plane/compare/envoy/v1.35.0...envoy/v1.36.0)
+- github.com/envoyproxy/go-control-plane: [75eaa19 → v0.14.0](https://github.com/envoyproxy/go-control-plane/compare/75eaa19...v0.14.0)
+- github.com/envoyproxy/protoc-gen-validate: [v1.2.1 → v1.3.0](https://github.com/envoyproxy/protoc-gen-validate/compare/v1.2.1...v1.3.0)
+- github.com/grpc-ecosystem/grpc-gateway/v2: [v2.27.5 → v2.28.0](https://github.com/grpc-ecosystem/grpc-gateway/compare/v2.27.5...v2.28.0)
+- github.com/kubernetes-csi/csi-lib-utils: [v0.23.1 → v0.23.2](https://github.com/kubernetes-csi/csi-lib-utils/compare/v0.23.1...v0.23.2)
+- go.opentelemetry.io/contrib/detectors/gcp: v1.38.0 → v1.39.0
+- go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc: v0.64.0 → v0.65.0
+- go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc: v1.39.0 → v1.40.0
+- go.opentelemetry.io/otel/exporters/otlp/otlptrace: v1.39.0 → v1.40.0
+- go.opentelemetry.io/otel/metric: v1.39.0 → v1.40.0
+- go.opentelemetry.io/otel/sdk/metric: v1.39.0 → v1.40.0
+- go.opentelemetry.io/otel/sdk: v1.39.0 → v1.40.0
+- go.opentelemetry.io/otel/trace: v1.39.0 → v1.40.0
+- go.opentelemetry.io/otel: v1.39.0 → v1.40.0
+- golang.org/x/crypto: v0.47.0 → v0.48.0
+- golang.org/x/mod: v0.31.0 → v0.32.0
+- golang.org/x/net: v0.49.0 → v0.50.0
+- golang.org/x/oauth2: v0.34.0 → v0.35.0
+- golang.org/x/sys: v0.40.0 → v0.41.0
+- golang.org/x/telemetry: 8fff8a5 → bd525da
+- golang.org/x/term: v0.39.0 → v0.40.0
+- golang.org/x/text: v0.33.0 → v0.34.0
+- golang.org/x/tools: v0.40.0 → v0.41.0
+- google.golang.org/genproto/googleapis/api: 8e98ce8 → 42d3e9b
+- google.golang.org/genproto/googleapis/rpc: 8e98ce8 → 42d3e9b
+- google.golang.org/grpc: v1.78.0 → v1.79.1
+- k8s.io/api: v0.35.0 → v0.35.1
+- k8s.io/apimachinery: v0.35.0 → v0.35.1
+- k8s.io/client-go: v0.35.0 → v0.35.1
+- k8s.io/component-base: v0.35.0 → v0.35.1
+- k8s.io/kube-openapi: 4e65d59 → a19766b
+- k8s.io/mount-utils: v0.35.0 → v0.35.1
+- k8s.io/utils: 914a6e7 → b8788ab
+- sigs.k8s.io/structured-merge-diff/v6: v6.3.1 → v6.3.2
+
+### Removed
+_Nothing has changed._
+
+# v1.55.0
+
+## Changes by Kind
+
+### Urgent Upgrade Notes
+*(No, really, you MUST read this before you upgrade)*
+
+**`v1.55.0` and later of the EBS CSI Driver does not support `a1.*` instances.** The EBS CSI Driver team recommends upgrading to a more recent [AWS Graviton](https://aws.amazon.com/ec2/graviton/) instance type.
+
+### Feature
+
+- Add new StorageClass parameter `ext4EncryptionSupport` to enable encryption support in ext4 for non-EBS encryption at rest ([#2820](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2820), [@ConnorJC3](https://github.com/ConnorJC3))
+- Added VolumeSnapshotClass parameters to lock EBS snapshots after creation ([#2797](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2797), [@mdzraf](https://github.com/mdzraf))
+- Automatically assign EBS card index for instances with multiple EBS cards ([#2835](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2835), [@ConnorJC3](https://github.com/ConnorJC3))
+- Cache known bad AWS IDs and remove from batched calls ([#2817](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2817), [@ElijahQuinones](https://github.com/ElijahQuinones))
+
+### Bug or Regression
+
+- Automatically detect and prevent use of IMDS on Hyper-pod nodes ([#2822](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2822), [@ElijahQuinones](https://github.com/ElijahQuinones))
+- Detect, abort, and force a retry of attachments stuck for longer than 90 seconds ([#2833](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2833), [@ConnorJC3](https://github.com/ConnorJC3))
+- Prevent startup crash when alpha `metadata-labeler` feature is enabled by initializing name-dependent variables in node path ([#2827](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2827), [@ConnorJC3](https://github.com/ConnorJC3))
+
+## Dependencies
+
+### Added
+_Nothing has changed._
+
+### Changed
+- github.com/aws/aws-sdk-go-v2/config: [v1.32.5 → v1.32.7](https://github.com/aws/aws-sdk-go-v2/compare/config/v1.32.5...config/v1.32.7)
+- github.com/aws/aws-sdk-go-v2/credentials: [v1.19.5 → v1.19.7](https://github.com/aws/aws-sdk-go-v2/compare/credentials/v1.19.5...credentials/v1.19.7)
+- github.com/aws/aws-sdk-go-v2/feature/ec2/imds: [v1.18.16 → v1.18.17](https://github.com/aws/aws-sdk-go-v2/compare/feature/ec2/imds/v1.18.16...feature/ec2/imds/v1.18.17)
+- github.com/aws/aws-sdk-go-v2/internal/configsources: [v1.4.16 → v1.4.17](https://github.com/aws/aws-sdk-go-v2/compare/internal/configsources/v1.4.16...internal/configsources/v1.4.17)
+- github.com/aws/aws-sdk-go-v2/internal/endpoints/v2: [v2.7.16 → v2.7.17](https://github.com/aws/aws-sdk-go-v2/compare/internal/endpoints/v2/v2.7.16...internal/endpoints/v2/v2.7.17)
+- github.com/aws/aws-sdk-go-v2/service/ec2: [v1.276.1 → v1.280.0](https://github.com/aws/aws-sdk-go-v2/compare/service/ec2/v1.276.1...service/ec2/v1.280.0)
+- github.com/aws/aws-sdk-go-v2/service/internal/presigned-url: [v1.13.16 → v1.13.17](https://github.com/aws/aws-sdk-go-v2/compare/service/internal/presigned-url/v1.13.16...service/internal/presigned-url/v1.13.17)
+- github.com/aws/aws-sdk-go-v2/service/sagemaker: [v1.228.2 → v1.230.1](https://github.com/aws/aws-sdk-go-v2/compare/service/sagemaker/v1.228.2...service/sagemaker/v1.230.1)
+- github.com/aws/aws-sdk-go-v2/service/signin: [v1.0.4 → v1.0.5](https://github.com/aws/aws-sdk-go-v2/compare/service/signin/v1.0.4...service/signin/v1.0.5)
+- github.com/aws/aws-sdk-go-v2/service/sso: [v1.30.7 → v1.30.9](https://github.com/aws/aws-sdk-go-v2/compare/service/sso/v1.30.7...service/sso/v1.30.9)
+- github.com/aws/aws-sdk-go-v2/service/ssooidc: [v1.35.12 → v1.35.13](https://github.com/aws/aws-sdk-go-v2/compare/service/ssooidc/v1.35.12...service/ssooidc/v1.35.13)
+- github.com/aws/aws-sdk-go-v2/service/sts: [v1.41.5 → v1.41.6](https://github.com/aws/aws-sdk-go-v2/compare/service/sts/v1.41.5...service/sts/v1.41.6)
+- github.com/aws/aws-sdk-go-v2: [v1.41.0 → v1.41.1](https://github.com/aws/aws-sdk-go-v2/compare/v1.41.0...v1.41.1)
+- github.com/grpc-ecosystem/grpc-gateway/v2: [v2.27.3 → v2.27.5](https://github.com/grpc-ecosystem/grpc-gateway/compare/v2.27.3...v2.27.5)
+- github.com/kubernetes-csi/csi-lib-utils: [v0.23.0 → v0.23.1](https://github.com/kubernetes-csi/csi-lib-utils/compare/v0.23.0...v0.23.1)
+- github.com/prometheus/common: [v0.67.4 → v0.67.5](https://github.com/prometheus/common/compare/v0.67.4...v0.67.5)
+- go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp: v0.58.0 → v0.61.0
+- golang.org/x/crypto: v0.46.0 → v0.47.0
+- golang.org/x/mod: v0.30.0 → v0.31.0
+- golang.org/x/net: v0.48.0 → v0.49.0
+- golang.org/x/sys: v0.39.0 → v0.40.0
+- golang.org/x/telemetry: bc8e575 → 8fff8a5
+- golang.org/x/term: v0.38.0 → v0.39.0
+- golang.org/x/text: v0.32.0 → v0.33.0
+- golang.org/x/tools: v0.39.0 → v0.40.0
+- google.golang.org/genproto/googleapis/api: 97cd9d5 → b8f7ae3
+- google.golang.org/genproto/googleapis/rpc: 97cd9d5 → b8f7ae3
+- google.golang.org/grpc: v1.77.0 → v1.78.0
+- k8s.io/api: v0.34.3 → v0.35.0
+- k8s.io/apimachinery: v0.34.3 → v0.35.0
+- k8s.io/client-go: v0.34.3 → v0.35.0
+- k8s.io/component-base: v0.34.3 → v0.35.0
+- k8s.io/mount-utils: v0.34.3 → v0.35.0
+- k8s.io/utils: bc988d5 → 914a6e7
+
+### Removed
+- github.com/kisielk/errcheck: [v1.5.0](https://github.com/kisielk/errcheck/tree/v1.5.0)
+- github.com/kisielk/gotool: [v1.0.0](https://github.com/kisielk/gotool/tree/v1.0.0)
+
+# v1.54.0
+
+## Changes by Kind
+
+### `a1compat` Deprecation Warning
+
+**`v1.54.0` will be the last minor version of the EBS CSI Driver to publish an `-a1compat` image for compatibility with `a1.*` family Amazon EC2 instances.** `v1.55.0` and later will not support `a1.*` instances. The EBS CSI Driver team recommends upgrading to a more recent [AWS Graviton](https://aws.amazon.com/ec2/graviton/) instance type.
+
+### Other (Cleanup or Flake)
+
+- Adjust errors codes returned by `CreateVolume` to fix rare volume leak edge case ([#2803](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2803), [@ElijahQuinones](https://github.com/ElijahQuinones))
+
+## Dependencies
+
+### Added
+- github.com/aws/aws-sdk-go-v2/service/signin: [v1.0.4](https://github.com/aws/aws-sdk-go-v2/tree/service/signin/v1.0.4)
+- github.com/go-openapi/testify/enable/yaml/v2: [v2.0.2](https://github.com/go-openapi/testify/tree/enable/yaml/v2/v2.0.2)
+- github.com/golang-jwt/jwt/v5: [v5.3.0](https://github.com/golang-jwt/jwt/tree/v5.3.0)
+
+### Changed
+- cloud.google.com/go/compute/metadata: v0.7.0 → v0.9.0
+- github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp: [v1.29.0 → v1.30.0](https://github.com/GoogleCloudPlatform/opentelemetry-operations-go/compare/detectors/gcp/v1.29.0...detectors/gcp/v1.30.0)
+- github.com/aws/aws-sdk-go-v2/config: [v1.31.20 → v1.32.5](https://github.com/aws/aws-sdk-go-v2/compare/config/v1.31.20...config/v1.32.5)
+- github.com/aws/aws-sdk-go-v2/credentials: [v1.18.24 → v1.19.5](https://github.com/aws/aws-sdk-go-v2/compare/credentials/v1.18.24...credentials/v1.19.5)
+- github.com/aws/aws-sdk-go-v2/feature/ec2/imds: [v1.18.13 → v1.18.16](https://github.com/aws/aws-sdk-go-v2/compare/feature/ec2/imds/v1.18.13...feature/ec2/imds/v1.18.16)
+- github.com/aws/aws-sdk-go-v2/internal/configsources: [v1.4.13 → v1.4.16](https://github.com/aws/aws-sdk-go-v2/compare/internal/configsources/v1.4.13...internal/configsources/v1.4.16)
+- github.com/aws/aws-sdk-go-v2/internal/endpoints/v2: [v2.7.13 → v2.7.16](https://github.com/aws/aws-sdk-go-v2/compare/internal/endpoints/v2/v2.7.13...internal/endpoints/v2/v2.7.16)
+- github.com/aws/aws-sdk-go-v2/service/ec2: [v1.269.0 → v1.276.1](https://github.com/aws/aws-sdk-go-v2/compare/service/ec2/v1.269.0...service/ec2/v1.276.1)
+- github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding: [v1.13.3 → v1.13.4](https://github.com/aws/aws-sdk-go-v2/compare/service/internal/accept-encoding/v1.13.3...service/internal/accept-encoding/v1.13.4)
+- github.com/aws/aws-sdk-go-v2/service/internal/presigned-url: [v1.13.13 → v1.13.16](https://github.com/aws/aws-sdk-go-v2/compare/service/internal/presigned-url/v1.13.13...service/internal/presigned-url/v1.13.16)
+- github.com/aws/aws-sdk-go-v2/service/sagemaker: [v1.223.0 → v1.228.2](https://github.com/aws/aws-sdk-go-v2/compare/service/sagemaker/v1.223.0...service/sagemaker/v1.228.2)
+- github.com/aws/aws-sdk-go-v2/service/sso: [v1.30.3 → v1.30.7](https://github.com/aws/aws-sdk-go-v2/compare/service/sso/v1.30.3...service/sso/v1.30.7)
+- github.com/aws/aws-sdk-go-v2/service/ssooidc: [v1.35.7 → v1.35.12](https://github.com/aws/aws-sdk-go-v2/compare/service/ssooidc/v1.35.7...service/ssooidc/v1.35.12)
+- github.com/aws/aws-sdk-go-v2/service/sts: [v1.40.2 → v1.41.5](https://github.com/aws/aws-sdk-go-v2/compare/service/sts/v1.40.2...service/sts/v1.41.5)
+- github.com/aws/aws-sdk-go-v2: [v1.39.6 → v1.41.0](https://github.com/aws/aws-sdk-go-v2/compare/v1.39.6...v1.41.0)
+- github.com/aws/smithy-go: [v1.23.2 → v1.24.0](https://github.com/aws/smithy-go/compare/v1.23.2...v1.24.0)
+- github.com/awslabs/volume-modifier-for-k8s: [v0.9.0 → v0.9.1](https://github.com/awslabs/volume-modifier-for-k8s/compare/v0.9.0...v0.9.1)
+- github.com/cncf/xds/go: [2ac532f → 0feb691](https://github.com/cncf/xds/compare/2ac532f...0feb691)
+- github.com/envoyproxy/go-control-plane/envoy: [v1.32.4 → v1.35.0](https://github.com/envoyproxy/go-control-plane/compare/envoy/v1.32.4...envoy/v1.35.0)
+- github.com/envoyproxy/go-control-plane: [v0.13.4 → 75eaa19](https://github.com/envoyproxy/go-control-plane/compare/v0.13.4...75eaa19)
+- github.com/go-jose/go-jose/v4: [v4.1.2 → v4.1.3](https://github.com/go-jose/go-jose/compare/v4.1.2...v4.1.3)
+- github.com/go-openapi/jsonpointer: [v0.22.2 → v0.22.4](https://github.com/go-openapi/jsonpointer/compare/v0.22.2...v0.22.4)
+- github.com/go-openapi/jsonreference: [v0.21.3 → v0.21.4](https://github.com/go-openapi/jsonreference/compare/v0.21.3...v0.21.4)
+- github.com/go-openapi/swag/cmdutils: [v0.25.1 → v0.25.4](https://github.com/go-openapi/swag/compare/cmdutils/v0.25.1...cmdutils/v0.25.4)
+- github.com/go-openapi/swag/conv: [v0.25.1 → v0.25.4](https://github.com/go-openapi/swag/compare/conv/v0.25.1...conv/v0.25.4)
+- github.com/go-openapi/swag/fileutils: [v0.25.1 → v0.25.4](https://github.com/go-openapi/swag/compare/fileutils/v0.25.1...fileutils/v0.25.4)
+- github.com/go-openapi/swag/jsonname: [v0.25.1 → v0.25.4](https://github.com/go-openapi/swag/compare/jsonname/v0.25.1...jsonname/v0.25.4)
+- github.com/go-openapi/swag/jsonutils/fixtures_test: [v0.25.1 → v0.25.4](https://github.com/go-openapi/swag/compare/jsonutils/fixtures_test/v0.25.1...jsonutils/fixtures_test/v0.25.4)
+- github.com/go-openapi/swag/jsonutils: [v0.25.1 → v0.25.4](https://github.com/go-openapi/swag/compare/jsonutils/v0.25.1...jsonutils/v0.25.4)
+- github.com/go-openapi/swag/loading: [v0.25.1 → v0.25.4](https://github.com/go-openapi/swag/compare/loading/v0.25.1...loading/v0.25.4)
+- github.com/go-openapi/swag/mangling: [v0.25.1 → v0.25.4](https://github.com/go-openapi/swag/compare/mangling/v0.25.1...mangling/v0.25.4)
+- github.com/go-openapi/swag/netutils: [v0.25.1 → v0.25.4](https://github.com/go-openapi/swag/compare/netutils/v0.25.1...netutils/v0.25.4)
+- github.com/go-openapi/swag/stringutils: [v0.25.1 → v0.25.4](https://github.com/go-openapi/swag/compare/stringutils/v0.25.1...stringutils/v0.25.4)
+- github.com/go-openapi/swag/typeutils: [v0.25.1 → v0.25.4](https://github.com/go-openapi/swag/compare/typeutils/v0.25.1...typeutils/v0.25.4)
+- github.com/go-openapi/swag/yamlutils: [v0.25.1 → v0.25.4](https://github.com/go-openapi/swag/compare/yamlutils/v0.25.1...yamlutils/v0.25.4)
+- github.com/go-openapi/swag: [v0.25.1 → v0.25.4](https://github.com/go-openapi/swag/compare/v0.25.1...v0.25.4)
+- github.com/google/gnostic-models: [v0.7.0 → v0.7.1](https://github.com/google/gnostic-models/compare/v0.7.0...v0.7.1)
+- github.com/prometheus/common: [v0.67.2 → v0.67.4](https://github.com/prometheus/common/compare/v0.67.2...v0.67.4)
+- github.com/spf13/cobra: [v1.10.1 → v1.10.2](https://github.com/spf13/cobra/compare/v1.10.1...v1.10.2)
+- github.com/spiffe/go-spiffe/v2: [v2.5.0 → v2.6.0](https://github.com/spiffe/go-spiffe/compare/v2.5.0...v2.6.0)
+- go.opentelemetry.io/contrib/detectors/gcp: v1.36.0 → v1.38.0
+- go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc: v0.63.0 → v0.64.0
+- go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc: v1.38.0 → v1.39.0
+- go.opentelemetry.io/otel/exporters/otlp/otlptrace: v1.38.0 → v1.39.0
+- go.opentelemetry.io/otel/metric: v1.38.0 → v1.39.0
+- go.opentelemetry.io/otel/sdk/metric: v1.38.0 → v1.39.0
+- go.opentelemetry.io/otel/sdk: v1.38.0 → v1.39.0
+- go.opentelemetry.io/otel/trace: v1.38.0 → v1.39.0
+- go.opentelemetry.io/otel: v1.38.0 → v1.39.0
+- go.uber.org/zap: v1.27.0 → v1.27.1
+- golang.org/x/crypto: v0.44.0 → v0.46.0
+- golang.org/x/mod: v0.29.0 → v0.30.0
+- golang.org/x/net: v0.47.0 → v0.48.0
+- golang.org/x/oauth2: v0.33.0 → v0.34.0
+- golang.org/x/sync: v0.18.0 → v0.19.0
+- golang.org/x/sys: v0.38.0 → v0.39.0
+- golang.org/x/telemetry: 078029d → bc8e575
+- golang.org/x/term: v0.37.0 → v0.38.0
+- golang.org/x/text: v0.31.0 → v0.32.0
+- golang.org/x/tools: v0.38.0 → v0.39.0
+- google.golang.org/genproto/googleapis/api: 95abcf5 → 97cd9d5
+- google.golang.org/genproto/googleapis/rpc: 95abcf5 → 97cd9d5
+- google.golang.org/grpc: v1.76.0 → v1.77.0
+- google.golang.org/protobuf: v1.36.10 → v1.36.11
+- k8s.io/api: v0.34.2 → v0.34.3
+- k8s.io/apimachinery: v0.34.2 → v0.34.3
+- k8s.io/client-go: v0.34.2 → v0.34.3
+- k8s.io/component-base: v0.34.2 → v0.34.3
+- k8s.io/csi-translation-lib: v0.34.1 → v0.34.3
+- k8s.io/kube-openapi: 589584f → 4e65d59
+- k8s.io/kubectl: v0.34.1 → v0.34.3
+- k8s.io/mount-utils: v0.34.2 → v0.34.3
+- sigs.k8s.io/structured-merge-diff/v6: v6.3.0 → v6.3.1
+
+### Removed
+- github.com/zeebo/errs: [v1.4.0](https://github.com/zeebo/errs/tree/v1.4.0)
+
+# v1.53.0
+
+## Changes by Kind
+
+### Feature
+
+- Add node-local volume support, enabling a single cluster-wide PV/PVC to mount node-specific EBS volumes with ReadWriteMany access. ([#2726](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2726), [@torredil](https://github.com/torredil))
+- Add support for custom build-time plugins to extend or modify EBS CSI Driver behavior. ([#2786](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2786), [@ConnorJC3](https://github.com/ConnorJC3))
+
+## Dependencies
+
+### Added
+- github.com/gkampitakis/ciinfo: [v0.3.2](https://github.com/gkampitakis/ciinfo/tree/v0.3.2)
+- github.com/gkampitakis/go-diff: [v1.3.2](https://github.com/gkampitakis/go-diff/tree/v1.3.2)
+- github.com/gkampitakis/go-snaps: [v0.5.15](https://github.com/gkampitakis/go-snaps/tree/v0.5.15)
+- github.com/go-openapi/testify/v2: [v2.0.2](https://github.com/go-openapi/testify/tree/v2.0.2)
+- github.com/goccy/go-yaml: [v1.18.0](https://github.com/goccy/go-yaml/tree/v1.18.0)
+- github.com/joshdk/go-junit: [v1.0.0](https://github.com/joshdk/go-junit/tree/v1.0.0)
+- github.com/maruel/natural: [v1.1.1](https://github.com/maruel/natural/tree/v1.1.1)
+- github.com/mfridman/tparse: [v0.18.0](https://github.com/mfridman/tparse/tree/v0.18.0)
+- github.com/tidwall/gjson: [v1.18.0](https://github.com/tidwall/gjson/tree/v1.18.0)
+- github.com/tidwall/match: [v1.1.1](https://github.com/tidwall/match/tree/v1.1.1)
+- github.com/tidwall/pretty: [v1.2.1](https://github.com/tidwall/pretty/tree/v1.2.1)
+- github.com/tidwall/sjson: [v1.2.5](https://github.com/tidwall/sjson/tree/v1.2.5)
+
+### Changed
+- github.com/aws/aws-sdk-go-v2/config: [v1.31.15 → v1.31.20](https://github.com/aws/aws-sdk-go-v2/compare/config/v1.31.15...config/v1.31.20)
+- github.com/aws/aws-sdk-go-v2/credentials: [v1.18.19 → v1.18.24](https://github.com/aws/aws-sdk-go-v2/compare/credentials/v1.18.19...credentials/v1.18.24)
+- github.com/aws/aws-sdk-go-v2/feature/ec2/imds: [v1.18.11 → v1.18.13](https://github.com/aws/aws-sdk-go-v2/compare/feature/ec2/imds/v1.18.11...feature/ec2/imds/v1.18.13)
+- github.com/aws/aws-sdk-go-v2/internal/configsources: [v1.4.11 → v1.4.13](https://github.com/aws/aws-sdk-go-v2/compare/internal/configsources/v1.4.11...internal/configsources/v1.4.13)
+- github.com/aws/aws-sdk-go-v2/internal/endpoints/v2: [v2.7.11 → v2.7.13](https://github.com/aws/aws-sdk-go-v2/compare/internal/endpoints/v2/v2.7.11...internal/endpoints/v2/v2.7.13)
+- github.com/aws/aws-sdk-go-v2/service/ec2: [v1.258.1 → v1.269.0](https://github.com/aws/aws-sdk-go-v2/compare/service/ec2/v1.258.1...service/ec2/v1.269.0)
+- github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding: [v1.13.2 → v1.13.3](https://github.com/aws/aws-sdk-go-v2/compare/service/internal/accept-encoding/v1.13.2...service/internal/accept-encoding/v1.13.3)
+- github.com/aws/aws-sdk-go-v2/service/internal/presigned-url: [v1.13.11 → v1.13.13](https://github.com/aws/aws-sdk-go-v2/compare/service/internal/presigned-url/v1.13.11...service/internal/presigned-url/v1.13.13)
+- github.com/aws/aws-sdk-go-v2/service/sagemaker: [v1.217.0 → v1.223.0](https://github.com/aws/aws-sdk-go-v2/compare/service/sagemaker/v1.217.0...service/sagemaker/v1.223.0)
+- github.com/aws/aws-sdk-go-v2/service/sso: [v1.29.8 → v1.30.3](https://github.com/aws/aws-sdk-go-v2/compare/service/sso/v1.29.8...service/sso/v1.30.3)
+- github.com/aws/aws-sdk-go-v2/service/ssooidc: [v1.35.3 → v1.35.7](https://github.com/aws/aws-sdk-go-v2/compare/service/ssooidc/v1.35.3...service/ssooidc/v1.35.7)
+- github.com/aws/aws-sdk-go-v2/service/sts: [v1.38.9 → v1.40.2](https://github.com/aws/aws-sdk-go-v2/compare/service/sts/v1.38.9...service/sts/v1.40.2)
+- github.com/aws/aws-sdk-go-v2: [v1.39.4 → v1.39.6](https://github.com/aws/aws-sdk-go-v2/compare/v1.39.4...v1.39.6)
+- github.com/aws/smithy-go: [v1.23.1 → v1.23.2](https://github.com/aws/smithy-go/compare/v1.23.1...v1.23.2)
+- github.com/awslabs/volume-modifier-for-k8s: [v0.8.0 → v0.9.0](https://github.com/awslabs/volume-modifier-for-k8s/compare/v0.8.0...v0.9.0)
+- github.com/go-openapi/jsonpointer: [v0.22.1 → v0.22.2](https://github.com/go-openapi/jsonpointer/compare/v0.22.1...v0.22.2)
+- github.com/go-openapi/jsonreference: [v0.21.2 → v0.21.3](https://github.com/go-openapi/jsonreference/compare/v0.21.2...v0.21.3)
+- github.com/kubernetes-csi/csi-lib-utils: [v0.22.0 → v0.23.0](https://github.com/kubernetes-csi/csi-lib-utils/compare/v0.22.0...v0.23.0)
+- github.com/kubernetes-csi/csi-test/v5: [v5.3.1 → v5.4.0](https://github.com/kubernetes-csi/csi-test/compare/v5.3.1...v5.4.0)
+- github.com/mailru/easyjson: [v0.9.1 → v0.9.0](https://github.com/mailru/easyjson/compare/v0.9.1...v0.9.0)
+- github.com/onsi/ginkgo/v2: [v2.25.3 → v2.27.2](https://github.com/onsi/ginkgo/compare/v2.25.3...v2.27.2)
+- github.com/prometheus/procfs: [v0.19.1 → v0.19.2](https://github.com/prometheus/procfs/compare/v0.19.1...v0.19.2)
+- go.opentelemetry.io/proto/otlp: v1.8.0 → v1.9.0
+- golang.org/x/crypto: v0.43.0 → v0.44.0
+- golang.org/x/mod: v0.28.0 → v0.29.0
+- golang.org/x/net: v0.46.0 → v0.47.0
+- golang.org/x/oauth2: v0.32.0 → v0.33.0
+- golang.org/x/sync: v0.17.0 → v0.18.0
+- golang.org/x/sys: v0.37.0 → v0.38.0
+- golang.org/x/telemetry: aef8a43 → 078029d
+- golang.org/x/term: v0.36.0 → v0.37.0
+- golang.org/x/text: v0.30.0 → v0.31.0
+- golang.org/x/tools: v0.37.0 → v0.38.0
+- google.golang.org/genproto/googleapis/api: 3a174f9 → 95abcf5
+- google.golang.org/genproto/googleapis/rpc: 3a174f9 → 95abcf5
+- k8s.io/api: v0.34.1 → v0.34.2
+- k8s.io/apimachinery: v0.34.1 → v0.34.2
+- k8s.io/client-go: v0.34.1 → v0.34.2
+- k8s.io/component-base: v0.34.1 → v0.34.2
+- k8s.io/mount-utils: v0.34.1 → v0.34.2
+
+### Removed
+- github.com/go-task/slim-sprig: [52ccab3](https://github.com/go-task/slim-sprig/tree/52ccab3)
+- sigs.k8s.io/structured-merge-diff/v4: v4.7.0
+
+# v1.52.1
+
+## Changes by Kind
+
+### Bug or Regression
+
+- Fix off-by-one error in volume limits for default nitro instances which would get PVCs stuck attempting to attach to a full instance. ([#2749](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2749), [@ConnorJC3](https://github.com/ConnorJC3))
+
+## Dependencies
+
+### Added
+_Nothing has changed._
+
+### Changed
+_Nothing has changed._
+
+### Removed
+_Nothing has changed._
+
+# v1.52.0
+
+## Changes by Kind
+
+### Feature
+
+- Add ALPHA metadata-labeler sidecar and metadata source ([#2591](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2591), [@sylviah23](https://github.com/sylviah23))
+
+### Bug or Regression
+
+- Improve handling of volume types that do not have hardcoded IOPS limits and/or do not support IOPS ([#2732](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2732), [@ConnorJC3](https://github.com/ConnorJC3))
+
+- Improve error handling of taint removal; Fix last chance taint removal not functioning ([#2699](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2699), [@ConnorJC3](https://github.com/ConnorJC3))
+
+### Other (Cleanup or Flake)
+
+- Added logging of volume attributes at controller.logLevel 7+ after successful volume creation for improved observability. ([#2737](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2737), [@torredil](https://github.com/torredil))
+- Minor tweaks to NVMe metrics collector performance ([#2722](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2722), [@ConnorJC3](https://github.com/ConnorJC3))
+
+## Dependencies
+
+### Added
+_Nothing has changed._
+
+### Changed
+- github.com/aws/aws-sdk-go-v2/config: [v1.31.12 → v1.31.15](https://github.com/aws/aws-sdk-go-v2/compare/config/v1.31.12...config/v1.31.15)
+- github.com/aws/aws-sdk-go-v2/credentials: [v1.18.16 → v1.18.19](https://github.com/aws/aws-sdk-go-v2/compare/credentials/v1.18.16...credentials/v1.18.19)
+- github.com/aws/aws-sdk-go-v2/feature/ec2/imds: [v1.18.9 → v1.18.11](https://github.com/aws/aws-sdk-go-v2/compare/feature/ec2/imds/v1.18.9...feature/ec2/imds/v1.18.11)
+- github.com/aws/aws-sdk-go-v2/internal/configsources: [v1.4.9 → v1.4.11](https://github.com/aws/aws-sdk-go-v2/compare/internal/configsources/v1.4.9...internal/configsources/v1.4.11)
+- github.com/aws/aws-sdk-go-v2/internal/endpoints/v2: [v2.7.9 → v2.7.11](https://github.com/aws/aws-sdk-go-v2/compare/internal/endpoints/v2/v2.7.9...internal/endpoints/v2/v2.7.11)
+- github.com/aws/aws-sdk-go-v2/internal/ini: [v1.8.3 → v1.8.4](https://github.com/aws/aws-sdk-go-v2/compare/internal/ini/v1.8.3...internal/ini/v1.8.4)
+- github.com/aws/aws-sdk-go-v2/service/ec2: [v1.256.0 → v1.258.1](https://github.com/aws/aws-sdk-go-v2/compare/service/ec2/v1.256.0...service/ec2/v1.258.1)
+- github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding: [v1.13.1 → v1.13.2](https://github.com/aws/aws-sdk-go-v2/compare/service/internal/accept-encoding/v1.13.1...service/internal/accept-encoding/v1.13.2)
+- github.com/aws/aws-sdk-go-v2/service/internal/presigned-url: [v1.13.9 → v1.13.11](https://github.com/aws/aws-sdk-go-v2/compare/service/internal/presigned-url/v1.13.9...service/internal/presigned-url/v1.13.11)
+- github.com/aws/aws-sdk-go-v2/service/sagemaker: [v1.215.3 → v1.217.0](https://github.com/aws/aws-sdk-go-v2/compare/service/sagemaker/v1.215.3...service/sagemaker/v1.217.0)
+- github.com/aws/aws-sdk-go-v2/service/sso: [v1.29.6 → v1.29.8](https://github.com/aws/aws-sdk-go-v2/compare/service/sso/v1.29.6...service/sso/v1.29.8)
+- github.com/aws/aws-sdk-go-v2/service/ssooidc: [v1.35.1 → v1.35.3](https://github.com/aws/aws-sdk-go-v2/compare/service/ssooidc/v1.35.1...service/ssooidc/v1.35.3)
+- github.com/aws/aws-sdk-go-v2/service/sts: [v1.38.6 → v1.38.9](https://github.com/aws/aws-sdk-go-v2/compare/service/sts/v1.38.6...service/sts/v1.38.9)
+- github.com/aws/aws-sdk-go-v2: [v1.39.2 → v1.39.4](https://github.com/aws/aws-sdk-go-v2/compare/v1.39.2...v1.39.4)
+- github.com/aws/smithy-go: [v1.23.0 → v1.23.1](https://github.com/aws/smithy-go/compare/v1.23.0...v1.23.1)
+- github.com/container-storage-interface/spec: [v1.11.0 → v1.12.0](https://github.com/container-storage-interface/spec/compare/v1.11.0...v1.12.0)
+- github.com/kubernetes-csi/csi-proxy/client: [v1.2.1 → v1.3.0](https://github.com/kubernetes-csi/csi-proxy/compare/client/v1.2.1...client/v1.3.0)
+- github.com/prometheus/common: [v0.67.1 → v0.67.2](https://github.com/prometheus/common/compare/v0.67.1...v0.67.2)
+- github.com/prometheus/procfs: [v0.17.0 → v0.19.1](https://github.com/prometheus/procfs/compare/v0.17.0...v0.19.1)
+- google.golang.org/genproto/googleapis/api: 49b9836 → 3a174f9
+- google.golang.org/genproto/googleapis/rpc: 49b9836 → 3a174f9
+
+### Removed
+_Nothing has changed._
+
+# v1.51.2
+
+## Changes by Kind
+
+### Bug or Regression
+
+- Fix off-by-one error in volume limits for default nitro instances which would get PVCs stuck attempting to attach to a full instance. ([#2749](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2749), [@ConnorJC3](https://github.com/ConnorJC3))
+
+## Dependencies
+
+### Added
+_Nothing has changed._
+
+### Changed
+_Nothing has changed._
+
+### Removed
+_Nothing has changed._
+
+# v1.51.1
+
+## Changes by Kind
+
+### Bug or Regression
+
+- Fix throughput handling when creating volumes ([#2733](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2733), [@ConnorJC3](https://github.com/ConnorJC3))
+
+## Dependencies
+
+### Added
+_Nothing has changed._
+
+### Changed
+_Nothing has changed._
+
+### Removed
+_Nothing has changed._
+
+# v1.51.0
+
+**WARNING: This version contains a bug that breaks handling of throughput. It is strongly recommended to skip directly to `v1.51.1` or later.**
+
+### Feature
+
+- Add support for creating instant, point-in-time copies of EBS volumes within the same Availability Zone ([#2716](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2716), [@ElijahQuinones](https://github.com/ElijahQuinones))
+
+## Dependencies
+
+### Added
+_Nothing has changed._
+
+### Changed
+- github.com/alecthomas/units: [b94a6e3 → 0f3dac3](https://github.com/alecthomas/units/compare/b94a6e3...0f3dac3)
+- github.com/aws/aws-sdk-go-v2/service/ec2: [v1.254.1 → v1.256.0](https://github.com/aws/aws-sdk-go-v2/compare/service/ec2/v1.254.1...service/ec2/v1.256.0)
+- github.com/go-jose/go-jose/v4: [v4.1.1 → v4.1.2](https://github.com/go-jose/go-jose/compare/v4.1.1...v4.1.2)
+- github.com/grpc-ecosystem/grpc-gateway/v2: [v2.27.2 → v2.27.3](https://github.com/grpc-ecosystem/grpc-gateway/compare/v2.27.2...v2.27.3)
+- github.com/prometheus/common: [v0.66.1 → v0.67.1](https://github.com/prometheus/common/compare/v0.66.1...v0.67.1)
+- golang.org/x/crypto: v0.42.0 → v0.43.0
+- golang.org/x/mod: v0.27.0 → v0.28.0
+- golang.org/x/net: v0.44.0 → v0.46.0
+- golang.org/x/oauth2: v0.31.0 → v0.32.0
+- golang.org/x/sys: v0.36.0 → v0.37.0
+- golang.org/x/telemetry: 1a19826 → aef8a43
+- golang.org/x/term: v0.35.0 → v0.36.0
+- golang.org/x/text: v0.29.0 → v0.30.0
+- golang.org/x/time: v0.13.0 → v0.14.0
+- golang.org/x/tools: v0.36.0 → v0.37.0
+- google.golang.org/genproto/googleapis/api: 57b25ae → 49b9836
+- google.golang.org/genproto/googleapis/rpc: 57b25ae → 49b9836
+- google.golang.org/grpc: v1.75.1 → v1.76.0
+
+### Removed
+_Nothing has changed._
+
+# v1.50.3
+
+## Changes by Kind
+
+### Bug or Regression
+
+- Fix off-by-one error in volume limits for default nitro instances which would get PVCs stuck attempting to attach to a full instance. ([#2749](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2749), [@ConnorJC3](https://github.com/ConnorJC3))
+
+## Dependencies
+
+### Added
+_Nothing has changed._
+
+### Changed
+_Nothing has changed._
+
+### Removed
+_Nothing has changed._
+
+# v1.50.2
+
+## Changes by Kind
+
+### Bug or Regression
+
+- Fix throughput handling when creating volumes ([#2730](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2730), [@ConnorJC3](https://github.com/ConnorJC3))
+
+## Dependencies
+
+### Added
+_Nothing has changed._
+
+### Changed
+_Nothing has changed._
+
+### Removed
+_Nothing has changed._
+
+# v1.50.1
+
+**WARNING: This version contains a bug that breaks handling of throughput. It is strongly recommended to skip directly to `v1.50.2` or later.**
+
+### Urgent Upgrade Notes
+*(No, really, you MUST read this before you upgrade)*
+
+This version of the EBS CSI Driver includes an upgraded `xfsprogs` version that enables the `nrext64` feature, which is not supported on some older kernels such as the default kernel shipped with Amazon Linux 2. **As a result, newly formatted XFS volumes may fail to mount on nodes with older kernel versions.**
+
+A workaround is available via the `--legacy-xfs` and `node.legacyXFS` parameters, see [the full FAQ entry](docs/faq.md#xfs-on-older-kernels-eg-amazon-linux-2) for more details.
+
+## Changes by Kind
+
+### Feature
+
+- Setting legacyXFS to true now disables nrext64. ([#2690](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2690), [@mdzraf](https://github.com/mdzraf))
+
+## Dependencies
+
+### Added
+_Nothing has changed._
+
+### Changed
+_Nothing has changed._
+
+### Removed
+_Nothing has changed._
+
+# v1.50.0
+
+**WARNING: This version contains a bug that breaks handling of throughput. It is strongly recommended to skip directly to `v1.50.2` or later.**
+
+### Urgent Upgrade Notes
+*(No, really, you MUST read this before you upgrade)*
+
+This version of the EBS CSI Driver includes an upgraded `xfsprogs` version that enables the `nrext64` feature, which is not supported on some older kernels such as the default kernel shipped with Amazon Linux 2. **As a result, newly formatted XFS volumes may fail to mount on nodes with older kernel versions.**
+
+A workaround is available in `v1.50.1` and later.
+
+## Changes by Kind
+
+### Feature
+
+- Retrieve maximum IOPS limit dynamically via `CreateVolume` dry-run to support increased IOPS limits for GP3 and other volume types ([#2682](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2682), [@mdzraf](https://github.com/mdzraf))
+
+## Dependencies
+
+### Added
+- github.com/go-openapi/swag/jsonutils/fixtures_test: [v0.25.1](https://github.com/go-openapi/swag/tree/jsonutils/fixtures_test/v0.25.1)
+
+### Changed
+- github.com/aws/aws-sdk-go-v2/config: [v1.31.9 → v1.31.12](https://github.com/aws/aws-sdk-go-v2/compare/config/v1.31.9...config/v1.31.12)
+- github.com/aws/aws-sdk-go-v2/credentials: [v1.18.13 → v1.18.16](https://github.com/aws/aws-sdk-go-v2/compare/credentials/v1.18.13...credentials/v1.18.16)
+- github.com/aws/aws-sdk-go-v2/feature/ec2/imds: [v1.18.7 → v1.18.9](https://github.com/aws/aws-sdk-go-v2/compare/feature/ec2/imds/v1.18.7...feature/ec2/imds/v1.18.9)
+- github.com/aws/aws-sdk-go-v2/internal/configsources: [v1.4.7 → v1.4.9](https://github.com/aws/aws-sdk-go-v2/compare/internal/configsources/v1.4.7...internal/configsources/v1.4.9)
+- github.com/aws/aws-sdk-go-v2/internal/endpoints/v2: [v2.7.7 → v2.7.9](https://github.com/aws/aws-sdk-go-v2/compare/internal/endpoints/v2/v2.7.7...internal/endpoints/v2/v2.7.9)
+- github.com/aws/aws-sdk-go-v2/service/ec2: [v1.253.0 → v1.254.1](https://github.com/aws/aws-sdk-go-v2/compare/service/ec2/v1.253.0...service/ec2/v1.254.1)
+- github.com/aws/aws-sdk-go-v2/service/internal/presigned-url: [v1.13.7 → v1.13.9](https://github.com/aws/aws-sdk-go-v2/compare/service/internal/presigned-url/v1.13.7...service/internal/presigned-url/v1.13.9)
+- github.com/aws/aws-sdk-go-v2/service/sagemaker: [v1.215.1 → v1.215.3](https://github.com/aws/aws-sdk-go-v2/compare/service/sagemaker/v1.215.1...service/sagemaker/v1.215.3)
+- github.com/aws/aws-sdk-go-v2/service/sso: [v1.29.3 → v1.29.6](https://github.com/aws/aws-sdk-go-v2/compare/service/sso/v1.29.3...service/sso/v1.29.6)
+- github.com/aws/aws-sdk-go-v2/service/ssooidc: [v1.34.5 → v1.35.1](https://github.com/aws/aws-sdk-go-v2/compare/service/ssooidc/v1.34.5...service/ssooidc/v1.35.1)
+- github.com/aws/aws-sdk-go-v2/service/sts: [v1.38.4 → v1.38.6](https://github.com/aws/aws-sdk-go-v2/compare/service/sts/v1.38.4...service/sts/v1.38.6)
+- github.com/aws/aws-sdk-go-v2: [v1.39.0 → v1.39.2](https://github.com/aws/aws-sdk-go-v2/compare/v1.39.0...v1.39.2)
+- github.com/go-openapi/jsonpointer: [v0.22.0 → v0.22.1](https://github.com/go-openapi/jsonpointer/compare/v0.22.0...v0.22.1)
+- github.com/go-openapi/jsonreference: [v0.21.1 → v0.21.2](https://github.com/go-openapi/jsonreference/compare/v0.21.1...v0.21.2)
+- github.com/go-openapi/swag/cmdutils: [v0.24.0 → v0.25.1](https://github.com/go-openapi/swag/compare/cmdutils/v0.24.0...cmdutils/v0.25.1)
+- github.com/go-openapi/swag/conv: [v0.24.0 → v0.25.1](https://github.com/go-openapi/swag/compare/conv/v0.24.0...conv/v0.25.1)
+- github.com/go-openapi/swag/fileutils: [v0.24.0 → v0.25.1](https://github.com/go-openapi/swag/compare/fileutils/v0.24.0...fileutils/v0.25.1)
+- github.com/go-openapi/swag/jsonname: [v0.24.0 → v0.25.1](https://github.com/go-openapi/swag/compare/jsonname/v0.24.0...jsonname/v0.25.1)
+- github.com/go-openapi/swag/jsonutils: [v0.24.0 → v0.25.1](https://github.com/go-openapi/swag/compare/jsonutils/v0.24.0...jsonutils/v0.25.1)
+- github.com/go-openapi/swag/loading: [v0.24.0 → v0.25.1](https://github.com/go-openapi/swag/compare/loading/v0.24.0...loading/v0.25.1)
+- github.com/go-openapi/swag/mangling: [v0.24.0 → v0.25.1](https://github.com/go-openapi/swag/compare/mangling/v0.24.0...mangling/v0.25.1)
+- github.com/go-openapi/swag/netutils: [v0.24.0 → v0.25.1](https://github.com/go-openapi/swag/compare/netutils/v0.24.0...netutils/v0.25.1)
+- github.com/go-openapi/swag/stringutils: [v0.24.0 → v0.25.1](https://github.com/go-openapi/swag/compare/stringutils/v0.24.0...stringutils/v0.25.1)
+- github.com/go-openapi/swag/typeutils: [v0.24.0 → v0.25.1](https://github.com/go-openapi/swag/compare/typeutils/v0.24.0...typeutils/v0.25.1)
+- github.com/go-openapi/swag/yamlutils: [v0.24.0 → v0.25.1](https://github.com/go-openapi/swag/compare/yamlutils/v0.24.0...yamlutils/v0.25.1)
+- github.com/go-openapi/swag: [v0.24.1 → v0.25.1](https://github.com/go-openapi/swag/compare/v0.24.1...v0.25.1)
+- google.golang.org/genproto/googleapis/api: 9219d12 → 57b25ae
+- google.golang.org/genproto/googleapis/rpc: 9219d12 → 57b25ae
+- google.golang.org/protobuf: v1.36.9 → v1.36.10
+- k8s.io/utils: 0af2bda → bc988d5
+
+### Removed
+_Nothing has changed._
+
+# v1.49.2
+
+## Changes by Kind
+
+### Bug or Regression
+
+- Fix off-by-one error in volume limits for default nitro instances which would get PVCs stuck attempting to attach to a full instance. ([#2749](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2749), [@ConnorJC3](https://github.com/ConnorJC3))
+
+## Dependencies
+
+### Added
+_Nothing has changed._
+
+### Changed
+_Nothing has changed._
+
+### Removed
+_Nothing has changed._
+
+# v1.49.1
+
+### Urgent Upgrade Notes
+*(No, really, you MUST read this before you upgrade)*
+
+This version of the EBS CSI Driver includes an upgraded `xfsprogs` version that enables the `nrext64` feature, which is not supported on some older kernels such as the default kernel shipped with Amazon Linux 2. **As a result, newly formatted XFS volumes may fail to mount on nodes with older kernel versions.**
+
+This can be worked around via the `--legacy-xfs` and `node.legacyXFS` parameters, see [the full FAQ entry](docs/faq.md#xfs-on-older-kernels-eg-amazon-linux-2) for more details.
+
+## Changes by Kind
+
+### Feature
+
+- Setting legacyXFS to true now disables nrext64. ([#2690](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2690), [@mdzraf](https://github.com/mdzraf))
+
+## Dependencies
+
+### Added
+_Nothing has changed._
+
+### Changed
+_Nothing has changed._
+
+### Removed
+_Nothing has changed._
+
+# v1.49.0
+
+### Urgent Upgrade Notes
+*(No, really, you MUST read this before you upgrade)*
+
+This version of the EBS CSI Driver includes an upgraded `xfsprogs` version that enables the `nrext64` feature, which is not supported on some older kernels such as the default kernel shipped with Amazon Linux 2. **As a result, newly formatted XFS volumes may fail to mount on nodes with older kernel versions.**
+
+A workaround is available in `v1.49.1`/`v1.50.1` and later.
+
+## Changes by Kind
+
+### Urgent Upgrade Notes
+*(No, really, you MUST read this before you upgrade)*
+
+Add dry-run EC2 API call to `ebs-csi-driver` controller readiness/liveness probes ([#2590](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2590), [@AndrewSirenko](https://github.com/AndrewSirenko))
+
+Starting in `v1.49.0`, the EBS CSI Driver Controller's readiness and liveness probes will periodically check the ability to perform AWS API calls by performing a dry run of the EC2 `DescribeAvailabilityZones` API. **Installation of the EBS CSI Driver on clusters with broken networking/DNS, incorrectly configured IAM, or other issues preventing access to the AWS API may fail.** If installation of the EBS CSI Driver fails due to the `ebs-csi-controller` probes, access the logs of the controller pods for details of the error.
+
+### Feature
+
+- Rate limit metrics endpoint to 5 requests/second with burst of 10 - Excessive requests will receive HTTP 429 ([#2638](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2638), [@torredil](https://github.com/torredil))
+
+### Bug or Regression
+
+- Update several incorrect EBS volume limits via generating table from DescribeInstanceTypes API ([#2660](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2660), [@ConnorJC3](https://github.com/ConnorJC3))
+- Fix cluster tags incorrectly overriding user-specified tags from StorageClass parameters ([#2655](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2655), [@torredil](https://github.com/torredil))
+
+## Dependencies
+
+### Added
+- github.com/Masterminds/semver/v3: [v3.4.0](https://github.com/Masterminds/semver/tree/v3.4.0)
+- github.com/go-openapi/swag/cmdutils: [v0.24.0](https://github.com/go-openapi/swag/tree/cmdutils/v0.24.0)
+- github.com/go-openapi/swag/conv: [v0.24.0](https://github.com/go-openapi/swag/tree/conv/v0.24.0)
+- github.com/go-openapi/swag/fileutils: [v0.24.0](https://github.com/go-openapi/swag/tree/fileutils/v0.24.0)
+- github.com/go-openapi/swag/jsonname: [v0.24.0](https://github.com/go-openapi/swag/tree/jsonname/v0.24.0)
+- github.com/go-openapi/swag/jsonutils: [v0.24.0](https://github.com/go-openapi/swag/tree/jsonutils/v0.24.0)
+- github.com/go-openapi/swag/loading: [v0.24.0](https://github.com/go-openapi/swag/tree/loading/v0.24.0)
+- github.com/go-openapi/swag/mangling: [v0.24.0](https://github.com/go-openapi/swag/tree/mangling/v0.24.0)
+- github.com/go-openapi/swag/netutils: [v0.24.0](https://github.com/go-openapi/swag/tree/netutils/v0.24.0)
+- github.com/go-openapi/swag/stringutils: [v0.24.0](https://github.com/go-openapi/swag/tree/stringutils/v0.24.0)
+- github.com/go-openapi/swag/typeutils: [v0.24.0](https://github.com/go-openapi/swag/tree/typeutils/v0.24.0)
+- github.com/go-openapi/swag/yamlutils: [v0.24.0](https://github.com/go-openapi/swag/tree/yamlutils/v0.24.0)
+- golang.org/x/tools/go/expect: v0.1.0-deprecated
+- golang.org/x/tools/go/packages/packagestest: v0.1.1-deprecated
+- gonum.org/v1/gonum: v0.16.0
+- sigs.k8s.io/structured-merge-diff/v6: v6.3.0
+
+### Changed
+- github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp: [v1.27.0 → v1.29.0](https://github.com/GoogleCloudPlatform/opentelemetry-operations-go/compare/detectors/gcp/v1.27.0...detectors/gcp/v1.29.0)
+- github.com/aws/aws-sdk-go-v2/config: [v1.31.0 → v1.31.9](https://github.com/aws/aws-sdk-go-v2/compare/config/v1.31.0...config/v1.31.9)
+- github.com/aws/aws-sdk-go-v2/credentials: [v1.18.4 → v1.18.13](https://github.com/aws/aws-sdk-go-v2/compare/credentials/v1.18.4...credentials/v1.18.13)
+- github.com/aws/aws-sdk-go-v2/feature/ec2/imds: [v1.18.3 → v1.18.7](https://github.com/aws/aws-sdk-go-v2/compare/feature/ec2/imds/v1.18.3...feature/ec2/imds/v1.18.7)
+- github.com/aws/aws-sdk-go-v2/internal/configsources: [v1.4.3 → v1.4.7](https://github.com/aws/aws-sdk-go-v2/compare/internal/configsources/v1.4.3...internal/configsources/v1.4.7)
+- github.com/aws/aws-sdk-go-v2/internal/endpoints/v2: [v2.7.3 → v2.7.7](https://github.com/aws/aws-sdk-go-v2/compare/internal/endpoints/v2/v2.7.3...internal/endpoints/v2/v2.7.7)
+- github.com/aws/aws-sdk-go-v2/service/ec2: [v1.244.0 → v1.253.0](https://github.com/aws/aws-sdk-go-v2/compare/service/ec2/v1.244.0...service/ec2/v1.253.0)
+- github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding: [v1.13.0 → v1.13.1](https://github.com/aws/aws-sdk-go-v2/compare/service/internal/accept-encoding/v1.13.0...service/internal/accept-encoding/v1.13.1)
+- github.com/aws/aws-sdk-go-v2/service/internal/presigned-url: [v1.13.3 → v1.13.7](https://github.com/aws/aws-sdk-go-v2/compare/service/internal/presigned-url/v1.13.3...service/internal/presigned-url/v1.13.7)
+- github.com/aws/aws-sdk-go-v2/service/sagemaker: [v1.209.0 → v1.215.1](https://github.com/aws/aws-sdk-go-v2/compare/service/sagemaker/v1.209.0...service/sagemaker/v1.215.1)
+- github.com/aws/aws-sdk-go-v2/service/sso: [v1.28.0 → v1.29.3](https://github.com/aws/aws-sdk-go-v2/compare/service/sso/v1.28.0...service/sso/v1.29.3)
+- github.com/aws/aws-sdk-go-v2/service/ssooidc: [v1.33.0 → v1.34.5](https://github.com/aws/aws-sdk-go-v2/compare/service/ssooidc/v1.33.0...service/ssooidc/v1.34.5)
+- github.com/aws/aws-sdk-go-v2/service/sts: [v1.37.0 → v1.38.4](https://github.com/aws/aws-sdk-go-v2/compare/service/sts/v1.37.0...service/sts/v1.38.4)
+- github.com/aws/aws-sdk-go-v2: [v1.38.0 → v1.39.0](https://github.com/aws/aws-sdk-go-v2/compare/v1.38.0...v1.39.0)
+- github.com/aws/smithy-go: [v1.22.5 → v1.23.0](https://github.com/aws/smithy-go/compare/v1.22.5...v1.23.0)
+- github.com/awslabs/volume-modifier-for-k8s: [v0.7.0 → v0.8.0](https://github.com/awslabs/volume-modifier-for-k8s/compare/v0.7.0...v0.8.0)
+- github.com/go-jose/go-jose/v4: [v4.0.5 → v4.1.1](https://github.com/go-jose/go-jose/compare/v4.0.5...v4.1.1)
+- github.com/go-openapi/jsonpointer: [v0.21.2 → v0.22.0](https://github.com/go-openapi/jsonpointer/compare/v0.21.2...v0.22.0)
+- github.com/go-openapi/jsonreference: [v0.21.0 → v0.21.1](https://github.com/go-openapi/jsonreference/compare/v0.21.0...v0.21.1)
+- github.com/go-openapi/swag: [v0.23.1 → v0.24.1](https://github.com/go-openapi/swag/compare/v0.23.1...v0.24.1)
+- github.com/grpc-ecosystem/grpc-gateway/v2: [v2.27.1 → v2.27.2](https://github.com/grpc-ecosystem/grpc-gateway/compare/v2.27.1...v2.27.2)
+- github.com/mailru/easyjson: [v0.9.0 → v0.9.1](https://github.com/mailru/easyjson/compare/v0.9.0...v0.9.1)
+- github.com/modern-go/reflect2: [v1.0.2 → 35a7c28](https://github.com/modern-go/reflect2/compare/v1.0.2...35a7c28)
+- github.com/onsi/ginkgo/v2: [v2.23.4 → v2.25.3](https://github.com/onsi/ginkgo/compare/v2.23.4...v2.25.3)
+- github.com/onsi/gomega: [v1.38.0 → v1.38.2](https://github.com/onsi/gomega/compare/v1.38.0...v1.38.2)
+- github.com/prometheus/client_golang: [v1.23.0 → v1.23.2](https://github.com/prometheus/client_golang/compare/v1.23.0...v1.23.2)
+- github.com/prometheus/common: [v0.65.0 → v0.66.1](https://github.com/prometheus/common/compare/v0.65.0...v0.66.1)
+- github.com/rogpeppe/go-internal: [v1.13.1 → v1.14.1](https://github.com/rogpeppe/go-internal/compare/v1.13.1...v1.14.1)
+- github.com/spf13/cobra: [v1.9.1 → v1.10.1](https://github.com/spf13/cobra/compare/v1.9.1...v1.10.1)
+- github.com/spf13/pflag: [v1.0.7 → v1.0.10](https://github.com/spf13/pflag/compare/v1.0.7...v1.0.10)
+- github.com/stretchr/testify: [v1.10.0 → v1.11.1](https://github.com/stretchr/testify/compare/v1.10.0...v1.11.1)
+- go.opentelemetry.io/auto/sdk: v1.1.0 → v1.2.1
+- go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc: v0.62.0 → v0.63.0
+- go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc: v1.37.0 → v1.38.0
+- go.opentelemetry.io/otel/exporters/otlp/otlptrace: v1.37.0 → v1.38.0
+- go.opentelemetry.io/otel/metric: v1.37.0 → v1.38.0
+- go.opentelemetry.io/otel/sdk/metric: v1.37.0 → v1.38.0
+- go.opentelemetry.io/otel/sdk: v1.37.0 → v1.38.0
+- go.opentelemetry.io/otel/trace: v1.37.0 → v1.38.0
+- go.opentelemetry.io/otel: v1.37.0 → v1.38.0
+- go.opentelemetry.io/proto/otlp: v1.7.1 → v1.8.0
+- go.yaml.in/yaml/v2: v2.4.2 → v2.4.3
+- golang.org/x/crypto: v0.41.0 → v0.42.0
+- golang.org/x/exp: 7e4ce0a → 509febe
+- golang.org/x/mod: v0.26.0 → v0.27.0
+- golang.org/x/net: v0.43.0 → v0.44.0
+- golang.org/x/oauth2: v0.30.0 → v0.31.0
+- golang.org/x/sync: v0.16.0 → v0.17.0
+- golang.org/x/sys: v0.35.0 → v0.36.0
+- golang.org/x/telemetry: 8d8967a → 1a19826
+- golang.org/x/term: v0.34.0 → v0.35.0
+- golang.org/x/text: v0.28.0 → v0.29.0
+- golang.org/x/time: v0.12.0 → v0.13.0
+- golang.org/x/tools: v0.35.0 → v0.36.0
+- google.golang.org/genproto/googleapis/api: 5f3141c → 9219d12
+- google.golang.org/genproto/googleapis/rpc: 5f3141c → 9219d12
+- google.golang.org/grpc: v1.74.2 → v1.75.1
+- google.golang.org/protobuf: v1.36.7 → v1.36.9
+- k8s.io/api: v0.33.4 → v0.34.1
+- k8s.io/apimachinery: v0.33.4 → v0.34.1
+- k8s.io/client-go: v0.33.4 → v0.34.1
+- k8s.io/component-base: v0.33.4 → v0.34.1
+- k8s.io/csi-translation-lib: v0.33.1 → v0.34.1
+- k8s.io/gengo/v2: a7b603a → 85fd79d
+- k8s.io/kube-openapi: d90c4fd → 589584f
+- k8s.io/kubectl: v0.33.1 → v0.34.1
+- k8s.io/mount-utils: v0.33.4 → v0.34.1
+- k8s.io/utils: 4c0f3b2 → 0af2bda
+
+### Removed
+_Nothing has changed._
+
+# v1.48.0
+
+## Changes by Kind
+
+### Feature
+
+- Add ability to provision volumes using AZ-ID ([#2613](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2613), [@ElijahQuinones](https://github.com/ElijahQuinones))
+
+## Dependencies
+
+### Added
+_Nothing has changed._
+
+### Changed
+- github.com/aws/aws-sdk-go-v2/config: [v1.30.3 → v1.31.0](https://github.com/aws/aws-sdk-go-v2/compare/config/v1.30.3...config/v1.31.0)
+- github.com/aws/aws-sdk-go-v2/credentials: [v1.18.3 → v1.18.4](https://github.com/aws/aws-sdk-go-v2/compare/credentials/v1.18.3...credentials/v1.18.4)
+- github.com/aws/aws-sdk-go-v2/feature/ec2/imds: [v1.18.2 → v1.18.3](https://github.com/aws/aws-sdk-go-v2/compare/feature/ec2/imds/v1.18.2...feature/ec2/imds/v1.18.3)
+- github.com/aws/aws-sdk-go-v2/internal/configsources: [v1.4.2 → v1.4.3](https://github.com/aws/aws-sdk-go-v2/compare/internal/configsources/v1.4.2...internal/configsources/v1.4.3)
+- github.com/aws/aws-sdk-go-v2/internal/endpoints/v2: [v2.7.2 → v2.7.3](https://github.com/aws/aws-sdk-go-v2/compare/internal/endpoints/v2/v2.7.2...internal/endpoints/v2/v2.7.3)
+- github.com/aws/aws-sdk-go-v2/service/ec2: [v1.240.0 → v1.244.0](https://github.com/aws/aws-sdk-go-v2/compare/service/ec2/v1.240.0...service/ec2/v1.244.0)
+- github.com/aws/aws-sdk-go-v2/service/internal/presigned-url: [v1.13.2 → v1.13.3](https://github.com/aws/aws-sdk-go-v2/compare/service/internal/presigned-url/v1.13.2...service/internal/presigned-url/v1.13.3)
+- github.com/aws/aws-sdk-go-v2/service/sagemaker: [v1.204.0 → v1.209.0](https://github.com/aws/aws-sdk-go-v2/compare/service/sagemaker/v1.204.0...service/sagemaker/v1.209.0)
+- github.com/aws/aws-sdk-go-v2/service/sso: [v1.27.0 → v1.28.0](https://github.com/aws/aws-sdk-go-v2/compare/service/sso/v1.27.0...service/sso/v1.28.0)
+- github.com/aws/aws-sdk-go-v2/service/ssooidc: [v1.32.0 → v1.33.0](https://github.com/aws/aws-sdk-go-v2/compare/service/ssooidc/v1.32.0...service/ssooidc/v1.33.0)
+- github.com/aws/aws-sdk-go-v2/service/sts: [v1.36.0 → v1.37.0](https://github.com/aws/aws-sdk-go-v2/compare/service/sts/v1.36.0...service/sts/v1.37.0)
+- github.com/aws/aws-sdk-go-v2: [v1.37.2 → v1.38.0](https://github.com/aws/aws-sdk-go-v2/compare/v1.37.2...v1.38.0)
+- github.com/emicklei/go-restful/v3: [v3.12.2 → v3.13.0](https://github.com/emicklei/go-restful/compare/v3.12.2...v3.13.0)
+- github.com/go-openapi/jsonpointer: [v0.21.1 → v0.21.2](https://github.com/go-openapi/jsonpointer/compare/v0.21.1...v0.21.2)
+- golang.org/x/crypto: v0.40.0 → v0.41.0
+- golang.org/x/mod: v0.25.0 → v0.26.0
+- golang.org/x/net: v0.42.0 → v0.43.0
+- golang.org/x/sys: v0.34.0 → v0.35.0
+- golang.org/x/telemetry: bda5523 → 8d8967a
+- golang.org/x/term: v0.33.0 → v0.34.0
+- golang.org/x/text: v0.27.0 → v0.28.0
+- golang.org/x/tools: v0.34.0 → v0.35.0
+- google.golang.org/genproto/googleapis/api: a7a43d2 → 5f3141c
+- google.golang.org/genproto/googleapis/rpc: a7a43d2 → 5f3141c
+- google.golang.org/protobuf: v1.36.6 → v1.36.7
+- gopkg.in/evanphx/json-patch.v4: v4.12.0 → v4.13.0
+- k8s.io/api: v0.33.3 → v0.33.4
+- k8s.io/apimachinery: v0.33.3 → v0.33.4
+- k8s.io/client-go: v0.33.3 → v0.33.4
+- k8s.io/component-base: v0.33.3 → v0.33.4
+- k8s.io/mount-utils: v0.33.3 → v0.33.4
+
+### Removed
+_Nothing has changed._
+
+# v1.47.1
+
+## Changes by Kind
+
+### Urgent Upgrade Notes
+*(No, really, you MUST read this before you upgrade)*
+
+The `blockExpress` StorageClass parameter is deprecated, effective immediately ([#2564](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2564), [@mdzraf](https://github.com/mdzraf))
+
+**Starting in `v1.47.0`, newly created `io2` volumes will always use a cap of 256,000 IOPS, irregardless of whether the `blockExpress` parameter is set to true or not.** This aligns with EBS, which now [creates all `io2` volumes as Block Express](https://docs.aws.amazon.com/ebs/latest/userguide/ebs-volume-types.html#vol-type-ssd). Volumes with greater than 64,000 IOPS may not reach their full performance on non-Nitro instances, see the EBS documentation for more details.
+
+Starting in `v1.47.0`, the `blockExpress` parameter has no effect (other than logging a deprecation warning) when present in a `StorageClass`. There are no current plans to fully remove support for the parameter (and fail `StorageClass`es using it), and any such change will be communicated in advance via the EBS CSI Driver `CHANGELOG`.
+
+### Bug or Regression
+
+- Prevent liveness probe failure (and thus CrashLoopBackoff) without proper logging by moving sts:GetCallerIdentity call from blocking startup to just in time ([#2621](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/2621), [@ConnorJC3](https://github.com/ConnorJC3))
+
+
 # v1.47.0
 
 ## Changes by Kind
@@ -116,7 +1289,7 @@ _Nothing has changed._
 ### Removed
 _Nothing has changed._
 
-# 1.45.0
+# v1.45.0
 
 ## Changes by Kind
 
@@ -211,7 +1384,7 @@ v0.7.0)
 - github.com/golang/groupcache: [2c02b82](https://github.com/golang/groupcache/tree/2c02b82)
 - github.com/imdario/mergo: [v0.3.16](https://github.com/imdario/mergo/tree/v0.3.16)
 
-# 1.44.0
+# v1.44.0
 
 ## Changes by Kind
 
@@ -399,7 +1572,7 @@ v0.7.0)
 - sigs.k8s.io/kustomize/kustomize/v5: v5.6.0
 - sigs.k8s.io/kustomize/kyaml: v0.19.0
 
-# 1.43.0
+# v1.43.0
 
 ## Changes by Kind
 
@@ -480,7 +1653,7 @@ v0.7.0)
 - go.uber.org/atomic: v1.7.0
 - gopkg.in/square/go-jose.v2: v2.6.0
 
-# 1.42.0
+# v1.42.0
 
 ## Changes by Kind
 
@@ -1357,7 +2530,7 @@ As part of this change, e2fsprogs will be upgraded from `1.42.9` to `1.46.5` and
 * Cherry-pick from v1.23.1: Do not call ModifyVolume if the volume is already in the desired state ([#1741](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/pull/1741), [@ConnorJC3](https://github.com/ConnorJC3))
 * Upgrade volume-modifier-for-k8s sidecar to 0.1.3 for Leader election conflict with csi-resizer bug fix ([#14](https://github.com/awslabs/volume-modifier-for-k8s/pull/14), [@torredil](https://github.com/torredil))
 
-# 1.22.0
+# v1.22.0
 ### Urgent Upgrade Notes
 *(No, really, you MUST read this before you upgrade)*
 

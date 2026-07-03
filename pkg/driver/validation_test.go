@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/kubernetes-sigs/aws-ebs-csi-driver/pkg/cloud"
+	"github.com/kubernetes-sigs/aws-ebs-csi-driver/pkg/util"
 )
 
 func TestValidateExtraTags(t *testing.T) {
@@ -51,7 +52,28 @@ func TestValidateExtraTags(t *testing.T) {
 			tags: map[string]string{
 				cloud.AwsEbsDriverTagKey: "false",
 			},
-			expErr: fmt.Errorf("tag key '%s' is reserved", cloud.AwsEbsDriverTagKey),
+			expErr: fmt.Errorf("tag key prefix '%s/' is reserved", util.GetDriverName()),
+		},
+		{
+			name: "invalid tag: reserved IOPSPerGb key",
+			tags: map[string]string{
+				cloud.IOPSPerGBKey: "100",
+			},
+			expErr: fmt.Errorf("tag key prefix '%s/' is reserved", util.GetDriverName()),
+		},
+		{
+			name: "invalid tag: reserved AllowAutoIOPSIncreaseOnModify key",
+			tags: map[string]string{
+				cloud.AllowAutoIOPSIncreaseOnModifyKey: "true",
+			},
+			expErr: fmt.Errorf("tag key prefix '%s/' is reserved", util.GetDriverName()),
+		},
+		{
+			name: "invalid tag: reserved driver name prefix",
+			tags: map[string]string{
+				util.GetDriverName() + "/anything": "value",
+			},
+			expErr: fmt.Errorf("tag key prefix '%s/' is reserved", util.GetDriverName()),
 		},
 		{
 			name: "invaid tag: reserved snapshot key",
@@ -67,6 +89,13 @@ func TestValidateExtraTags(t *testing.T) {
 			},
 			expErr: fmt.Errorf("tag key prefix '%s' is reserved", cloud.KubernetesTagKeyPrefix),
 		},
+		{
+			name: "invalid tag: reserved cluster name key",
+			tags: map[string]string{
+				ClusterNameTagKey: "my-cluster",
+			},
+			expErr: fmt.Errorf("tag key '%s' is reserved", ClusterNameTagKey),
+		},
 	}
 
 	for _, tc := range testCases {
@@ -74,6 +103,48 @@ func TestValidateExtraTags(t *testing.T) {
 			err := validateExtraTags(tc.tags, false)
 			if !reflect.DeepEqual(err, tc.expErr) {
 				t.Fatalf("error not equal\ngot:\n%s\nexpected:\n%s", err, tc.expErr)
+			}
+		})
+	}
+}
+
+func TestValidateExtraTagsWarnOnly(t *testing.T) {
+	testCases := []struct {
+		name         string
+		tags         map[string]string
+		expectedTags map[string]string
+	}{
+		{
+			name: "valid tags are preserved",
+			tags: map[string]string{
+				"extra-tag-key": "extra-tag-value",
+			},
+			expectedTags: map[string]string{
+				"extra-tag-key": "extra-tag-value",
+			},
+		},
+		{
+			name: "reserved keys are removed",
+			tags: map[string]string{
+				cloud.VolumeNameTagKey:   "attacker-vol-name",
+				cloud.SnapshotNameTagKey: "attacker-snap-name",
+				ClusterNameTagKey:        "attacker-cluster",
+				"valid-key":              "valid-value",
+			},
+			expectedTags: map[string]string{
+				"valid-key": "valid-value",
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := validateExtraTags(tc.tags, true)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if !reflect.DeepEqual(tc.tags, tc.expectedTags) {
+				t.Fatalf("tags not equal\ngot:\n%v\nexpected:\n%v", tc.tags, tc.expectedTags)
 			}
 		})
 	}
@@ -144,7 +215,7 @@ func TestValidateDriverOptions(t *testing.T) {
 				cloud.AwsEbsDriverTagKey: "extra-tag-value",
 			},
 			modifyVolumeTimeout: 5 * time.Second,
-			expErr:              fmt.Errorf("invalid extra tags: %w", fmt.Errorf("tag key '%s' is reserved", cloud.AwsEbsDriverTagKey)),
+			expErr:              fmt.Errorf("invalid extra tags: %w", fmt.Errorf("tag key prefix '%s/' is reserved", util.GetDriverName())),
 		},
 		{
 			name:                "fail because modifyVolumeRequestHandlerTimeout is zero",

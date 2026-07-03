@@ -29,6 +29,9 @@ test-e2e-single-az)
 test-e2e-multi-az)
   TEST="multi-az"
   ;;
+test-e2e-disruptive)
+  TEST="disruptive"
+  ;;
 test-e2e-external)
   TEST="external"
   ;;
@@ -46,12 +49,23 @@ test-e2e-external-eks)
   TEST="external"
   export CLUSTER_TYPE="eksctl"
   ;;
-test-e2e-external-a1-eks)
-  TEST="external-a1-eks"
-  export K8S_VERSION_EKSCTL="1.30"
-  export INSTANCE_TYPE="a1.large"
-  export IMAGE_ARCH="arm64"
+test-e2e-external-eks-oldest)
+  TEST="external"
   export CLUSTER_TYPE="eksctl"
+  OLDEST_EKS_VERSION=$(aws eks describe-cluster-versions \
+    --region "${AWS_REGION:-us-west-2}" \
+    --cluster-type eks \
+    --output json |
+    jq -r '[.clusterVersions[]
+            | select(.versionStatus == "STANDARD_SUPPORT" or .versionStatus == "EXTENDED_SUPPORT")
+            | .clusterVersion]
+           | sort_by(split(".") | map(tonumber))
+           | .[0] // empty')
+  if [[ -z "${OLDEST_EKS_VERSION}" ]]; then
+    echo "Failed to resolve the oldest supported EKS Kubernetes version from the EKS API" >&2
+    exit 1
+  fi
+  export K8S_VERSION_EKSCTL="${OLDEST_EKS_VERSION}"
   ;;
 test-e2e-external-eks-bottlerocket)
   TEST="external-eks-bottlerocket"
@@ -80,7 +94,10 @@ test-e2e-external-kustomize)
   ;;
 test-helm-chart)
   TEST="helm-ct"
-  export INSTANCE_TYPE="c5.xlarge"
+  export INSTANCE_TYPE="c5.2xlarge"
+  ;;
+test-e2e-parameters)
+  TEST="parameters-all"
   ;;
 *)
   echo "Unknown e2e test ${1}" >&2

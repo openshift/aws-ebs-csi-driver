@@ -31,6 +31,10 @@ find . -type d \( -name "deploy" -o -name "charts" -o -name "vendor" \) -prune -
     # Do not add license to auto-generated mock files
     continue
     ;;
+  **/volume_limits_table.go)
+    # Do not add license to auto-generated volume limits table
+    continue
+    ;;
   *.go)
     comment_prefix="//"
     ;;

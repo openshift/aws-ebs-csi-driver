@@ -43,23 +43,7 @@ func (c *Client) SearchTrainingPlanOfferings(ctx context.Context, params *Search
 type SearchTrainingPlanOfferingsInput struct {
 
 	// The desired duration in hours for the training plan offerings.
-	//
-	// This member is required.
 	DurationHours *int64
-
-	// The target resources (e.g., SageMaker Training Jobs, SageMaker HyperPod) to
-	// search for in the offerings.
-	//
-	// Training plans are specific to their target resource.
-	//
-	//   - A training plan designed for SageMaker training jobs can only be used to
-	//   schedule and run training jobs.
-	//
-	//   - A training plan for HyperPod clusters can be used exclusively to provide
-	//   compute resources to a cluster's instance group.
-	//
-	// This member is required.
-	TargetResources []types.SageMakerResourceName
 
 	// A filter to search for reserved capacity offerings with an end time before a
 	// specified date.
@@ -83,6 +67,29 @@ type SearchTrainingPlanOfferingsInput struct {
 	// specified date.
 	StartTimeAfter *time.Time
 
+	// The target resources (e.g., SageMaker Training Jobs, SageMaker HyperPod,
+	// SageMaker Endpoints, Studio apps) to search for in the offerings.
+	//
+	// Training plans are specific to their target resource.
+	//
+	//   - A training plan designed for SageMaker training jobs can only be used to
+	//   schedule and run training jobs.
+	//
+	//   - A training plan for HyperPod clusters can be used exclusively to provide
+	//   compute resources to a cluster's instance group.
+	//
+	//   - A training plan for SageMaker endpoints can be used exclusively to provide
+	//   compute resources to SageMaker endpoints for model deployment.
+	//
+	//   - A training plan for Studio apps can be used to launch JupyterLab and Code
+	//   Editor apps on reserved training plan capacity.
+	TargetResources []types.SageMakerResourceName
+
+	// The Amazon Resource Name (ARN); of an existing training plan to search for
+	// extension offerings. When specified, the API returns extension offerings that
+	// can be used to extend the specified training plan.
+	TrainingPlanArn *string
+
 	// The number of UltraServers to search for.
 	UltraServerCount *int32
 
@@ -98,6 +105,12 @@ type SearchTrainingPlanOfferingsOutput struct {
 	//
 	// This member is required.
 	TrainingPlanOfferings []types.TrainingPlanOffering
+
+	// A list of extension offerings available for the specified training plan. These
+	// offerings can be used with the [ExtendTrainingPlan]API to extend an existing training plan.
+	//
+	// [ExtendTrainingPlan]: https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_ExtendTrainingPlan.html
+	TrainingPlanExtensionOfferings []types.TrainingPlanExtensionOffering
 
 	// Metadata pertaining to the operation's result.
 	ResultMetadata middleware.Metadata
@@ -139,7 +152,7 @@ func (c *Client) addOperationSearchTrainingPlanOfferingsMiddlewares(stack *middl
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
+	if err = addRetry(stack, options, c); err != nil {
 		return err
 	}
 	if err = addRawResponseToMetadata(stack); err != nil {
@@ -163,16 +176,10 @@ func (c *Client) addOperationSearchTrainingPlanOfferingsMiddlewares(stack *middl
 	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addTimeOffsetBuild(stack, c); err != nil {
-		return err
-	}
 	if err = addUserAgentRetryMode(stack, options); err != nil {
 		return err
 	}
 	if err = addCredentialSource(stack, options); err != nil {
-		return err
-	}
-	if err = addOpSearchTrainingPlanOfferingsValidationMiddleware(stack); err != nil {
 		return err
 	}
 	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opSearchTrainingPlanOfferings(options.Region), middleware.Before); err != nil {
@@ -199,40 +206,7 @@ func (c *Client) addOperationSearchTrainingPlanOfferingsMiddlewares(stack *middl
 	if err = addInterceptAttempt(stack, options); err != nil {
 		return err
 	}
-	if err = addInterceptExecution(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptBeforeSerialization(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptAfterSerialization(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptBeforeSigning(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptAfterSigning(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptTransmit(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptBeforeDeserialization(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptAfterDeserialization(stack, options); err != nil {
-		return err
-	}
-	if err = addSpanInitializeStart(stack); err != nil {
-		return err
-	}
-	if err = addSpanInitializeEnd(stack); err != nil {
-		return err
-	}
-	if err = addSpanBuildRequestStart(stack); err != nil {
-		return err
-	}
-	if err = addSpanBuildRequestEnd(stack); err != nil {
+	if err = addInterceptors(stack, options); err != nil {
 		return err
 	}
 	return nil
