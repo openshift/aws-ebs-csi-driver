@@ -5,14 +5,14 @@ require (
 	github.com/container-storage-interface/spec v1.6.0
 	github.com/golang/mock v1.6.0
 	github.com/golang/protobuf v1.5.2
-	github.com/google/go-cmp v0.5.9
+	github.com/google/go-cmp v0.6.0
 	github.com/kubernetes-csi/csi-proxy/client v1.1.1
 	github.com/kubernetes-csi/csi-test v2.2.0+incompatible
 	github.com/kubernetes-csi/external-snapshotter/client/v4 v4.2.0
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.20.2
 	github.com/stretchr/testify v1.8.0
-	golang.org/x/sys v0.13.0
+	golang.org/x/sys v0.30.0
 	google.golang.org/grpc v1.49.0
 	k8s.io/api v0.22.11
 	k8s.io/apimachinery v0.22.11
@@ -74,11 +74,11 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v0.20.0 // indirect
 	go.opentelemetry.io/otel/trace v0.20.0 // indirect
 	go.opentelemetry.io/proto/otlp v0.7.0 // indirect
-	golang.org/x/crypto v0.14.0 // indirect
-	golang.org/x/net v0.17.0 // indirect
+	golang.org/x/crypto v0.33.0 // indirect
+	golang.org/x/net v0.25.0 // indirect
 	golang.org/x/oauth2 v0.0.0-20220909003341-f21342109be1 // indirect
-	golang.org/x/term v0.13.0 // indirect
-	golang.org/x/text v0.13.0 // indirect
+	golang.org/x/term v0.29.0 // indirect
+	golang.org/x/text v0.22.0 // indirect
 	golang.org/x/time v0.0.0-20220722155302-e5dcc9cfc0b9 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20220919141832-68c03719ef51 // indirect
@@ -135,3 +135,5 @@ replace (
 )
 
 go 1.19
+
+replace golang.org/x/net => github.com/openshift-sustaining/net v0.35.0-sec.4
