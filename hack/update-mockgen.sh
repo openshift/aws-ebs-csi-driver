@@ -21,7 +21,7 @@ BIN="$(dirname "$(realpath "${BASH_SOURCE[0]}")")/../bin"
 # Source-based mocking for internal interfaces
 "${BIN}/mockgen" -package cloud -destination=./pkg/cloud/mock_cloud.go -source pkg/cloud/interface.go &
 "${BIN}/mockgen" -package metadata -destination=./pkg/cloud/metadata/mock_metadata.go -source pkg/cloud/metadata/interface.go &
-"${BIN}/mockgen" -package mounter -destination=./pkg/mounter/mock_mount.go -source pkg/mounter/mount.go &
+"${BIN}/mockgen" -package mounter -destination=./pkg/mounter/mock_mount.go -source pkg/mounter/mount.go -write_package_comment=false &
 "${BIN}/mockgen" -package cloud -destination=./pkg/cloud/mock_ec2.go -source pkg/cloud/ec2_interface.go EC2API &
 "${BIN}/mockgen" -package cloud -destination=./pkg/cloud/mock_sm.go -source pkg/cloud/sagemaker_interface.go SageMakerAPI &
 

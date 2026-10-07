@@ -20,7 +20,7 @@ import "time"
 
 // constants of keys in PublishContext.
 const (
-	// devicePathKey represents key for device path in PublishContext
+	// DevicePathKey represents key for device path in PublishContext
 	// devicePath is the device path where the volume is attached to.
 	DevicePathKey = "devicePath"
 )
@@ -46,7 +46,7 @@ const (
 	// VolumeInitializationRateKey represents key for volume initialization rate when creating volumes from snapshots.
 	VolumeInitializationRateKey = "volumeinitializationrate"
 
-	// Iops represents key for IOPS for volume.
+	// IopsKey represents key for IOPS for volume.
 	IopsKey = "iops"
 
 	// ThroughputKey represents key for throughput.
@@ -55,7 +55,7 @@ const (
 	// EncryptedKey represents key for whether filesystem is encrypted.
 	EncryptedKey = "encrypted"
 
-	// KmsKeyId represents key for KMS encryption key.
+	// KmsKeyIDKey represents key for KMS encryption key.
 	KmsKeyIDKey = "kmskeyid"
 
 	// PVCNameKey contains name of the PVC for which is a volume provisioned.
@@ -74,11 +74,11 @@ const (
 	// VolumeSnapshotNamespaceKey contains namespace of the snapshot.
 	VolumeSnapshotNamespaceKey = "csi.storage.k8s.io/volumesnapshot/namespace"
 
-	// VolumeSnapshotCotentNameKey contains name of the VolumeSnapshotContent that is the source
+	// VolumeSnapshotContentNameKey contains name of the VolumeSnapshotContent that is the source
 	// for the snapshot.
 	VolumeSnapshotContentNameKey = "csi.storage.k8s.io/volumesnapshotcontent/name"
 
-	// Previously `BlockExpressKey` now deprecated as all io2 volumes now support up to 256,000 IOPS.
+	// DeprecatedBlockExpressKey was previously `BlockExpressKey`; all io2 volumes now support up to 256,000 IOPS.
 	// See https://docs.aws.amazon.com/ebs/latest/userguide/ebs-volume-types.html.
 	DeprecatedBlockExpressKey = "blockexpress"
 
@@ -97,7 +97,7 @@ const (
 	// NumberOfInodesKey configures the `number-of-inodes` when formatting a volume.
 	NumberOfInodesKey = "numberofinodes"
 
-	// Ext4ClusterSizeKey enables the bigalloc option when formatting an ext4 volume.
+	// Ext4BigAllocKey enables the bigalloc option when formatting an ext4 volume.
 	Ext4BigAllocKey = "ext4bigalloc"
 
 	// Ext4ClusterSizeKey configures the cluster size when formatting an ext4 volume with the bigalloc option enabled.
@@ -107,7 +107,7 @@ const (
 	// a tag to be attached to the resource.
 	TagKeyPrefix = "tagSpecification"
 
-	// OutpostArn represents key for outpost's arn.
+	// OutpostArnKey represents key for outpost's ARN.
 	OutpostArnKey = "outpostarn"
 
 	// BlockAttachUntilInitializedKey will prevent restored volume from being attached until it is fully initialized.
@@ -116,7 +116,7 @@ const (
 
 // constants of keys in snapshot parameters.
 const (
-	// FastSnapShotRestoreAvailabilityZones represents key for fast snapshot restore availability zones.
+	// FastSnapshotRestoreAvailabilityZones represents key for fast snapshot restore availability zones.
 	FastSnapshotRestoreAvailabilityZones = "fastsnapshotrestoreavailabilityzones"
 )
 

@@ -122,10 +122,14 @@ const (
 const (
 	volumeIDBatcher volumeBatcherType = iota
 	volumeTagBatcher
+)
 
+const (
 	snapshotIDBatcher snapshotBatcherType = iota
 	snapshotTagBatcher
+)
 
+const (
 	batchDescribeTimeout = 30 * time.Second
 
 	// Minimizes RPC latency and EC2 API calls. Tuned via scalability tests.
@@ -1892,7 +1896,6 @@ func (c *cloud) getSnapshot(ctx context.Context, request *ec2.DescribeSnapshotsI
 
 // listSnapshots returns all snapshots based from a request.
 func (c *cloud) listSnapshots(ctx context.Context, request *ec2.DescribeSnapshotsInput) (*ec2ListSnapshotsResponse, error) {
-	var snapshots []types.Snapshot
 	var nextToken *string
 
 	response, err := c.ec2.DescribeSnapshots(ctx, request)
@@ -1900,6 +1903,10 @@ func (c *cloud) listSnapshots(ctx context.Context, request *ec2.DescribeSnapshot
 		return nil, err
 	}
 
+	var snapshots []types.Snapshot
+	if len(response.Snapshots) > 0 {
+		snapshots = make([]types.Snapshot, 0, len(response.Snapshots))
+	}
 	snapshots = append(snapshots, response.Snapshots...)
 
 	if response.NextToken != nil {

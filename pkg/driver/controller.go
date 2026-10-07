@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"strconv"
 	"strings"
 
@@ -265,9 +266,7 @@ func (d *ControllerService) CreateVolume(ctx context.Context, req *csi.CreateVol
 		return nil, status.Errorf(codes.InvalidArgument, "Invalid tag value: %v", err)
 	}
 
-	for k, v := range addTags {
-		volumeTags[k] = v
-	}
+	maps.Copy(volumeTags, addTags)
 
 	responseCtx := map[string]string{}
 
@@ -786,13 +785,9 @@ func (d *ControllerService) CreateSnapshot(ctx context.Context, req *csi.CreateS
 		snapshotTags[resourceLifecycleTag] = ResourceLifecycleOwned
 		snapshotTags[NameTag] = d.options.KubernetesClusterID + "-dynamic-" + snapshotName
 	}
-	for k, v := range d.options.ExtraTags {
-		snapshotTags[k] = v
-	}
+	maps.Copy(snapshotTags, d.options.ExtraTags)
 
-	for k, v := range addTags {
-		snapshotTags[k] = v
-	}
+	maps.Copy(snapshotTags, addTags)
 
 	opts := &cloud.SnapshotOptions{
 		Tags:       snapshotTags,
