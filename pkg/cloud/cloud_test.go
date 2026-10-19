@@ -3591,7 +3591,7 @@ func TestListSnapshots(t *testing.T) {
 				t.Helper()
 				maxResults := 5
 				nextTokenValue := "nextTokenValue"
-				var expSnapshots []*Snapshot
+				expSnapshots := make([]*Snapshot, 0, maxResults*2)
 				for i := range maxResults * 2 {
 					expSnapshots = append(expSnapshots, &Snapshot{
 						SourceVolumeID: "snap-test-volume1",
@@ -3601,7 +3601,7 @@ func TestListSnapshots(t *testing.T) {
 					})
 				}
 
-				var ec2Snapshots []types.Snapshot
+				ec2Snapshots := make([]types.Snapshot, 0, maxResults*2)
 				for i := range maxResults * 2 {
 					ec2Snapshots = append(ec2Snapshots, types.Snapshot{
 						SnapshotId: aws.String(expSnapshots[i].SnapshotID),

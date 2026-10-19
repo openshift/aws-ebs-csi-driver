@@ -98,11 +98,11 @@ func TestMakeDir(t *testing.T) {
 		t.Fatalf("error creating mounter %v", err)
 	}
 
-	if mountObj.MakeDir(targetPath) != nil {
+	if err := mountObj.MakeDir(targetPath); err != nil {
 		t.Fatalf("Expect no error but got: %v", err)
 	}
 
-	if mountObj.MakeDir(targetPath) != nil {
+	if err := mountObj.MakeDir(targetPath); err != nil {
 		t.Fatalf("Expect no error but got: %v", err)
 	}
 
@@ -126,11 +126,11 @@ func TestMakeFile(t *testing.T) {
 		t.Fatalf("error creating mounter %v", err)
 	}
 
-	if mountObj.MakeFile(targetPath) != nil {
+	if err := mountObj.MakeFile(targetPath); err != nil {
 		t.Fatalf("Expect no error but got: %v", err)
 	}
 
-	if mountObj.MakeFile(targetPath) != nil {
+	if err := mountObj.MakeFile(targetPath); err != nil {
 		t.Fatalf("Expect no error but got: %v", err)
 	}
 

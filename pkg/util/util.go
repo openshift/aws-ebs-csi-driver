@@ -127,7 +127,7 @@ func roundUpSize(volumeSizeBytes int64, allocationUnitBytes int64) int64 {
 // GetAccessModes returns a slice containing all of the access modes defined
 // in the passed in VolumeCapabilities.
 func GetAccessModes(caps []*csi.VolumeCapability) *[]string {
-	modes := []string{}
+	modes := make([]string, 0, len(caps))
 	for _, c := range caps {
 		modes = append(modes, c.GetAccessMode().GetMode().String())
 	}
@@ -156,7 +156,7 @@ func NormalizeWindowsPath(path string) string {
 
 // SanitizeRequest takes a request object and returns a copy of the request with
 // the "Secrets" field cleared.
-func SanitizeRequest(req interface{}) interface{} {
+func SanitizeRequest(req any) any {
 	v := reflect.ValueOf(&req).Elem()
 	e := reflect.New(v.Elem().Type()).Elem()
 

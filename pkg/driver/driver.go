@@ -54,7 +54,7 @@ const (
 	WellKnownZoneTopologyKey = "topology.kubernetes.io/zone"
 	// Deprecated: Use the WellKnownZoneTopologyKey instead.
 	ZoneTopologyKey = "topology." + DriverName + "/zone"
-	// This name is purposefully consistent with the CCM's ZoneID topology key.
+	// ZoneIDTopologyKey is purposefully consistent with the CCM's ZoneID topology key.
 	// This key is only used for provisioning by az-id and will not be used for node topology
 	// to prevent any backwards compatibility issues.
 	ZoneIDTopologyKey = "topology.k8s.aws/zone-id"
@@ -107,7 +107,7 @@ func (d *Driver) Run() error {
 		return err
 	}
 
-	logErr := func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+	logErr := func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
 		resp, err := handler(ctx, req)
 		if err != nil {
 			klog.ErrorS(err, "GRPC error")

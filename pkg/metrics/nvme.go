@@ -308,7 +308,7 @@ func nvmeReadLogPage(fd uintptr, logID uint8) ([]byte, error) {
 
 	cmd := nvmePassthruCommand{
 		opcode:  0x02,
-		addr:    uint64(uintptr(unsafe.Pointer(&data[0]))),
+		addr:    uint64(uintptr(unsafe.Pointer(unsafe.SliceData(data)))),
 		nsid:    1,
 		dataLen: uint32(bufferLen),
 		cdw10:   uint32(logID) | (1024 << 16),
@@ -355,8 +355,8 @@ func getCSIManagedDevices(path string) ([]string, error) {
 		return nil, fmt.Errorf("getCSIManagedDevices: error reading mountinfo: %w", err)
 	}
 
-	lines := strings.Split(string(mountinfo), "\n")
-	for _, line := range lines {
+	lines := strings.SplitSeq(string(mountinfo), "\n")
+	for line := range lines {
 		fields := strings.Fields(line)
 
 		// https://man7.org/linux/man-pages/man5/proc.5.html

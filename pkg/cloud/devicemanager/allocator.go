@@ -26,7 +26,7 @@ import (
 // can be used for anything that NameAllocator user wants.
 type ExistingNames map[string]string
 
-// On AWS, we should assign new (not yet used) device names to attached volumes.
+// NameAllocator assigns new (not yet used) device names to attached volumes on AWS.
 // If we reuse a previously used name, we may get the volume "attaching" forever,
 // see https://aws.amazon.com/premiumsupport/knowledge-center/ebs-stuck-attaching/.
 // NameAllocator finds available device name, taking into account already
@@ -57,7 +57,7 @@ func (d *nameAllocator) GetNext(existingNames ExistingNames, likelyBadNames *syn
 	}
 
 	finalResortName := ""
-	likelyBadNames.Range(func(name, _ interface{}) bool {
+	likelyBadNames.Range(func(name, _ any) bool {
 		if name, ok := name.(string); ok {
 			if _, existing := existingNames[name]; !existing {
 				finalResortName = name
