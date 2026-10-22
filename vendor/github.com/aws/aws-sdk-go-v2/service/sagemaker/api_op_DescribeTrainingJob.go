@@ -6,12 +6,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/sagemaker/types"
 	smithy "github.com/aws/smithy-go"
 	"github.com/aws/smithy-go/middleware"
 	smithytime "github.com/aws/smithy-go/time"
-	smithyhttp "github.com/aws/smithy-go/transport/http"
 	smithywaiter "github.com/aws/smithy-go/waiter"
 	"time"
 )
@@ -50,11 +48,6 @@ type DescribeTrainingJobInput struct {
 
 type DescribeTrainingJobOutput struct {
 
-	// Information about the algorithm used for training, and algorithm metadata.
-	//
-	// This member is required.
-	AlgorithmSpecification *types.AlgorithmSpecification
-
 	// A timestamp that indicates when the training job was created.
 	//
 	// This member is required.
@@ -66,12 +59,6 @@ type DescribeTrainingJobOutput struct {
 	// This member is required.
 	ModelArtifacts *types.ModelArtifacts
 
-	// Resources, including ML compute instances and ML storage volumes, that are
-	// configured for model training.
-	//
-	// This member is required.
-	ResourceConfig *types.ResourceConfig
-
 	//  Provides detailed information about the state of the training job. For
 	// detailed information on the secondary status of the training job, see
 	// StatusMessage under [SecondaryStatusTransition].
@@ -81,6 +68,9 @@ type DescribeTrainingJobOutput struct {
 	//
 	// InProgress
 	//   - Starting - Starting the training job.
+	//
+	//   - Pending - The training job is waiting for compute capacity or compute
+	//   resource provision.
 	//
 	//   - Downloading - An optional stage for algorithms that support File training
 	//   input mode. It indicates that data is being downloaded to the ML storage
@@ -170,6 +160,9 @@ type DescribeTrainingJobOutput struct {
 	// This member is required.
 	TrainingJobStatus types.TrainingJobStatus
 
+	// Information about the algorithm used for training, and algorithm metadata.
+	AlgorithmSpecification *types.AlgorithmSpecification
+
 	// The Amazon Resource Name (ARN) of an AutoML job.
 	AutoMLJobArn *string
 
@@ -186,6 +179,9 @@ type DescribeTrainingJobOutput struct {
 	// if BillableTimeInSeconds is 100 and TrainingTimeInSeconds is 500, the savings
 	// is 80%.
 	BillableTimeInSeconds *int32
+
+	//  The billable token count for eligible serverless training jobs.
+	BillableTokenCount *int64
 
 	// Contains information about the output location for managed spot training
 	// checkpoint data.
@@ -273,9 +269,22 @@ type DescribeTrainingJobOutput struct {
 	// modified.
 	LastModifiedTime *time.Time
 
+	//  The MLflow configuration using SageMaker managed MLflow.
+	MlflowConfig *types.MlflowConfig
+
+	//  The MLflow details of this job.
+	MlflowDetails *types.MlflowDetails
+
+	//  The configuration for the model package.
+	ModelPackageConfig *types.ModelPackageConfig
+
 	// The S3 path where model artifacts that you configured when creating the job are
 	// stored. SageMaker creates subfolders for model artifacts.
 	OutputDataConfig *types.OutputDataConfig
+
+	//  The Amazon Resource Name (ARN) of the output model package containing model
+	// weights or checkpoints.
+	OutputModelPackageArn *string
 
 	// Configuration information for Amazon SageMaker Debugger system monitoring,
 	// framework profiling, and storage paths.
@@ -292,11 +301,18 @@ type DescribeTrainingJobOutput struct {
 	// Profiling status of a training job.
 	ProfilingStatus types.ProfilingStatus
 
+	//  The Serverless training job progress information.
+	ProgressInfo *types.TrainingProgressInfo
+
 	// Configuration for remote debugging. To learn more about the remote debugging
 	// functionality of SageMaker, see [Access a training container through Amazon Web Services Systems Manager (SSM) for remote debugging].
 	//
 	// [Access a training container through Amazon Web Services Systems Manager (SSM) for remote debugging]: https://docs.aws.amazon.com/sagemaker/latest/dg/train-remote-debugging.html
 	RemoteDebugConfig *types.RemoteDebugConfig
+
+	// Resources, including ML compute instances and ML storage volumes, that are
+	// configured for model training.
+	ResourceConfig *types.ResourceConfig
 
 	// The number of times to retry the job when the job fails due to an
 	// InternalServerError .
@@ -309,6 +325,9 @@ type DescribeTrainingJobOutput struct {
 	// A history of all of the secondary statuses that the training job has
 	// transitioned through.
 	SecondaryStatusTransitions []types.SecondaryStatusTransition
+
+	//  The configuration for serverless training jobs.
+	ServerlessJobConfig *types.ServerlessJobConfig
 
 	// Configuration of storage locations for the Amazon SageMaker Debugger
 	// TensorBoard output data.
@@ -352,9 +371,6 @@ type DescribeTrainingJobOutput struct {
 }
 
 func (c *Client) addOperationDescribeTrainingJobMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsAwsjson11_serializeOpDescribeTrainingJob{}, middleware.After)
 	if err != nil {
 		return err
@@ -363,68 +379,20 @@ func (c *Client) addOperationDescribeTrainingJobMiddlewares(stack *middleware.St
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "DescribeTrainingJob"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
-	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
-		return err
-	}
-	if err = addComputeContentLength(stack); err != nil {
-		return err
-	}
 	if err = addResolveEndpointMiddleware(stack, options); err != nil {
 		return err
 	}
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
-	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addSpanRetryLoop(stack, options); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
-		return err
-	}
-	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
-		return err
-	}
-	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
-		return err
-	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
-		return err
-	}
-	if err = addTimeOffsetBuild(stack, c); err != nil {
-		return err
-	}
-	if err = addUserAgentRetryMode(stack, options); err != nil {
+	if err = addRecordResponseTiming(stack, options); err != nil {
 		return err
 	}
 	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addOpDescribeTrainingJobValidationMiddleware(stack); err != nil {
-		return err
-	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opDescribeTrainingJob(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -439,46 +407,7 @@ func (c *Client) addOperationDescribeTrainingJobMiddlewares(stack *middleware.St
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
-	if err = addInterceptBeforeRetryLoop(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptAttempt(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptExecution(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptBeforeSerialization(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptAfterSerialization(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptBeforeSigning(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptAfterSigning(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptTransmit(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptBeforeDeserialization(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptAfterDeserialization(stack, options); err != nil {
-		return err
-	}
-	if err = addSpanInitializeStart(stack); err != nil {
-		return err
-	}
-	if err = addSpanInitializeEnd(stack); err != nil {
-		return err
-	}
-	if err = addSpanBuildRequestStart(stack); err != nil {
-		return err
-	}
-	if err = addSpanBuildRequestEnd(stack); err != nil {
+	if err = addInterceptors(stack, options); err != nil {
 		return err
 	}
 	return nil
@@ -703,11 +632,3 @@ type DescribeTrainingJobAPIClient interface {
 }
 
 var _ DescribeTrainingJobAPIClient = (*Client)(nil)
-
-func newServiceMetadataMiddleware_opDescribeTrainingJob(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "DescribeTrainingJob",
-	}
-}

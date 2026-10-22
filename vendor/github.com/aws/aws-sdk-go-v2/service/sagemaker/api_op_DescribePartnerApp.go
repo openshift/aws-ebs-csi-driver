@@ -4,11 +4,8 @@ package sagemaker
 
 import (
 	"context"
-	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/sagemaker/types"
 	"github.com/aws/smithy-go/middleware"
-	smithyhttp "github.com/aws/smithy-go/transport/http"
 	"time"
 )
 
@@ -35,6 +32,10 @@ type DescribePartnerAppInput struct {
 	// This member is required.
 	Arn *string
 
+	// When set to TRUE , the response includes available upgrade information for the
+	// SageMaker Partner AI App. Default is FALSE .
+	IncludeAvailableUpgrade *bool
+
 	noSmithyDocumentSerde
 }
 
@@ -47,7 +48,19 @@ type DescribePartnerAppOutput struct {
 	Arn *string
 
 	// The authorization type that users use to access the SageMaker Partner AI App.
+	// Valid values:
+	//
+	//   - IAM : Users access the SageMaker Partner AI App with their Amazon Web
+	//   Services IAM identity.
+	//
+	//   - IDC : Users access the SageMaker Partner AI App with their Amazon Web
+	//   Services IAM Identity Center identity.
 	AuthType types.PartnerAppAuthType
+
+	// A map of available minor version upgrades for the SageMaker Partner AI App. The
+	// key is the semantic version number, and the value is a list of release notes for
+	// that version. A null value indicates no upgrades are available.
+	AvailableUpgrade *types.AvailableUpgrade
 
 	// The URL of the SageMaker Partner AI App that the Application SDK uses to
 	// support in-app calls for the user.
@@ -55,6 +68,13 @@ type DescribePartnerAppOutput struct {
 
 	// The time that the SageMaker Partner AI App was created.
 	CreationTime *time.Time
+
+	// The end-of-life date for the current version of the SageMaker Partner AI App.
+	CurrentVersionEolDate *time.Time
+
+	// Indicates whether the SageMaker Partner AI App is configured for automatic
+	// minor version upgrades during scheduled maintenance windows.
+	EnableAutoMinorVersionUpgrade *bool
 
 	// When set to TRUE , the SageMaker Partner AI App sets the Amazon Web Services IAM
 	// session name or the authenticated IAM user as the identity of the SageMaker
@@ -67,6 +87,12 @@ type DescribePartnerAppOutput struct {
 
 	// The ARN of the IAM role associated with the SageMaker Partner AI App.
 	ExecutionRoleArn *string
+
+	// Contains the Amazon Web Services IAM Identity Center configuration for the
+	// SageMaker Partner AI App, including the Identity Center instance and the
+	// Identity Center application that SageMaker creates for the app. The service
+	// returns this field for apps that use IDC authorization.
+	IdcConfig *types.IdcConfigOutput
 
 	// The Amazon Web Services KMS customer managed key used to encrypt the data at
 	// rest associated with SageMaker Partner AI Apps.
@@ -82,6 +108,25 @@ type DescribePartnerAppOutput struct {
 	Name *string
 
 	// The status of the SageMaker Partner AI App.
+	//
+	//   - Creating: SageMaker AI is creating the partner AI app. The partner AI app
+	//   is not available during creation.
+	//
+	//   - Updating: SageMaker AI is updating the partner AI app. The partner AI app
+	//   is not available when updating.
+	//
+	//   - Deleting: SageMaker AI is deleting the partner AI app. The partner AI app
+	//   is not available during deletion.
+	//
+	//   - Available: The partner AI app is provisioned and accessible.
+	//
+	//   - Failed: The partner AI app is in a failed state and isn't available.
+	//   SageMaker AI is investigating the issue. For further guidance, contact Amazon
+	//   Web Services Support.
+	//
+	//   - UpdateFailed: The partner AI app couldn't be updated but is available.
+	//
+	//   - Deleted: The partner AI app is permanently deleted and not available.
 	Status types.PartnerAppStatus
 
 	// The instance type and size of the cluster attached to the SageMaker Partner AI
@@ -102,9 +147,6 @@ type DescribePartnerAppOutput struct {
 }
 
 func (c *Client) addOperationDescribePartnerAppMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsAwsjson11_serializeOpDescribePartnerApp{}, middleware.After)
 	if err != nil {
 		return err
@@ -113,68 +155,20 @@ func (c *Client) addOperationDescribePartnerAppMiddlewares(stack *middleware.Sta
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "DescribePartnerApp"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
-	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
-		return err
-	}
-	if err = addComputeContentLength(stack); err != nil {
-		return err
-	}
 	if err = addResolveEndpointMiddleware(stack, options); err != nil {
 		return err
 	}
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
-	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addSpanRetryLoop(stack, options); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
-		return err
-	}
-	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
-		return err
-	}
-	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
-		return err
-	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
-		return err
-	}
-	if err = addTimeOffsetBuild(stack, c); err != nil {
-		return err
-	}
-	if err = addUserAgentRetryMode(stack, options); err != nil {
+	if err = addRecordResponseTiming(stack, options); err != nil {
 		return err
 	}
 	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addOpDescribePartnerAppValidationMiddleware(stack); err != nil {
-		return err
-	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opDescribePartnerApp(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -189,55 +183,8 @@ func (c *Client) addOperationDescribePartnerAppMiddlewares(stack *middleware.Sta
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
-	if err = addInterceptBeforeRetryLoop(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptAttempt(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptExecution(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptBeforeSerialization(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptAfterSerialization(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptBeforeSigning(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptAfterSigning(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptTransmit(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptBeforeDeserialization(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptAfterDeserialization(stack, options); err != nil {
-		return err
-	}
-	if err = addSpanInitializeStart(stack); err != nil {
-		return err
-	}
-	if err = addSpanInitializeEnd(stack); err != nil {
-		return err
-	}
-	if err = addSpanBuildRequestStart(stack); err != nil {
-		return err
-	}
-	if err = addSpanBuildRequestEnd(stack); err != nil {
+	if err = addInterceptors(stack, options); err != nil {
 		return err
 	}
 	return nil
-}
-
-func newServiceMetadataMiddleware_opDescribePartnerApp(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "DescribePartnerApp",
-	}
 }

@@ -5,10 +5,8 @@ package sagemaker
 import (
 	"context"
 	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/sagemaker/types"
 	"github.com/aws/smithy-go/middleware"
-	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
 // Updates all of the SageMaker Partner AI Apps in an account.
@@ -34,16 +32,43 @@ type UpdatePartnerAppInput struct {
 	// This member is required.
 	Arn *string
 
+	// The semantic version to upgrade the SageMaker Partner AI App to. Must be the
+	// same semantic version returned in the AvailableUpgrade field from
+	// DescribePartnerApp . Version skipping and downgrades are not supported.
+	AppVersion *string
+
 	// Configuration settings for the SageMaker Partner AI App.
 	ApplicationConfig *types.PartnerAppConfig
 
+	// The authorization type that users use to access the SageMaker Partner AI App.
+	// Use this parameter to migrate an existing SageMaker Partner AI App from IAM
+	// authorization to IDC authorization. Valid values:
+	//
+	//   - IAM : Users access the SageMaker Partner AI App with their Amazon Web
+	//   Services IAM identity.
+	//
+	//   - IDC : Users access the SageMaker Partner AI App with their Amazon Web
+	//   Services IAM Identity Center identity. Specify the Identity Center instance to
+	//   use in IdcConfig .
+	AuthType types.PartnerAppAuthType
+
 	// A unique token that guarantees that the call to this API is idempotent.
 	ClientToken *string
+
+	// When set to TRUE , the SageMaker Partner AI App is automatically upgraded to the
+	// latest minor version during the next scheduled maintenance window, if one is
+	// available.
+	EnableAutoMinorVersionUpgrade *bool
 
 	// When set to TRUE , the SageMaker Partner AI App sets the Amazon Web Services IAM
 	// session name or the authenticated IAM user as the identity of the SageMaker
 	// Partner AI App user.
 	EnableIamSessionBasedIdentity *bool
+
+	// Specifies the Amazon Web Services IAM Identity Center configuration for the
+	// SageMaker Partner AI App. Specify this parameter when AuthType is IDC . Apps
+	// that use IAM authorization don't use this parameter.
+	IdcConfig *types.IdcConfigInput
 
 	// Maintenance configuration settings for the SageMaker Partner AI App.
 	MaintenanceConfig *types.PartnerAppMaintenanceConfig
@@ -71,9 +96,6 @@ type UpdatePartnerAppOutput struct {
 }
 
 func (c *Client) addOperationUpdatePartnerAppMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsAwsjson11_serializeOpUpdatePartnerApp{}, middleware.After)
 	if err != nil {
 		return err
@@ -82,56 +104,14 @@ func (c *Client) addOperationUpdatePartnerAppMiddlewares(stack *middleware.Stack
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "UpdatePartnerApp"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
-	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
-		return err
-	}
-	if err = addComputeContentLength(stack); err != nil {
-		return err
-	}
 	if err = addResolveEndpointMiddleware(stack, options); err != nil {
 		return err
 	}
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
-	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addSpanRetryLoop(stack, options); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
-		return err
-	}
-	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
-		return err
-	}
-	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
-		return err
-	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
-		return err
-	}
-	if err = addTimeOffsetBuild(stack, c); err != nil {
-		return err
-	}
-	if err = addUserAgentRetryMode(stack, options); err != nil {
+	if err = addRecordResponseTiming(stack, options); err != nil {
 		return err
 	}
 	if err = addCredentialSource(stack, options); err != nil {
@@ -141,12 +121,6 @@ func (c *Client) addOperationUpdatePartnerAppMiddlewares(stack *middleware.Stack
 		return err
 	}
 	if err = addOpUpdatePartnerAppValidationMiddleware(stack); err != nil {
-		return err
-	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opUpdatePartnerApp(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -161,46 +135,7 @@ func (c *Client) addOperationUpdatePartnerAppMiddlewares(stack *middleware.Stack
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
-	if err = addInterceptBeforeRetryLoop(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptAttempt(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptExecution(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptBeforeSerialization(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptAfterSerialization(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptBeforeSigning(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptAfterSigning(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptTransmit(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptBeforeDeserialization(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptAfterDeserialization(stack, options); err != nil {
-		return err
-	}
-	if err = addSpanInitializeStart(stack); err != nil {
-		return err
-	}
-	if err = addSpanInitializeEnd(stack); err != nil {
-		return err
-	}
-	if err = addSpanBuildRequestStart(stack); err != nil {
-		return err
-	}
-	if err = addSpanBuildRequestEnd(stack); err != nil {
+	if err = addInterceptors(stack, options); err != nil {
 		return err
 	}
 	return nil
@@ -237,12 +172,4 @@ func (m *idempotencyToken_initializeOpUpdatePartnerApp) HandleInitialize(ctx con
 }
 func addIdempotencyToken_opUpdatePartnerAppMiddleware(stack *middleware.Stack, cfg Options) error {
 	return stack.Initialize.Add(&idempotencyToken_initializeOpUpdatePartnerApp{tokenProvider: cfg.IdempotencyTokenProvider}, middleware.Before)
-}
-
-func newServiceMetadataMiddleware_opUpdatePartnerApp(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "UpdatePartnerApp",
-	}
 }

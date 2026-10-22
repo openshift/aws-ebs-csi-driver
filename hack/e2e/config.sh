@@ -21,15 +21,16 @@ BIN="${BASE_DIR}/../../bin"
 TEST_DIR="${BASE_DIR}/csi-test-artifacts"
 # On Prow, $ARTIFACTS indicates where to put the artifacts for skylens upload
 REPORT_DIR="${ARTIFACTS:-${TEST_DIR}/artifacts}"
-mkdir -p "${TEST_DIR}"
+mkdir -p "${TEST_DIR}" "${REPORT_DIR}"
 CLUSTER_FILE=${TEST_DIR}/${CLUSTER_NAME}.${CLUSTER_TYPE}.yaml
 KUBECONFIG=${KUBECONFIG:-"${TEST_DIR}/${CLUSTER_NAME}.${CLUSTER_TYPE}.kubeconfig"}
 
 # Use AWS_REGION as priority, fallback to region from awscli config, fallback to us-west-2
 REGION_FROM_CONFIG="$(${BIN}/aws configure get region || echo '')"
 export AWS_REGION=${AWS_REGION:-${REGION_FROM_CONFIG:-us-west-2}}
-# If zones are not provided, auto-detect the first 3 AZs that are not opt in
-ZONES=${AWS_AVAILABILITY_ZONES:-$(${BIN}/aws ec2 describe-availability-zones --region "${AWS_REGION}" | jq -r '[.AvailabilityZones[] | select(.OptInStatus == "opt-in-not-required") | .ZoneName][:3] | join(",")')}
+# If zones are not provided, auto-detect the first NUM_AZS AZs that are not opt in.
+NUM_AZS=${NUM_AZS:-2}
+ZONES=${AWS_AVAILABILITY_ZONES:-$(${BIN}/aws ec2 describe-availability-zones --region "${AWS_REGION}" | jq -r "[.AvailabilityZones[] | select(.OptInStatus == \"opt-in-not-required\") | .ZoneName][:${NUM_AZS}] | join(\",\")")}
 FIRST_ZONE=$(echo "${ZONES}" | cut -d, -f1)
 NODE_COUNT=${NODE_COUNT:-3}
 INSTANCE_TYPE=${INSTANCE_TYPE:-c5.large}
@@ -38,15 +39,17 @@ AMI_FAMILY=${AMI_FAMILY:-"AmazonLinux2023"}
 WINDOWS_HOSTPROCESS=${WINDOWS_HOSTPROCESS:-"false"}
 OUTPOST_ARN=${OUTPOST_ARN:-}
 OUTPOST_INSTANCE_TYPE=${OUTPOST_INSTANCE_TYPE:-${INSTANCE_TYPE}}
-FIPS_TEST=${FIPS_TEST:-"false"}
-
 # kops: must include patch version (e.g. 1.19.1)
 # eksctl: mustn't include patch version (e.g. 1.19)
-K8S_VERSION_KOPS=${K8S_VERSION_KOPS:-1.33.3}
-K8S_VERSION_EKSCTL=${K8S_VERSION_EKSCTL:-1.33}
+K8S_VERSION_KOPS=${K8S_VERSION_KOPS:-1.36.4}
+K8S_VERSION_EKSCTL=${K8S_VERSION_EKSCTL:-1.36}
+
+# Override AMI - eksctl clusters only
+LINUX_AMI=${LINUX_AMI:-}
+WINDOWS_AMI=${WINDOWS_AMI:-}
 
 EBS_INSTALL_SNAPSHOT=${EBS_INSTALL_SNAPSHOT:-"true"}
-EBS_INSTALL_SNAPSHOT_VERSION=${EBS_INSTALL_SNAPSHOT_VERSION:-"v8.3.0"}
+EBS_INSTALL_SNAPSHOT_VERSION=${EBS_INSTALL_SNAPSHOT_VERSION:-"v8.6.0"}
 EBS_INSTALL_SNAPSHOT_CUSTOM_IMAGE=${EBS_INSTALL_SNAPSHOT_CUSTOM_IMAGE:-}
 
 AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
@@ -63,9 +66,13 @@ IMAGE_ARCH=${IMAGE_ARCH:-amd64}
 DEPLOY_METHOD=${DEPLOY_METHOD:-"helm"}
 HELM_CT_TEST=${HELM_CT_TEST:-"false"}
 HELM_EXTRA_FLAGS=${HELM_EXTRA_FLAGS:-}
+# When using IRSA, eksctl creates the service account
+if [[ -n "${USE_IRSA:-}" ]]; then
+  HELM_EXTRA_FLAGS="${HELM_EXTRA_FLAGS} --set controller.serviceAccount.create=false"
+fi
 COLLECT_METRICS=${COLLECT_METRICS:-"false"}
 
 TEST_PATH=${TEST_PATH:-"./tests/e2e-kubernetes/..."}
 GINKGO_FOCUS=${GINKGO_FOCUS:-"External.Storage"}
-GINKGO_SKIP=${GINKGO_SKIP:-"\[Disruptive\]|\[Serial\]|\[Flaky\]"}
+GINKGO_SKIP=${GINKGO_SKIP:-"\[Disruptive\]|\[Serial\]|\[Flaky\]|should provision storage with pvc data source in parallel"}
 GINKGO_PARALLEL=${GINKGO_PARALLEL:-25}

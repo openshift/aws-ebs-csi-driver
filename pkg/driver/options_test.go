@@ -77,6 +77,9 @@ func TestAddFlags(t *testing.T) {
 	if err := f.Set("legacy-xfs", "true"); err != nil {
 		t.Errorf("error setting legacy-xfs: %v", err)
 	}
+	if err := f.Set("enable-node-local-volumes", "true"); err != nil {
+		t.Errorf("error setting enable-node-local-volumes: %v", err)
+	}
 
 	if err := f.Set("csi-mount-point-prefix", "/var/lib/kubelet"); err != nil {
 		t.Errorf("error setting csi-mount-point-prefix: %v", err)
@@ -120,6 +123,48 @@ func TestAddFlags(t *testing.T) {
 	}
 	if !o.LegacyXFSProgs {
 		t.Errorf("unexpected LegacyXFSProgs: got false, want true")
+	}
+	if !o.EnableNodeLocalVolumes {
+		t.Error("unexpected EnableNodeLocalVolumes: got false, want true")
+	}
+}
+
+func TestAddFlagsMetadataLabelerMode(t *testing.T) {
+	o := &Options{}
+	o.Mode = MetadataLabelerMode
+
+	f := flag.NewFlagSet("test", flag.ExitOnError)
+	o.AddFlags(f)
+
+	// AWS SDK flags should be registered for metadata labeler mode
+	if err := f.Set("user-agent-extra", "test-agent"); err != nil {
+		t.Errorf("error setting user-agent-extra: %v", err)
+	}
+	if o.UserAgentExtra != "test-agent" {
+		t.Errorf("unexpected UserAgentExtra: got %s, want test-agent", o.UserAgentExtra)
+	}
+
+	if err := f.Set("aws-sdk-debug-log", "true"); err != nil {
+		t.Errorf("error setting aws-sdk-debug-log: %v", err)
+	}
+	if !o.AwsSdkDebugLog {
+		t.Error("unexpected AwsSdkDebugLog: got false, want true")
+	}
+
+	// Controller-only flags should NOT be registered for metadata labeler mode
+	controllerOnlyFlags := []string{"extra-tags", "k8s-tag-cluster-id", "batching", "modify-volume-request-handler-timeout"}
+	for _, name := range controllerOnlyFlags {
+		if fl := f.Lookup(name); fl != nil {
+			t.Errorf("flag --%s should not be registered in MetadataLabelerMode", name)
+		}
+	}
+
+	// Node-only flags should NOT be registered for metadata labeler mode
+	nodeOnlyFlags := []string{"volume-attach-limit", "reserved-volume-attachments"}
+	for _, name := range nodeOnlyFlags {
+		if fl := f.Lookup(name); fl != nil {
+			t.Errorf("flag --%s should not be registered in MetadataLabelerMode", name)
+		}
 	}
 }
 

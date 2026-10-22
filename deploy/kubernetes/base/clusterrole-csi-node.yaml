@@ -5,14 +5,18 @@ apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: ebs-csi-node-role
   labels:
-    app.kubernetes.io/name: aws-ebs-csi-driver
+    app.kubernetes.io/name: "aws-ebs-csi-driver"
 rules:
-  - apiGroups: [""]
-    resources: ["nodes"]
-    verbs: ["get", "patch", "list", "watch"]
   - apiGroups: ["storage.k8s.io"]
     resources: ["volumeattachments"]
     verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["get"]
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["patch", "list", "watch"]
   - apiGroups: ["storage.k8s.io"]
     resources: ["csinodes"]
     verbs: ["get"]
+

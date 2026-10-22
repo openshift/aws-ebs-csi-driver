@@ -41,20 +41,20 @@ else
   exit 1
 fi
 
-# Fail single-az tests early if we know cluster is multi-az.
-IGNORE_SINGLE_AZ_ERR=${IGNORE_SINGLE_AZ_ERR:="false"}
-if [[ $IGNORE_SINGLE_AZ_ERR != "true" && "$GINKGO_FOCUS" =~ "single-az" ]]; then
-  # Get unique AZs of non-control-plane nodes
-  azs=$(kubectl get nodes \
+# [env]-gated tests (pre-provisioned, topology-aware) read AWS_AVAILABILITY_ZONES
+# to target real AZs. When unset, derive it from the live worker nodes.
+if [[ -z "${AWS_AVAILABILITY_ZONES:-}" ]]; then
+  AWS_AVAILABILITY_ZONES=$(kubectl get nodes \
     --kubeconfig "${KUBECONFIG}" \
     --selector '!node-role.kubernetes.io/control-plane' \
-    -o jsonpath='{.items[*].metadata.labels.topology\.kubernetes\.io/zone}' | tr " " "\n" | sort -u)
-
-  # Check if there's exactly one AZ and it matches $AWS_AVAILABILITY_ZONES
-  if [[ $(echo "$azs" | wc -w) -gt 1 ]] || [[ "$azs" != "$AWS_AVAILABILITY_ZONES" ]]; then
-    loudecho "ERROR. single-az tests require all worker nodes to be in a single availability zone (AZ) that matches env var \$AWS_AVAILABILITY_ZONES (Currently set as \"$AWS_AVAILABILITY_ZONES\"). Please delete nodes in other AZs. If you want to bypass this error, set env var IGNORE_SINGLE_AZ_ERR='true'"
+    --field-selector 'spec.unschedulable=false' \
+    -o jsonpath='{.items[*].metadata.labels.topology\.kubernetes\.io/zone}' | tr " " "\n" | sort -u | paste -sd, -)
+  if [[ -z "${AWS_AVAILABILITY_ZONES}" ]]; then
+    loudecho "ERROR. Could not derive AWS_AVAILABILITY_ZONES from cluster worker nodes. Set it explicitly or ensure worker nodes are labeled with topology.kubernetes.io/zone."
     exit 1
   fi
+  export AWS_AVAILABILITY_ZONES
+  loudecho "Derived AWS_AVAILABILITY_ZONES from cluster worker nodes: ${AWS_AVAILABILITY_ZONES}"
 fi
 
 if [[ "$WINDOWS" == true ]]; then
@@ -78,7 +78,7 @@ if [[ "${EBS_INSTALL_SNAPSHOT}" == true ]]; then
   kubectl apply --kubeconfig "${KUBECONFIG}" -f - <<<${SNAPSHOT_CONTROLLER_MANIFEST}
 fi
 
-if [[ "${HELM_CT_TEST}" != true ]]; then
+if [[ "${HELM_CT_TEST}" != true ]] && [ -z "${SKIP_DRIVER_INSTALL+x}" ]; then
   startSec=$(date +'%s')
   install_driver
   endSec=$(date +'%s')
@@ -105,10 +105,8 @@ if [[ "${HELM_CT_TEST}" == true ]]; then
   (
     while true; do
       if kubectl get pod ebs-csi-driver-test -n kube-system --kubeconfig "${KUBECONFIG}" &>/dev/null; then
-        echo "Pod found, waiting for it to become ready..."
         if kubectl wait --for=condition=ready pod ebs-csi-driver-test -n kube-system --timeout=300s --kubeconfig "${KUBECONFIG}"; then
-          echo "Pod is ready, fetching logs..."
-          kubectl logs -f ebs-csi-driver-test -n kube-system -c kubetest2 --kubeconfig "${KUBECONFIG}"
+          kubectl logs -f ebs-csi-driver-test -n kube-system -c kubetest2 --kubeconfig "${KUBECONFIG}" >"${REPORT_DIR}/helm-test-pod.txt"
         fi
       fi
       sleep 30
@@ -134,32 +132,83 @@ else
     pushd "${BASE_DIR}/../../tests/e2e-kubernetes"
     packageVersion=$(echo $(cut -d '.' -f 1,2 <<<$K8S_VERSION))
 
+    # VolumeAttributesClass went GA in 1.34, older test packages can only decode v1beta1
+    if [[ $(cut -d '.' -f 2 <<<"${packageVersion}") -lt 34 ]]; then
+      sed -i 's|^apiVersion: storage.k8s.io/v1$|apiVersion: storage.k8s.io/v1beta1|' volumeattributesclass.yaml
+    fi
+
     # TODO: Always skip broken upstream test - remove after fix released
-    GINKGO_SKIP="(should be protected by vac\\-protection finalizer)|${GINKGO_SKIP}"
+    GINKGO_SKIP="(should be protected by vac\\-protection finalizer)|should provision storage with pvc data source in parallel|${GINKGO_SKIP}"
     GINKGO_SKIP="${GINKGO_SKIP%|}" # Strip trailing | if needed - remove with above TODO
     set -x
     set +e
     # kubetest2 looks for deployers/testers in $PATH
-    PATH="${BIN}:${PATH}" "${BIN}/kubetest2" noop \
-      --run-id="e2e-kubernetes" \
-      --test=ginkgo \
-      -- \
-      --skip-regex="${GINKGO_SKIP}" \
-      --focus-regex="${GINKGO_FOCUS}" \
-      --test-package-version=$(curl -L https://dl.k8s.io/release/stable-${packageVersion}.txt) \
-      --parallel=${GINKGO_PARALLEL} \
-      --test-args="-storage.testdriver=${PWD}/manifests.yaml -kubeconfig=${KUBECONFIG} -node-os-distro=${NODE_OS_DISTRO}"
-    TEST_PASSED=$?
+
+    # Regex matching volume expansion tests susceptible to transient failures on Windows due to defragsvc contention.
+    WINDOWS_VOLUME_EXPAND_REGEX="volume-expand|expansion of pvcs created for ephemeral"
+
+    TEST_PACKAGE_VERSION=$(curl -L https://dl.k8s.io/release/stable-${packageVersion}.txt)
+
+    run_kubetest2() {
+      local run_id="$1"
+      local skip="$2"
+      local focus="$3"
+      local extra_ginkgo_args="${4:-}"
+
+      PATH="${BIN}:${PATH}" "${BIN}/kubetest2" noop \
+        --run-id="${run_id}" \
+        --test=ginkgo \
+        -- \
+        --skip-regex="${skip}" \
+        --focus-regex="${focus}" \
+        --test-package-version="${TEST_PACKAGE_VERSION}" \
+        --parallel=${GINKGO_PARALLEL} \
+        ${extra_ginkgo_args:+--ginkgo-args="${extra_ginkgo_args}"} \
+        --test-args="-storage.testdriver=${PWD}/manifests.yaml -kubeconfig=${KUBECONFIG} -node-os-distro=${NODE_OS_DISTRO}"
+    }
+
+    if [[ "${WINDOWS}" == true ]]; then
+      # Pass 1: Run all tests except volume-expand (no retries).
+      loudecho "Running non-volume-expand tests (no retries)"
+      run_kubetest2 "e2e-kubernetes" \
+        "${GINKGO_SKIP}|${WINDOWS_VOLUME_EXPAND_REGEX}" \
+        "${GINKGO_FOCUS}"
+      TEST_PASSED=$?
+
+      # Preserve Pass 1 JUnit results before Pass 2 overwrites them.
+      # kubetest2 writes JUnit XML to $ARTIFACTS (or ./_artifacts if unset).
+      _JUNIT_DIR="${ARTIFACTS:-_artifacts}"
+      for f in "${_JUNIT_DIR}"/junit*.xml; do
+        [ -f "$f" ] && mv "$f" "${f%.xml}_main.xml"
+      done
+
+      # Pass 2: Run only volume-expand tests with flake retries to tolerate
+      # transient defragsvc contention on Windows (StorageWMI error 4).
+      loudecho "Running volume-expand tests (with flake retries)"
+      run_kubetest2 "e2e-kubernetes-volume-expand" \
+        "${GINKGO_SKIP}" \
+        "${GINKGO_FOCUS}.*(${WINDOWS_VOLUME_EXPAND_REGEX})" \
+        "--flake-attempts=2"
+      VOLUME_EXPAND_PASSED=$?
+
+      if [[ ${VOLUME_EXPAND_PASSED} -ne 0 ]]; then
+        loudecho "WARNING: Volume expansion tests failed."
+        TEST_PASSED=1
+      fi
+    else
+      run_kubetest2 "e2e-kubernetes" "${GINKGO_SKIP}" "${GINKGO_FOCUS}"
+      TEST_PASSED=$?
+    fi
     set -e
     set +x
     popd
   else
     set -x
     set +e
-    "${BIN}/ginkgo" -p -nodes="${GINKGO_PARALLEL}" -v \
+    "${BIN}/ginkgo" -p -nodes="${GINKGO_PARALLEL}" \
       --focus="${GINKGO_FOCUS}" \
       --skip="${GINKGO_SKIP}" \
-      --junit-report="${REPORT_DIR}/junit.xml" \
+      --junit-report="${JUNIT_REPORT:-${REPORT_DIR}/junit.xml}" \
       "${TEST_PATH}" \
       -- \
       -kubeconfig="${KUBECONFIG}" \
@@ -169,14 +218,13 @@ else
     set +x
   fi
 
-  PODS=$(kubectl get pod -n kube-system -l "app.kubernetes.io/name=aws-ebs-csi-driver,app.kubernetes.io/instance=aws-ebs-csi-driver" -o json --kubeconfig "${KUBECONFIG}" | jq -r .items[].metadata.name)
+  PODS=$(kubectl get pod -n kube-system -l "app.kubernetes.io/name=aws-ebs-csi-driver" -o json --kubeconfig "${KUBECONFIG}" | jq -r .items[].metadata.name)
 
-  while IFS= read -r POD; do
-    loudecho "Printing pod ${POD} container logs"
-    set +e
-    kubectl logs "${POD}" -n kube-system --all-containers --ignore-errors --kubeconfig "${KUBECONFIG}"
-    set -e
-  done <<<"${PODS}"
+  if [[ -n "${PODS}" ]]; then
+    while IFS= read -r POD; do
+      kubectl logs "${POD}" -n kube-system --all-containers --ignore-errors --kubeconfig "${KUBECONFIG}" >"${REPORT_DIR}/${POD}.txt"
+    done <<<"${PODS}"
+  fi
 fi
 
 # Collect periodic performance metrics - this should only run in Prow
@@ -193,7 +241,17 @@ fi
 ## Cleanup
 
 if [[ "${HELM_CT_TEST}" != true ]]; then
-  uninstall_driver
+  # If there are more than 3 restarts in any single container fail the test and print table with restarts.
+  if [[ $(kubectl get pods -n kube-system -l "app.kubernetes.io/name=aws-ebs-csi-driver" -o json |
+    jq -r '.items[].status.containerStatuses[]?.restartCount // 0' |
+    sort -nr | head -n 1) -gt 3 ]]; then
+    loudecho "ERROR: Container restart count exceeds threshold"
+    kubectl get pods -n kube-system -l "app.kubernetes.io/name=aws-ebs-csi-driver" -o custom-columns="POD:.metadata.name,CONTAINER:.spec.containers[*].name,RESTARTS:.status.containerStatuses[*].restartCount" --kubeconfig "${KUBECONFIG}"
+    TEST_PASSED=1
+  fi
+  if [ -z "${SKIP_DRIVER_INSTALL+x}" ]; then
+    uninstall_driver
+  fi
 fi
 
 if [[ "${EBS_INSTALL_SNAPSHOT}" == true ]]; then

@@ -15,22 +15,25 @@
 package metrics
 
 import (
+	"fmt"
 	"strings"
+	"sync"
 	"testing"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"k8s.io/component-base/metrics/testutil"
 )
 
 func TestMetricRecorder(t *testing.T) {
 	tests := []struct {
 		name     string
-		exec     func(m *metricRecorder)
+		exec     func(m *MetricRecorder)
 		expected string
 		recorder bool
 	}{
 		{
 			name: "TestMetricRecorder: IncreaseCounterMetric",
-			exec: func(m *metricRecorder) {
+			exec: func(m *MetricRecorder) {
 				m.IncreaseCount("test_total", "help text", map[string]string{"key": "value"})
 			},
 			expected: `
@@ -42,7 +45,7 @@ test_total{key="value"} 1
 		},
 		{
 			name: "TestMetricRecorder: ObserveHistogramMetric",
-			exec: func(m *metricRecorder) {
+			exec: func(m *MetricRecorder) {
 				m.ObserveHistogram("test", "help text", 1.5, map[string]string{"key": "value"}, []float64{1, 2, 3})
 			},
 			expected: `
@@ -59,7 +62,7 @@ test_count{key="value"} 1
 		},
 		{
 			name: "TestMetricRecorder: Re-register metric",
-			exec: func(m *metricRecorder) {
+			exec: func(m *MetricRecorder) {
 				m.IncreaseCount("test_re_register_total", "help text", map[string]string{"key": "value1"})
 				m.registerCounterVec("test_re_register_total", "help text", []string{"key"})
 				m.IncreaseCount("test_re_register_total", "help text", map[string]string{"key": "value1"})
@@ -89,6 +92,27 @@ test_re_register_total{key="value2"} 1
 			}
 		})
 	}
+}
+
+func TestMetricRecorderConcurrentAccess(t *testing.T) {
+	m := &MetricRecorder{
+		registry: prometheus.NewRegistry(),
+		metrics:  make(map[string]any),
+	}
+
+	const goroutines = 2
+	var wg sync.WaitGroup
+	wg.Add(goroutines)
+	for i := range goroutines {
+		go func(id int) {
+			defer wg.Done()
+			labels := map[string]string{"k": fmt.Sprintf("v%d", id)}
+			m.IncreaseCount("concurrent_counter", "help", labels)
+			m.ObserveHistogram("concurrent_hist", "help", float64(id), labels, []float64{1, 5, 10})
+			m.initializeMetricWithOperations("concurrent_op", "help", []string{"request"})
+		}(i)
+	}
+	wg.Wait()
 }
 
 func getMetricNameFromExpected(expected string) string {

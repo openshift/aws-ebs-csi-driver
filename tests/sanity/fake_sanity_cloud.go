@@ -29,14 +29,14 @@ import (
 )
 
 type fakeCloud struct {
-	fakeMetadata     metadata.Metadata
+	fakeMetadata     *metadata.Metadata
 	mountPath        string
 	disks            map[string]*cloud.Disk
 	snapshots        map[string]*cloud.Snapshot
 	snapshotNameToID map[string]string
 }
 
-func newFakeCloud(fmd metadata.Metadata, mp string) *fakeCloud {
+func newFakeCloud(fmd *metadata.Metadata, mp string) *fakeCloud {
 	return &fakeCloud{
 		fakeMetadata:     fmd,
 		mountPath:        mp,
@@ -55,7 +55,7 @@ func (d *fakeCloud) CreateDisk(ctx context.Context, volumeID string, diskOptions
 
 	if diskOptions.SnapshotID != "" {
 		if _, exists := d.snapshots[diskOptions.SnapshotID]; !exists {
-			return nil, cloud.ErrNotFound
+			return nil, cloud.ErrSourceNotFound
 		}
 		newDisk := &cloud.Disk{
 			SnapshotID:       diskOptions.SnapshotID,
@@ -138,6 +138,10 @@ func (d *fakeCloud) GetSnapshotByName(ctx context.Context, name string) (*cloud.
 	return nil, cloud.ErrNotFound
 }
 
+func (d *fakeCloud) GetInstancesPatching(ctx context.Context, nodeIDs []string) ([]*types.Instance, error) {
+	return []*types.Instance{}, nil
+}
+
 func (d *fakeCloud) ListSnapshots(ctx context.Context, sourceVolumeID string, maxResults int32, nextToken string) (*cloud.ListSnapshotsResponse, error) {
 	var s []*cloud.Snapshot
 	startIndex := 0
@@ -206,6 +210,10 @@ func (d *fakeCloud) EnableFastSnapshotRestores(ctx context.Context, availability
 	return &ec2.EnableFastSnapshotRestoresOutput{}, nil
 }
 
+func (d *fakeCloud) LockSnapshot(ctx context.Context, lockOptions *cloud.SnapshotLockOptions) error {
+	return nil
+}
+
 func (d *fakeCloud) GetDiskByName(ctx context.Context, name string, capacityBytes int64) (*cloud.Disk, error) {
 	return &cloud.Disk{}, nil
 }
@@ -214,10 +222,18 @@ func (d *fakeCloud) ModifyTags(ctx context.Context, volumeID string, tagOptions 
 	return nil
 }
 
-func (d *fakeCloud) WaitForAttachmentState(ctx context.Context, expectedState types.VolumeAttachmentState, volumeID string, expectedInstance string, expectedDevice string, alreadyAssigned bool) (*types.VolumeAttachment, error) {
+func (d *fakeCloud) WaitForAttachmentState(ctx context.Context, expectedState types.VolumeAttachmentState, volumeID string, expectedInstance string, expectedDevice string, alreadyAssigned bool, expectedCardIndex *int32) (*types.VolumeAttachment, error) {
 	return &types.VolumeAttachment{}, nil
 }
 
 func (d *fakeCloud) IsVolumeInitialized(ctx context.Context, volumeID string) (bool, error) {
 	return true, nil
+}
+
+func (d *fakeCloud) DryRun(ctx context.Context) error {
+	return nil
+}
+
+func (d *fakeCloud) GetVolumeIDByNodeAndDevice(ctx context.Context, nodeID, deviceName string) (string, error) {
+	return "", cloud.ErrNotFound
 }
