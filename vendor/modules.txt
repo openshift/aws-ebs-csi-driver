@@ -417,8 +417,8 @@ go.yaml.in/yaml/v2
 go.yaml.in/yaml/v3
 # golang.org/x/exp v0.0.0-20250408133849-7e4ce0ab07d0
 ## explicit; go 1.23.0
-# golang.org/x/net v0.48.0
-## explicit; go 1.24.0
+# golang.org/x/net v0.48.0 => github.com/openshift-sustaining/net v0.35.0-sec.4
+## explicit; go 1.18
 golang.org/x/net/html
 golang.org/x/net/html/atom
 golang.org/x/net/html/charset
@@ -1111,3 +1111,4 @@ sigs.k8s.io/structured-merge-diff/v4/value
 sigs.k8s.io/yaml
 sigs.k8s.io/yaml/goyaml.v2
 # k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20250628140032-d90c4fd18f59
+# golang.org/x/net => github.com/openshift-sustaining/net v0.35.0-sec.4
