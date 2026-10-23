@@ -116,3 +116,5 @@ require (
 replace k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20250628140032-d90c4fd18f59
 
 go 1.24.5
+
+replace golang.org/x/net => github.com/openshift-sustaining/net v0.35.0-sec.4
