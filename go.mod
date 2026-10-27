@@ -146,3 +146,5 @@ replace (
 go 1.19
 
 replace golang.org/x/net => github.com/openshift-sustaining/net v0.35.0-sec.4
+
+replace golang.org/x/crypto v0.33.0 => golang.org/x/crypto v0.14.0
