@@ -4,11 +4,8 @@ package sagemaker
 
 import (
 	"context"
-	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/sagemaker/types"
 	"github.com/aws/smithy-go/middleware"
-	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
 // Updates a SageMaker HyperPod cluster.
@@ -34,6 +31,14 @@ type UpdateClusterInput struct {
 	// This member is required.
 	ClusterName *string
 
+	// Updates the autoscaling configuration for the cluster. Use to enable or disable
+	// automatic node scaling.
+	AutoScaling *types.ClusterAutoScalingConfig
+
+	// The Amazon Resource Name (ARN) of the IAM role that HyperPod assumes for
+	// cluster autoscaling operations. Cannot be updated while autoscaling is enabled.
+	ClusterRole *string
+
 	// Specify the instance groups to update.
 	InstanceGroups []types.ClusterInstanceGroupSpecification
 
@@ -41,12 +46,31 @@ type UpdateClusterInput struct {
 	// separator between multiple names.
 	InstanceGroupsToDelete []string
 
+	// Determines how instance provisioning is handled during cluster operations. In
+	// Continuous mode, the cluster provisions available instances incrementally and
+	// retries until the target count is reached. The cluster becomes operational once
+	// cluster-level resources are ready. Use CurrentCount and TargetCount in
+	// DescribeCluster to track provisioning progress.
+	NodeProvisioningMode types.ClusterNodeProvisioningMode
+
 	// The node recovery mode to be applied to the SageMaker HyperPod cluster.
 	NodeRecovery types.ClusterNodeRecovery
+
+	// The type of orchestrator used for the SageMaker HyperPod cluster.
+	Orchestrator *types.ClusterOrchestrator
 
 	// The specialized instance groups for training models like Amazon Nova to be
 	// created in the SageMaker HyperPod cluster.
 	RestrictedInstanceGroups []types.ClusterRestrictedInstanceGroupSpecification
+
+	// The configuration for the restricted instance groups (RIG) in the SageMaker
+	// HyperPod cluster.
+	RestrictedInstanceGroupsConfig *types.ClusterRestrictedInstanceGroupsConfig
+
+	// Updates the configuration for managed tier checkpointing on the HyperPod
+	// cluster. For example, you can enable or disable the feature and modify the
+	// percentage of cluster memory allocated for checkpoint storage.
+	TieredStorageConfig *types.ClusterTieredStorageConfig
 
 	noSmithyDocumentSerde
 }
@@ -65,9 +89,6 @@ type UpdateClusterOutput struct {
 }
 
 func (c *Client) addOperationUpdateClusterMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsAwsjson11_serializeOpUpdateCluster{}, middleware.After)
 	if err != nil {
 		return err
@@ -76,68 +97,20 @@ func (c *Client) addOperationUpdateClusterMiddlewares(stack *middleware.Stack, o
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "UpdateCluster"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
-	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
-		return err
-	}
-	if err = addComputeContentLength(stack); err != nil {
-		return err
-	}
 	if err = addResolveEndpointMiddleware(stack, options); err != nil {
 		return err
 	}
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
-	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addSpanRetryLoop(stack, options); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
-		return err
-	}
-	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
-		return err
-	}
-	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
-		return err
-	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
-		return err
-	}
-	if err = addTimeOffsetBuild(stack, c); err != nil {
-		return err
-	}
-	if err = addUserAgentRetryMode(stack, options); err != nil {
+	if err = addRecordResponseTiming(stack, options); err != nil {
 		return err
 	}
 	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addOpUpdateClusterValidationMiddleware(stack); err != nil {
-		return err
-	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opUpdateCluster(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -152,55 +125,8 @@ func (c *Client) addOperationUpdateClusterMiddlewares(stack *middleware.Stack, o
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
-	if err = addInterceptBeforeRetryLoop(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptAttempt(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptExecution(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptBeforeSerialization(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptAfterSerialization(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptBeforeSigning(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptAfterSigning(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptTransmit(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptBeforeDeserialization(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptAfterDeserialization(stack, options); err != nil {
-		return err
-	}
-	if err = addSpanInitializeStart(stack); err != nil {
-		return err
-	}
-	if err = addSpanInitializeEnd(stack); err != nil {
-		return err
-	}
-	if err = addSpanBuildRequestStart(stack); err != nil {
-		return err
-	}
-	if err = addSpanBuildRequestEnd(stack); err != nil {
+	if err = addInterceptors(stack, options); err != nil {
 		return err
 	}
 	return nil
-}
-
-func newServiceMetadataMiddleware_opUpdateCluster(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "UpdateCluster",
-	}
 }

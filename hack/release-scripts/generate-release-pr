@@ -88,7 +88,10 @@ parse_args() {
 
 update_readme() {
   log "Updating README.md"
+  chart_version=$(yq '.version' "$CHART_PATH")
   $SED "/^## Container Images$/,+5 s/$PREV_DRIVER_VERSION/$NEW_DRIVER_VERSION/g" -i "$README_PATH"
+  $SED "/^## Helm Charts$/,/^## Releases$/ s#aws-ebs-csi-driver:[0-9][0-9.]*#aws-ebs-csi-driver:$chart_version#g" -i "$README_PATH"
+  $SED "/^## Helm Charts$/,/^## Releases$/ s/^| [0-9][0-9.]*[[:space:]]*|/| $chart_version        |/" -i "$README_PATH"
 
   # If the major/minor version has changed, we also need to replace the old prev version with the new previous version
   # (If not, that means this is a patch release, and we shouldn't change the other version)
@@ -107,15 +110,24 @@ update_installmd() {
   log "Updating docs/install.md"
   prev_major_minor_version=$(echo "$PREV_DRIVER_VERSION" | sed 's/v\([0-9]*\.[0-9]*\).*/\1/')
   new_major_minor_version=$(echo "$NEW_DRIVER_VERSION" | sed 's/v\([0-9]*\.[0-9]*\).*/\1/')
+  chart_version=$(yq '.version' "$CHART_PATH")
   $SED "s/?ref=release-$prev_major_minor_version/?ref=release-$new_major_minor_version/g" -i "$INSTALL_MD_PATH"
+  $SED "/^#### Helm$/,/^Review the/ s/--version [0-9][0-9.]*/--version $chart_version/g" -i "$INSTALL_MD_PATH"
 }
 
 update_chart_and_overlays() {
   log "Updating helm chart and generates kustomize"
-  prev_minor_patch_version=$(echo "$PREV_DRIVER_VERSION" | sed 's/v[0-9]*\.//')
-  new_minor_patch_version=$(echo "$NEW_DRIVER_VERSION" | sed 's/v[0-9]*\.//')
+  new_driver_version_no_prefix=$(echo "$NEW_DRIVER_VERSION" | sed 's/v//')
 
-  $SED "s/$prev_minor_patch_version$/$new_minor_patch_version/g" -i "$CHART_PATH"
+  # Set appVersion to new driver version
+  yq ".appVersion=\"$new_driver_version_no_prefix\"" -i "$CHART_PATH"
+  # If minor version has changed, set chart version to appVersion with 2 as major version
+  # If not (patch release), just bump the chart patch version
+  if [ "${PREV_DRIVER_VERSION%.*}" != "${NEW_DRIVER_VERSION%.*}" ]; then
+    yq ".version = (\"$new_driver_version_no_prefix\" | split(\".\") | .[0] = \"2\" | join(\".\"))" -i "$CHART_PATH"
+  else
+    yq '.version |= (split(".") | .[2] |= (to_number + 1) | join("."))' -i "$CHART_PATH"
+  fi
 
   (
     cd "$ROOT_DIRECTORY"
@@ -124,10 +136,10 @@ update_chart_and_overlays() {
 }
 
 update_upstream_repo() {
-  update_readme
   update_makefile
-  update_installmd
   update_chart_and_overlays
+  update_readme
+  update_installmd
 }
 
 print_rest_of_release_steps() {

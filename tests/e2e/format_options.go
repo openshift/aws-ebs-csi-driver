@@ -31,7 +31,7 @@ var (
 	testedFsTypes = []string{ebscsidriver.FSTypeExt4, ebscsidriver.FSTypeExt3, ebscsidriver.FSTypeXfs}
 )
 
-var _ = Describe("[ebs-csi-e2e] [single-az] [format-options] Formatting a volume", func() {
+var _ = Describe("[ebs-csi-e2e] [functional] [format-options] Formatting a volume", func() {
 	f := framework.NewDefaultFramework("ebs")
 	f.NamespacePodSecurityEnforceLevel = admissionapi.LevelPrivileged
 
@@ -85,6 +85,16 @@ var _ = Describe("[ebs-csi-e2e] [single-az] [format-options] Formatting a volume
 					ebscsidriver.Ext4BigAllocKey:    "true",
 					ebscsidriver.Ext4ClusterSizeKey: "16384",
 					ebscsidriver.FSTypeKey:          fsType,
+				},
+			},
+			ebscsidriver.Ext4EncryptionSupportKey: {
+				CreateVolumeParameters: map[string]string{
+					ebscsidriver.Ext4EncryptionSupportKey: "true",
+					ebscsidriver.FSTypeKey:                fsType,
+					// Intentionally also enabling big alloc to test
+					// merging of two format params both using -O
+					ebscsidriver.Ext4BigAllocKey:    "true",
+					ebscsidriver.Ext4ClusterSizeKey: "16384",
 				},
 			},
 		}

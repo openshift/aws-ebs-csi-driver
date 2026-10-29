@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	"github.com/kubernetes-sigs/aws-ebs-csi-driver/pkg/cloud"
+	"github.com/kubernetes-sigs/aws-ebs-csi-driver/pkg/util"
 	"k8s.io/klog/v2"
 )
 
@@ -43,17 +44,14 @@ func ValidateDriverOptions(options *Options) error {
 
 func validateExtraTags(tags map[string]string, warnOnly bool) error {
 	validate := func(k, _ string) error {
-		if k == cloud.VolumeNameTagKey {
-			return fmt.Errorf("tag key '%s' is reserved", cloud.VolumeNameTagKey)
-		}
-		if k == cloud.AwsEbsDriverTagKey {
-			return fmt.Errorf("tag key '%s' is reserved", cloud.AwsEbsDriverTagKey)
-		}
-		if k == cloud.SnapshotNameTagKey {
-			return fmt.Errorf("tag key '%s' is reserved", cloud.SnapshotNameTagKey)
+		if k == cloud.VolumeNameTagKey || k == cloud.SnapshotNameTagKey || k == ClusterNameTagKey {
+			return fmt.Errorf("tag key '%s' is reserved", k)
 		}
 		if strings.HasPrefix(k, cloud.KubernetesTagKeyPrefix) {
 			return fmt.Errorf("tag key prefix '%s' is reserved", cloud.KubernetesTagKeyPrefix)
+		}
+		if strings.HasPrefix(k, util.GetDriverName()+"/") {
+			return fmt.Errorf("tag key prefix '%s/' is reserved", util.GetDriverName())
 		}
 		return nil
 	}
@@ -63,6 +61,7 @@ func validateExtraTags(tags map[string]string, warnOnly bool) error {
 		if err != nil {
 			if warnOnly {
 				klog.InfoS("Skipping tag: the following key-value pair is not valid", "key", k, "value", v, "err", err)
+				delete(tags, k)
 			} else {
 				return err
 			}

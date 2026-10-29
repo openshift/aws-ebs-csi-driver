@@ -31,7 +31,6 @@ rules:
     resources:
       - services
       - nodes
-      - nodes/proxy
       - persistentvolumes
       - persistentvolumeclaims
       - pods
@@ -136,7 +135,7 @@ metadata:
 subjects:
   - kind: ServiceAccount
     name: ebs-csi-driver-test
-    namespace: {{ .Release.Namespace }}
+    namespace: {{ .Release.Namespace | quote }}
 roleRef:
   kind: ClusterRole
   name: ebs-csi-driver-test
@@ -199,13 +198,13 @@ metadata:
 spec:
   containers:
     - name: kubetest2
-      image: {{ .Values.helmTester.image }}
+      image: {{ .Values.helmTester.image | quote }}
       resources:
         requests:
           cpu: 2000m
-          memory: 4Gi
+          memory: 8Gi
         limits:
-          memory: 4Gi
+          memory: 8Gi
       command: [ "/bin/sh", "-c" ]
       args:
         - |

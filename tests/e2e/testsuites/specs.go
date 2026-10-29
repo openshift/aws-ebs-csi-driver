@@ -27,6 +27,7 @@ import (
 
 type PodDetails struct {
 	Cmd     string
+	Image   string // Optional; overrides the default busybox image from NewTestPod.
 	Volumes []VolumeDetails
 }
 
@@ -44,6 +45,7 @@ type VolumeDetails struct {
 	CreateVolumeParameters     map[string]string // Optional, used when dynamically-provisioned volumes
 	VolumeID                   string            // Optional, used with pre-provisioned volumes
 	PreProvisionedVolumeFsType string            // Optional, used with pre-provisioned volumes
+	AvailabilityZone           string            // Optional, used with pre-provisioned volumes to set PV node affinity
 	DataSource                 *DataSource       // Optional, used with PVCs created from snapshots
 }
 
@@ -56,6 +58,7 @@ const (
 
 const (
 	VolumeSnapshotKind        = "VolumeSnapshot"
+	PersistentVolumeClaimKind = "PersistentVolumeClaim"
 	VolumeSnapshotContentKind = "VolumeSnapshotContent"
 	SnapshotAPIVersion        = "snapshot.storage.k8s.io/v1"
 	APIVersionv1              = "v1"
@@ -78,10 +81,14 @@ type VolumeDeviceDetails struct {
 
 type DataSource struct {
 	Name string
+	Kind string
 }
 
 func (pod *PodDetails) SetupWithDynamicVolumes(client clientset.Interface, namespace *v1.Namespace, csiDriver driver.DynamicPVTestDriver) (*TestPod, []func()) {
 	tpod := NewTestPod(client, namespace, pod.Cmd)
+	if pod.Image != "" {
+		tpod.SetImage(pod.Image)
+	}
 	cleanupFuncs := make([]func(), 0)
 	for n, v := range pod.Volumes {
 		tpvc, funcs := v.SetupDynamicPersistentVolumeClaim(client, namespace, csiDriver)
@@ -145,9 +152,11 @@ func (volume *VolumeDetails) SetupDynamicPersistentVolumeClaim(client clientset.
 	var tpvc *TestPersistentVolumeClaim
 	if volume.DataSource != nil {
 		dataSource := &v1.TypedLocalObjectReference{
-			Name:     volume.DataSource.Name,
-			Kind:     VolumeSnapshotKind,
-			APIGroup: &SnapshotAPIGroup,
+			Name: volume.DataSource.Name,
+			Kind: volume.DataSource.Kind,
+		}
+		if volume.DataSource.Kind == VolumeSnapshotKind {
+			dataSource.APIGroup = &SnapshotAPIGroup
 		}
 		tpvc = NewTestPersistentVolumeClaimWithDataSource(client, namespace, volume.ClaimSize, volume.VolumeMode, &createdStorageClass, dataSource, volume.AccessMode)
 	} else {
@@ -171,7 +180,7 @@ func (volume *VolumeDetails) SetupPreProvisionedPersistentVolumeClaim(client cli
 		volumeMode = v1.PersistentVolumeBlock
 	}
 	By("setting up the PV")
-	pv := csiDriver.GetPersistentVolume(volume.VolumeID, volume.PreProvisionedVolumeFsType, volume.ClaimSize, volume.ReclaimPolicy, namespace.Name, volume.AccessMode, volumeMode)
+	pv := csiDriver.GetPersistentVolume(volume.VolumeID, volume.PreProvisionedVolumeFsType, volume.ClaimSize, volume.ReclaimPolicy, namespace.Name, volume.AccessMode, volumeMode, volume.AvailabilityZone)
 	tpv := NewTestPreProvisionedPersistentVolume(client, pv)
 	tpv.Create()
 	By("setting up the PVC")

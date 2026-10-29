@@ -165,11 +165,7 @@ func (b *Batcher[InputType, ResultType]) execute(pendingTasks map[InputType][]ch
 	for _, task := range batch {
 		r := resultsMap[task]
 		for _, ch := range pendingTasks[task] {
-			select {
-			case ch <- BatchResult[ResultType]{Result: r, Err: err}:
-			default:
-				klog.V(7).InfoS("execute: ignoring channel with no receiver")
-			}
+			ch <- BatchResult[ResultType]{Result: r, Err: err}
 		}
 	}
 	klog.V(7).InfoS("execute: finished execution", "batchSize", len(batch))

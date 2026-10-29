@@ -19,6 +19,7 @@ import (
 
 	volumesnapshotv1 "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1"
 	ebscsidriver "github.com/kubernetes-sigs/aws-ebs-csi-driver/pkg/driver"
+	"github.com/kubernetes-sigs/aws-ebs-csi-driver/pkg/util"
 	v1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -37,7 +38,7 @@ type ebsCSIDriver struct {
 // InitEbsCSIDriver returns ebsCSIDriver that implements DynamicPVTestDriver interface.
 func InitEbsCSIDriver() PVTestDriver {
 	return &ebsCSIDriver{
-		driverName: ebscsidriver.DriverName,
+		driverName: util.GetDriverName(),
 	}
 }
 
@@ -67,7 +68,7 @@ func (d *ebsCSIDriver) GetVolumeSnapshotClass(namespace string, parameters map[s
 	return getVolumeSnapshotClass(generateName, provisioner, parameters)
 }
 
-func (d *ebsCSIDriver) GetPersistentVolume(volumeID string, fsType string, size string, reclaimPolicy *v1.PersistentVolumeReclaimPolicy, namespace string, accessMode v1.PersistentVolumeAccessMode, volumeMode v1.PersistentVolumeMode) *v1.PersistentVolume {
+func (d *ebsCSIDriver) GetPersistentVolume(volumeID string, fsType string, size string, reclaimPolicy *v1.PersistentVolumeReclaimPolicy, namespace string, accessMode v1.PersistentVolumeAccessMode, volumeMode v1.PersistentVolumeMode, availabilityZone string) *v1.PersistentVolume {
 	provisioner := d.driverName
 	generateName := fmt.Sprintf("%s-%s-preprovsioned-pv-", namespace, provisioner)
 	// Default to Retain ReclaimPolicy for pre-provisioned volumes
@@ -103,6 +104,24 @@ func (d *ebsCSIDriver) GetPersistentVolume(volumeID string, fsType string, size 
 				},
 			},
 			VolumeMode: &volumeMode,
+			// Pin the PV to the AZ the pre-provisioned volume was created in so
+			// the consuming pod schedules there; otherwise on a multi-AZ cluster
+			// the pod may land in a different AZ than the volume and never attach.
+			NodeAffinity: &v1.VolumeNodeAffinity{
+				Required: &v1.NodeSelector{
+					NodeSelectorTerms: []v1.NodeSelectorTerm{
+						{
+							MatchExpressions: []v1.NodeSelectorRequirement{
+								{
+									Key:      ebscsidriver.WellKnownZoneTopologyKey,
+									Operator: v1.NodeSelectorOpIn,
+									Values:   []string{availabilityZone},
+								},
+							},
+						},
+					},
+				},
+			},
 		},
 	}
 }

@@ -19,36 +19,38 @@ set -euo pipefail
 readonly PKG_ROOT="$(git rev-parse --show-toplevel)"
 
 # https://github.com/aws/aws-cli/tags
-AWSCLI_VERSION="2.28.11"
+AWSCLI_VERSION="2.36.32"
 # https://github.com/helm/chart-testing
-CT_VERSION="v3.13.0"
+CT_VERSION="v3.14.0"
 # https://github.com/eksctl-io/eksctl
-EKSCTL_VERSION="v0.212.0"
+EKSCTL_VERSION="v0.230.0"
 # https://github.com/onsi/ginkgo
-GINKGO_VERSION="v2.24.0"
+GINKGO_VERSION="v2.32.1"
 # https://github.com/golangci/golangci-lint
-GOLANGCI_LINT_VERSION="v2.4.0"
+GOLANGCI_LINT_VERSION="v2.12.2"
 # https://github.com/hairyhenderson/gomplate
-GOMPLATE_VERSION="v4.3.3"
+GOMPLATE_VERSION="v5.2.0"
 # https://pkg.go.dev/golang.org/x/vuln/cmd/govulncheck
-GOVULNCHECK_VERSION="v1.1.4"
+GOVULNCHECK_VERSION="v1.7.0"
 # https://github.com/helm/helm
-HELM_VERSION="v3.18.5"
+HELM_VERSION="v4.2.4"
 # https://github.com/kubernetes/kops
 # Commit is preferred over version if non-empty, and can
 # be used to test new Kubernetes releases earlier
-KOPS_VERSION="v1.33.0-beta.1"
+KOPS_VERSION="v1.37.0-alpha.1"
 KOPS_COMMIT=""
 # https://pkg.go.dev/sigs.k8s.io/kubetest2?tab=versions
-KUBETEST2_VERSION="v0.0.0-20250722085027-1ad71e1e364e"
+KUBETEST2_VERSION="v0.0.0-20260811223918-f64637cff8e4"
 # https://github.com/golang/mock
 MOCKGEN_VERSION="v1.6.0"
+# https://github.com/kubernetes/release
+RELEASE_NOTES_VERSION="v0.21.1"
 # https://github.com/mvdan/sh
-SHFMT_VERSION="v3.12.0"
+SHFMT_VERSION="v3.13.1"
 # https://pypi.org/project/yamale/
-YAMALE_VERSION="6.0.0"
+YAMALE_VERSION="6.1.0"
 # https://pypi.org/project/yamllint/
-YAMLLINT_VERSION="1.37.1"
+YAMLLINT_VERSION="1.38.0"
 
 OS="$(go env GOHOSTOS)"
 ARCH="$(go env GOHOSTARCH)"
@@ -96,7 +98,11 @@ function install_tar_binary() {
     TAR_EXTRA_FLAGS=""
   fi
 
-  curl --location "${DOWNLOAD_URL}" | tar "$TAR_EXTRA_FLAGS" --extract --touch --transform "s/.*/${BINARY_NAME}/" -C "${INSTALL_PATH}" "${BINARY_PATH}"
+  # Extract the single binary to stdout and redirect it to the destination,
+  # rather than using GNU tar's --transform to rename in place. The release
+  # build image (gcb-docker-gcloud) ships BusyBox tar, which supports neither
+  # --transform nor --touch; -O (extract to stdout) is portable across both.
+  curl --location "${DOWNLOAD_URL}" | tar "$TAR_EXTRA_FLAGS" --extract -O "${BINARY_PATH}" >"${INSTALL_PATH}/${BINARY_NAME}"
   chmod +x "${INSTALL_PATH}/${BINARY_NAME}"
 }
 
@@ -185,6 +191,12 @@ function install_mockgen() {
   INSTALL_PATH="${1}"
 
   install_go "${INSTALL_PATH}" "github.com/golang/mock/mockgen@${MOCKGEN_VERSION}"
+}
+
+function install_release-notes() {
+  INSTALL_PATH="${1}"
+
+  install_go "${INSTALL_PATH}" "k8s.io/release/cmd/release-notes@${RELEASE_NOTES_VERSION}"
 }
 
 function install_shfmt() {

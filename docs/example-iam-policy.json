@@ -6,6 +6,7 @@
       "Action": [
         "ec2:DescribeAvailabilityZones",
         "ec2:DescribeInstances",
+        "ec2:DescribeInstanceTypes",
         "ec2:DescribeSnapshots",
         "ec2:DescribeTags",
         "ec2:DescribeVolumes",
@@ -21,6 +22,15 @@
         "ec2:ModifyVolume"
       ],
       "Resource": "arn:aws:ec2:*:*:volume/*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "ec2:CopyVolumes"
+      ],
+      "Resource": [
+        "arn:aws:ec2:*:*:volume/vol-*"
+      ]
     },
     {
       "Effect": "Allow",
@@ -54,7 +64,8 @@
         "StringEquals": {
           "ec2:CreateAction": [
             "CreateVolume",
-            "CreateSnapshot"
+            "CreateSnapshot",
+            "CopyVolumes"
           ]
         }
       }
@@ -72,7 +83,8 @@
     {
       "Effect": "Allow",
       "Action": [
-        "ec2:CreateVolume"
+        "ec2:CreateVolume",
+        "ec2:CopyVolumes"
       ],
       "Resource": "arn:aws:ec2:*:*:volume/*",
       "Condition": {
@@ -84,7 +96,8 @@
     {
       "Effect": "Allow",
       "Action": [
-        "ec2:CreateVolume"
+        "ec2:CreateVolume",
+        "ec2:CopyVolumes"
       ],
       "Resource": "arn:aws:ec2:*:*:volume/*",
       "Condition": {
@@ -156,7 +169,8 @@
     {
       "Effect": "Allow",
       "Action": [
-        "ec2:DeleteSnapshot"
+        "ec2:DeleteSnapshot",
+        "ec2:LockSnapshot"
       ],
       "Resource": "arn:aws:ec2:*:*:snapshot/*",
       "Condition": {
@@ -168,7 +182,8 @@
     {
       "Effect": "Allow",
       "Action": [
-        "ec2:DeleteSnapshot"
+        "ec2:DeleteSnapshot",
+        "ec2:LockSnapshot"
       ],
       "Resource": "arn:aws:ec2:*:*:snapshot/*",
       "Condition": {

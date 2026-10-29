@@ -2,6 +2,6 @@ To verify that aws-ebs-csi-driver has started, run:
 
     kubectl get pod -n {{ .Release.Namespace }} -l "app.kubernetes.io/name={{ include "aws-ebs-csi-driver.name" . }},app.kubernetes.io/instance={{ .Release.Name }}"
 
-[Deprecation announcement] AWS Snow Family device support for the EBS CSI Driver
+Two new AWS-managed IAM policies are available: AmazonEBSCSIDriverPolicyV2 scopes the EBS CSI driver to volumes and snapshots explicitly tagged for use by the driver. AmazonEBSCSIDriverEKSClusterScopedPolicy scopes the driver to volumes and snapshots belonging to a specific EKS cluster. If interested in migrating, see https://github.com/kubernetes-sigs/aws-ebs-csi-driver/issues/2918.
 
-Support for the EBS CSI Driver on [AWS Snow Family devices](https://aws.amazon.com/snowball/) is deprecated, effective immediately. No further Snow-specific bugfixes or feature requests will be merged. The existing functionality for Snow devices has been removed on the 1.44 release of the EBS CSI Driver. Support of the EBS CSI Driver on other platforms, such as [Amazon EC2](https://aws.amazon.com/ec2/) or EC2 on [AWS Outposts](https://aws.amazon.com/outposts/) is not affected.
+The `-fips` container images are no longer built or released. FIPS support has been migrated to the Golang FIPS 140-3 module (https://go.dev/doc/security/fips140) which can be enabled dynamically at runtime. Going forward, a single container image will be used for both FIPS and non-FIPS deployments. This change only affects users directly relying on or customizing the `-fips` image. If you enable FIPS mode via the `fips` Helm or EKS Addon parameter without using a custom container image, this change does not affect you.
